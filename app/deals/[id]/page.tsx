@@ -1,11 +1,11 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { useData } from "@/context/DataContext";
 import { formatCurrency } from "@/lib/utils";
-import { MapPin, TrendingUp, Maximize2, Layers, Calendar, ChevronLeft, ShieldCheck } from "lucide-react";
+import { MapPin, TrendingUp, Maximize2, Layers, Calendar, ChevronLeft, ShieldCheck, Briefcase, Building2, Mail, Award } from "lucide-react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function DealPage({
     params,
@@ -13,14 +13,12 @@ export default function DealPage({
     params: Promise<{ id: string }>;
 }) {
     const { id } = use(params);
-    const { deals, teamMembers } = useData();
+    const { deals, teamMembers, firms } = useData();
 
     const deal = deals.find((d) => d.id === id);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
     if (!deal) {
-        // Since this is a client component, we might need a better way to handle notFound 
-        // if the deal is truly missing vs just loading.
-        // For now, let's just return a placeholder or redirect.
         return (
             <div className="flex min-h-screen items-center justify-center bg-brand-dark text-white">
                 <div className="text-center">
@@ -32,70 +30,104 @@ export default function DealPage({
     }
 
     const member = teamMembers.find((m) => m.id === deal.teamMemberId);
+    const firm = firms.find(f => f.id === deal.firmId);
+    const allImages = deal.images && deal.images.length > 0 ? deal.images : [deal.stillImageURL];
 
     return (
         <div className="relative min-h-screen bg-brand-dark overflow-hidden">
-            {/* Hero Background */}
+            {/* Hero Carousel Background */}
             <div className="absolute inset-0 z-0">
-                <img
-                    src={deal.stillImageURL || ""}
-                    alt={deal.address}
-                    className="h-full w-full object-cover"
-                />
+                <AnimatePresence mode="wait">
+                    <motion.img
+                        key={currentImageIndex}
+                        src={allImages[currentImageIndex] || ""}
+                        alt={deal.address}
+                        initial={{ opacity: 0, scale: 1.1 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 1 }}
+                        className="h-full w-full object-cover"
+                    />
+                </AnimatePresence>
                 <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/60 to-brand-dark/30" />
+
+                {/* Carousel Controls */}
+                {allImages.length > 1 && (
+                    <div className="absolute bottom-10 left-1/2 z-20 flex -translate-x-1/2 gap-3">
+                        {allImages.map((_, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setCurrentImageIndex(idx)}
+                                className={`h-1 rounded-full transition-all ${idx === currentImageIndex ? 'w-8 bg-brand-gold' : 'w-4 bg-white/20'}`}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Back Button */}
             <div className="relative z-10 pt-28 px-6 container mx-auto">
                 <Link
-                    href="/"
+                    href={firm ? `/firms/${firm.slug || firm.id}` : "/"}
                     className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-foreground/60 transition-all hover:text-brand-gold"
                 >
                     <ChevronLeft size={18} />
-                    Return to Portfolio
+                    Return to {firm?.name || "Portfolio"}
                 </Link>
             </div>
 
             {/* Main Content Overlay */}
             <div className="relative z-10 container mx-auto px-6 pt-12 pb-20">
-                <div className="grid gap-12 lg:grid-cols-2 lg:items-end">
+                <div className="grid gap-12 lg:grid-cols-2 lg:items-start">
                     {/* Left: Asset Title & Identity */}
-                    <div className="space-y-6">
-                        <div className="flex flex-wrap gap-2">
-                            <span className="glass-dark rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-brand-gold">
-                                {deal.assetType.replace("_", " ")}
-                            </span>
-                            <span className="glass-dark rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-foreground">
-                                {deal.strategy.replace("_", " ")}
-                            </span>
+                    <div className="space-y-8">
+                        <div className="space-y-6">
+                            <div className="flex flex-wrap gap-2">
+                                <span className="glass-dark rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-brand-gold">
+                                    {deal.assetType.replace("_", " ")}
+                                </span>
+                                <span className="glass-dark rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-foreground">
+                                    {deal.strategy.replace("_", " ")}
+                                </span>
+                            </div>
+
+                            <h1 className="text-5xl font-bold tracking-tight text-white md:text-7xl lg:max-w-xl">
+                                {deal.address.split(",")[0]}
+                                <span className="block text-2xl font-medium text-foreground/60 mt-2">
+                                    {deal.address.split(",").slice(1).join(",")}
+                                </span>
+                            </h1>
+
+                            <div className="flex items-center gap-4 pt-4">
+                                <div className="h-12 w-12 overflow-hidden rounded-full border-2 border-brand-gold/20">
+                                    <img
+                                        src={member?.imageURL || ""}
+                                        alt={member?.name}
+                                        className="h-full w-full object-cover"
+                                    />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-foreground/40">Deal Managed By</p>
+                                    <Link href={`/team/${member?.slug}`} className="text-sm font-bold text-brand-gold hover:underline">
+                                        {member?.name}
+                                    </Link>
+                                </div>
+                            </div>
                         </div>
 
-                        <h1 className="text-5xl font-bold tracking-tight text-white md:text-7xl lg:max-w-xl">
-                            {deal.address.split(",")[0]}
-                            <span className="block text-2xl font-medium text-foreground/60 mt-2">
-                                {deal.address.split(",").slice(1).join(",")}
-                            </span>
-                        </h1>
-
-                        <div className="flex items-center gap-4 pt-4">
-                            <div className="h-12 w-12 overflow-hidden rounded-full border-2 border-brand-gold/20">
-                                <img
-                                    src={member?.imageURL || ""}
-                                    alt={member?.name}
-                                    className="h-full w-full object-cover"
-                                />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-foreground/40">Deal Managed By</p>
-                                <Link href={`/team/${member?.slug}`} className="text-sm font-bold text-brand-gold hover:underline">
-                                    {member?.name}
-                                </Link>
+                        {/* Deal Overview & Highlights */}
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+                            <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-brand-gold">Deal Overview & Highlights</h3>
+                            <div className="glass-dark rounded-2xl border border-white/5 p-6 md:p-8">
+                                <p className="text-lg leading-relaxed text-foreground/70 italic">
+                                    {deal.context || "This transaction represents a strategic positioning within a high-growth market, leveraging institutional-grade asset management to drive superior risk-adjusted returns."}
+                                </p>
                             </div>
                         </div>
                     </div>
 
                     {/* Right: Deal Sheet Overlay */}
-                    <div className="glass-dark rounded-3xl p-8 lg:p-10 border border-white/10 shadow-2xl">
+                    <div className="glass-dark sticky top-32 rounded-3xl p-8 lg:p-10 border border-white/10 shadow-2xl">
                         <div className="mb-8 flex items-center justify-between border-b border-white/5 pb-6">
                             <h3 className="text-xl font-bold text-foreground">Digital Tombstone</h3>
                             <ShieldCheck className="text-brand-gold" size={24} />
@@ -146,7 +178,7 @@ export default function DealPage({
 
             {/* Bottom Subtle Overlay */}
             <div className="absolute bottom-4 right-6 text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/20">
-                PRVT MKT ALPHA PROJECT v1.0
+                PRVT MKT ALPHA PROJECT v1.1
             </div>
         </div>
     );

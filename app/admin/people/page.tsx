@@ -127,6 +127,16 @@ export default function AdminPeoplePage() {
                                     </div>
                                 </div>
 
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Biography</label>
+                                    <textarea
+                                        className="w-full h-24 rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white outline-none focus:border-brand-gold/50 resize-none"
+                                        placeholder="Principal professional with a specialization in..."
+                                        value={newPerson.bio}
+                                        onChange={(e) => setNewPerson({ ...newPerson, bio: e.target.value })}
+                                    />
+                                </div>
+
                                 <button
                                     type="submit"
                                     className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-gold py-4 mt-4 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/30"
@@ -172,13 +182,37 @@ export default function AdminPeoplePage() {
                                 </div>
 
                                 <div className="space-y-3 mb-8">
-                                    <div className="flex items-center gap-3 text-sm text-foreground/60">
-                                        <Building2 size={16} className="text-brand-gold/50" />
-                                        {firm?.name}
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Associated Firm</span>
+                                        <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-brand-dark px-3 py-2 text-sm text-foreground/60 focus-within:border-brand-gold/50 transition-all">
+                                            <Building2 size={16} className="text-brand-gold/50" />
+                                            <select
+                                                className="bg-transparent outline-none w-full cursor-pointer text-white"
+                                                value={member.firmId}
+                                                onChange={(e) => updateTeamMember(member.id, { firmId: e.target.value })}
+                                            >
+                                                {firms.map(f => (
+                                                    <option key={f.id} value={f.id}>{f.name}</option>
+                                                ))}
+                                                <option value="">No Associated Firm</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-3 text-sm text-foreground/60">
+                                    <div className="flex items-center gap-3 text-sm text-foreground/60 px-3">
                                         <Mail size={16} className="text-brand-gold/50" />
                                         {member.email}
+                                    </div>
+                                    <div className="flex flex-col gap-1 px-3">
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Biography</span>
+                                        <textarea
+                                            className="w-full h-20 rounded-xl border border-white/5 bg-brand-dark px-3 py-2 text-xs text-foreground/70 outline-none focus:border-brand-gold/50 transition-all resize-none"
+                                            defaultValue={member.bio}
+                                            onBlur={(e) => {
+                                                if (e.target.value !== member.bio) {
+                                                    updateTeamMember(member.id, { bio: e.target.value });
+                                                }
+                                            }}
+                                        />
                                     </div>
                                 </div>
 

@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
-import { MOCK_FIRMS } from "@/lib/mock-data";
+import { useData } from "@/context/DataContext";
 import { ChevronRight, ShieldCheck, Zap, Globe } from "lucide-react";
 
 export default function PlatformLandingPage() {
+  const { firms } = useData();
+
   return (
     <div className="min-h-screen bg-brand-dark pt-32 pb-20">
       <div className="container mx-auto px-6">
@@ -17,10 +21,10 @@ export default function PlatformLandingPage() {
         </div>
 
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {MOCK_FIRMS.map((firm) => (
+          {firms.map((firm) => (
             <Link
               key={firm.id}
-              href={`/${firm.slug}`}
+              href={`/firms/${firm.slug || firm.id}`}
               className="group relative overflow-hidden rounded-3xl border border-white/5 bg-brand-gray-900 p-8 transition-all hover:border-brand-gold/30 hover:bg-brand-gray-800"
             >
               <div className="mb-6 h-12 w-full">
@@ -31,12 +35,9 @@ export default function PlatformLandingPage() {
                     className="h-full object-contain object-left grayscale transition-all group-hover:grayscale-0"
                   />
                 ) : (
-                  <div className="h-full w-32 relative">
-                    <img
-                      src="/master-logo.png"
-                      alt={firm.name}
-                      className="h-full object-contain object-left"
-                    />
+                  <div className="h-full w-32 relative text-foreground/20 flex items-center">
+                    <Building2 className="mr-2" size={24} />
+                    <span className="text-xs font-bold uppercase tracking-widest">{firm.name.substring(0, 3)}</span>
                   </div>
                 )}
               </div>
@@ -57,16 +58,13 @@ export default function PlatformLandingPage() {
           ))}
 
           {/* New Firm Placeholder */}
-          <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-white/5 p-8 text-center transition-all hover:border-brand-gold/20">
+          <Link href="/admin/firms" className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-white/5 p-8 text-center transition-all hover:border-brand-gold/20 hover:bg-white/5">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-gray-900">
-              <Zap size={24} className="text-brand-gold" />
+              <PlusCircle size={24} className="text-brand-gold" />
             </div>
-            <h3 className="text-lg font-bold text-white">Join PRVT MKT</h3>
-            <p className="mt-2 text-sm text-foreground/40">Scale your CRE firm with a professional digital presence.</p>
-            <button className="mt-6 rounded-xl border border-brand-gold/20 px-6 py-2 text-xs font-bold uppercase tracking-wider text-brand-gold transition-all hover:bg-brand-gold hover:text-brand-dark">
-              Inquire Now
-            </button>
-          </div>
+            <h3 className="text-lg font-bold text-white">Add Your Firm</h3>
+            <p className="mt-2 text-sm text-foreground/40">Initialize your firm's platform presence instantly.</p>
+          </Link>
         </div>
 
         {/* Platform Features Section */}
@@ -91,6 +89,8 @@ export default function PlatformLandingPage() {
     </div>
   );
 }
+
+import { Building2, PlusCircle } from "lucide-react";
 
 function Feature({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
   return (

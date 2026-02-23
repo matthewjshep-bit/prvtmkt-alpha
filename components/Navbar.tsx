@@ -2,9 +2,61 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { LayoutDashboard, Users, PlusCircle, Globe } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useData } from "@/context/DataContext";
+import { LayoutDashboard, Users, PlusCircle, Globe, ArrowLeft } from "lucide-react";
 
 export default function Navbar() {
+    const pathname = usePathname();
+    const { firms } = useData();
+
+    const isWhiteLabelPath = pathname?.startsWith("/firms/");
+    const firmSlugOrId = isWhiteLabelPath ? pathname.split("/")[2] : null;
+    const currentFirm = firms.find(f => f.id === firmSlugOrId || f.slug === firmSlugOrId);
+
+    const isWhiteLabelActive = isWhiteLabelPath && currentFirm?.showAgencyBranding === false;
+
+    if (isWhiteLabelActive) {
+        return (
+            <nav
+                className="fixed top-0 z-50 w-full border-b border-white/5 backdrop-blur-md transition-colors"
+                style={{
+                    backgroundColor: `${currentFirm.backgroundColor || '#0a0a0a'}e6`,
+                    borderColor: 'rgba(255,255,255,0.05)'
+                }}
+            >
+                <div className="container mx-auto flex h-16 items-center justify-between px-6">
+                    <Link href={`/firms/${currentFirm.slug || currentFirm.id}`} className="flex items-center gap-3">
+                        {currentFirm.logoUrl ? (
+                            <img src={currentFirm.logoUrl} alt={currentFirm.name} className="h-8 object-contain" />
+                        ) : (
+                            <span className="text-lg font-bold" style={{ color: currentFirm.fontColor || '#ffffff' }}>{currentFirm.name}</span>
+                        )}
+                    </Link>
+
+                    <Link
+                        href="/"
+                        className="flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all hover:opacity-80"
+                        style={{
+                            backgroundColor: currentFirm.primaryColor || '#c5a059',
+                            color: currentFirm.backgroundColor || '#0a0a0a'
+                        }}
+                    >
+                        <ArrowLeft size={14} />
+                        Agency Home
+                    </Link>
+                </div>
+            </nav>
+        );
+    }
+
+    if (isWhiteLabelPath && (!currentFirm || currentFirm.showAgencyBranding !== false)) {
+        // Continue showing standard navbar or hide it? 
+        // User said: "Instead of rendering the full PRVT MKT header/sidebar, render a simplified Utility Header"
+        // But the prompt also says: "If toggled ON, the standard PRVT MKT navigation remains visible."
+    }
+
+    // Default Agency Navbar
     return (
         <nav className="fixed top-0 z-50 w-full border-b border-white/5 bg-brand-dark/80 backdrop-blur-md">
             <div className="container mx-auto flex h-20 items-center justify-between px-6">

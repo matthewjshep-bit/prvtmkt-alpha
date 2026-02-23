@@ -9,6 +9,10 @@ interface Firm {
     slug: string;
     logoUrl: string;
     primaryColor: string;
+    bio?: string;
+    backgroundColor?: string;
+    fontColor?: string;
+    showAgencyBranding?: boolean;
 }
 
 interface TeamMember {
@@ -31,10 +35,12 @@ interface Deal {
     purchaseAmount: number;
     financedAmount: number;
     stillImageURL: string;
+    images?: string[];
     isPublic: boolean;
     capRate: number;
     sqFt: number;
     teamMemberId: string;
+    context?: string;
 }
 
 interface DataContextType {
@@ -43,10 +49,13 @@ interface DataContextType {
     teamMembers: TeamMember[];
     updateFirm: (id: string, updates: Partial<Firm>) => void;
     updateTeamMember: (id: string, updates: Partial<TeamMember>) => void;
+    updateDeal: (id: string, updates: Partial<Deal>) => void;
     addFirm: (firm: Firm) => void;
     addTeamMember: (member: TeamMember) => void;
     addDeal: (deal: Deal) => void;
     deleteDeal: (id: string) => void;
+    deleteFirm: (id: string) => void;
+    isInitialized: boolean;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -129,8 +138,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         setDeals(prev => [deal, ...prev]);
     };
 
+    const updateDeal = (id: string, updates: Partial<Deal>) => {
+        setDeals(prev => prev.map(d => d.id === id ? { ...d, ...updates } : d));
+    };
+
     const deleteDeal = (id: string) => {
         setDeals(prev => prev.filter(d => d.id !== id));
+    };
+
+    const deleteFirm = (id: string) => {
+        setFirms(prev => prev.filter(f => f.id !== id));
+        // Cascading: Unlink deals and team members
+        setDeals(prev => prev.map(d => d.firmId === id ? { ...d, firmId: "" } : d));
+        setTeamMembers(prev => prev.map(m => m.firmId === id ? { ...m, firmId: "" } : m));
     };
 
     return (
@@ -140,10 +160,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             teamMembers,
             updateFirm,
             updateTeamMember,
+            updateDeal,
             addFirm,
             addTeamMember,
             addDeal,
-            deleteDeal
+            deleteDeal,
+            deleteFirm,
+            isInitialized
         }}>
             {children}
         </DataContext.Provider>

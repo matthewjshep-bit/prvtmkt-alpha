@@ -3,16 +3,17 @@
 import { useState } from "react";
 import { useData } from "@/context/DataContext";
 import { useRouter } from "next/navigation";
-import { Upload, CheckCircle2, ChevronRight, ChevronLeft, Image as ImageIcon, Video, DollarSign, MapPin, X } from "lucide-react";
+import { Upload, CheckCircle2, ChevronRight, ChevronLeft, Image as ImageIcon, Video, DollarSign, MapPin, X, Building2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 export default function IntakeFormPage() {
-    const { addDeal } = useData();
+    const { addDeal, firms } = useData();
     const router = useRouter();
     const [step, setStep] = useState(1);
     const [isGenerating, setIsGenerating] = useState(false);
     const [form, setForm] = useState({
         address: "",
+        firmId: "",
         assetType: "INDUSTRIAL",
         strategy: "BUY_AND_HOLD",
         purchaseAmount: "",
@@ -30,7 +31,7 @@ export default function IntakeFormPage() {
             const newId = `d-${Date.now()}`;
             const newDeal = {
                 id: newId,
-                firmId: "f1", // Default for now
+                firmId: form.firmId,
                 address: form.address,
                 assetType: form.assetType,
                 strategy: form.strategy,
@@ -57,8 +58,8 @@ export default function IntakeFormPage() {
                         <div key={s} className="flex items-center">
                             <div
                                 className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all ${step >= s
-                                        ? "border-brand-gold bg-brand-gold text-brand-dark"
-                                        : "border-white/10 bg-brand-gray-900 text-foreground/30"
+                                    ? "border-brand-gold bg-brand-gold text-brand-dark"
+                                    : "border-white/10 bg-brand-gray-900 text-foreground/30"
                                     }`}
                             >
                                 {step > s ? <CheckCircle2 size={20} /> : s}
@@ -86,10 +87,29 @@ export default function IntakeFormPage() {
                                 <h2 className="text-3xl font-bold text-foreground">Basic Information</h2>
                                 <div className="space-y-4">
                                     <div className="space-y-2">
+                                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Responsible Firm</label>
+                                        <div className="relative">
+                                            <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gold" size={18} />
+                                            <select
+                                                required
+                                                className="h-14 w-full rounded-xl border border-white/5 bg-brand-gray-900 pl-12 pr-4 text-foreground outline-none focus:border-brand-gold/50 appearance-none"
+                                                value={form.firmId}
+                                                onChange={(e) => setForm({ ...form, firmId: e.target.value })}
+                                            >
+                                                <option value="" disabled>Select the lead firm...</option>
+                                                {firms.map(firm => (
+                                                    <option key={firm.id} value={firm.id}>{firm.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
                                         <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Property Address</label>
                                         <div className="relative">
                                             <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gold" size={18} />
                                             <input
+                                                required
                                                 type="text"
                                                 placeholder="e.g. 123 Industrial Way, Dallas, TX"
                                                 className="h-14 w-full rounded-xl border border-white/5 bg-brand-gray-900 pl-12 pr-4 text-foreground outline-none focus:border-brand-gold/50"

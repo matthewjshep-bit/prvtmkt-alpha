@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useData } from "@/context/DataContext";
-import { Building2, Save, Upload, ExternalLink, Shield, Check, Plus, X } from "lucide-react";
+import { Building2, Save, Upload, ExternalLink, Shield, Check, Plus, X, Search, Trash2, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminFirmsPage() {
-    const { firms, teamMembers, updateFirm, updateTeamMember, addFirm } = useData();
+    const { firms, teamMembers, updateFirm, updateTeamMember, addFirm, deleteFirm } = useData();
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [isAddingFirm, setIsAddingFirm] = useState(false);
     const [newFirm, setNewFirm] = useState({
@@ -184,6 +185,72 @@ export default function AdminFirmsPage() {
                                         </div>
                                     </div>
 
+                                    <div className="mt-8 grid gap-6 md:grid-cols-2 border-t border-white/5 pt-6">
+                                        <div className="space-y-3">
+                                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Firm Bio</h4>
+                                            <textarea
+                                                className="w-full h-24 rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-sm text-white focus:border-brand-gold/50 focus:outline-none resize-none"
+                                                placeholder="Enter firm description..."
+                                                value={firm.bio || ""}
+                                                onChange={(e) => updateFirm(firm.id, { bio: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Background</h4>
+                                                    <div className="flex items-center gap-2 rounded-xl border border-white/5 bg-brand-dark px-3 py-2">
+                                                        <input
+                                                            type="color"
+                                                            className="h-6 w-6 rounded border-none bg-transparent cursor-pointer"
+                                                            value={firm.backgroundColor || "#0a0a0a"}
+                                                            onChange={(e) => updateFirm(firm.id, { backgroundColor: e.target.value })}
+                                                        />
+                                                        <span className="text-[10px] font-mono text-foreground/60 uppercase">{firm.backgroundColor || "#0a0a0a"}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Font Color</h4>
+                                                    <div className="flex items-center gap-2 rounded-xl border border-white/5 bg-brand-dark px-3 py-2">
+                                                        <input
+                                                            type="color"
+                                                            className="h-6 w-6 rounded border-none bg-transparent cursor-pointer"
+                                                            value={firm.fontColor || "#ffffff"}
+                                                            onChange={(e) => updateFirm(firm.id, { fontColor: e.target.value })}
+                                                        />
+                                                        <span className="text-[10px] font-mono text-foreground/60 uppercase">{firm.fontColor || "#ffffff"}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Primary Brand Color</h4>
+                                                <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-brand-dark px-3 py-2">
+                                                    <input
+                                                        type="color"
+                                                        className="h-6 w-6 rounded border-none bg-transparent cursor-pointer"
+                                                        value={firm.primaryColor || "#c5a059"}
+                                                        onChange={(e) => updateFirm(firm.id, { primaryColor: e.target.value })}
+                                                    />
+                                                    <span className="text-[10px] font-mono text-foreground/60 uppercase">{firm.primaryColor || "#c5a059"}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between rounded-xl border border-white/5 bg-brand-dark px-4 py-3">
+                                                <div className="space-y-0.5">
+                                                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Agency Branding</h4>
+                                                    <p className="text-[10px] text-foreground/50">Show PRVT MKT navigation</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => updateFirm(firm.id, { showAgencyBranding: !firm.showAgencyBranding })}
+                                                    className={`relative h-6 w-11 rounded-full transition-colors focus:outline-none ${firm.showAgencyBranding !== false ? 'bg-brand-gold' : 'bg-white/10'}`}
+                                                >
+                                                    <div
+                                                        className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${firm.showAgencyBranding !== false ? 'translate-x-5' : 'translate-x-0'}`}
+                                                    />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     {/* Team Members Section */}
                                     <div className="mt-6 border-t border-white/5 pt-4">
                                         <h4 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-foreground/30">Associated Team</h4>
@@ -201,14 +268,49 @@ export default function AdminFirmsPage() {
                                                     />
                                                 </div>
                                             ))}
+
+                                            {/* Link Member Tool */}
+                                            <div className="relative">
+                                                <select
+                                                    className="appearance-none bg-brand-gold/10 border border-brand-gold/20 rounded-lg px-3 py-2 text-[10px] font-bold text-brand-gold outline-none cursor-pointer hover:bg-brand-gold/20 transition-all pr-8"
+                                                    value=""
+                                                    onChange={(e) => {
+                                                        const memberId = e.target.value;
+                                                        if (memberId) {
+                                                            updateTeamMember(memberId, { firmId: firm.id });
+                                                        }
+                                                    }}
+                                                >
+                                                    <option value="" disabled>+ Link Member</option>
+                                                    {teamMembers
+                                                        .filter(m => m.firmId !== firm.id)
+                                                        .map(member => {
+                                                            const otherFirm = firms.find(f => f.id === member.firmId);
+                                                            return (
+                                                                <option key={member.id} value={member.id}>
+                                                                    {member.name} {otherFirm ? `(Transfer from ${otherFirm.name})` : '(Independent)'}
+                                                                </option>
+                                                            );
+                                                        })
+                                                    }
+                                                </select>
+                                                <Plus size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-brand-gold pointer-events-none" />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Actions Section */}
-                                <div className="lg:col-span-3 flex justify-end gap-3">
+                                <div className="lg:col-span-3 flex items-center justify-end gap-3">
+                                    <button
+                                        onClick={() => setConfirmDeleteId(firm.id)}
+                                        className="mr-auto flex items-center gap-2 rounded-xl bg-red-500/10 px-4 py-3 text-sm font-bold text-red-500 transition-all hover:bg-red-500 hover:text-white"
+                                    >
+                                        <Trash2 size={16} />
+                                        Delete Firm
+                                    </button>
                                     <Link
-                                        href={`/${firm.slug}`}
+                                        href={`/firms/${firm.slug || firm.id}`}
                                         target="_blank"
                                         className="flex items-center gap-2 rounded-xl bg-brand-gray-800 px-5 py-3 text-sm font-bold text-white transition-all hover:bg-brand-gray-700"
                                     >
@@ -239,6 +341,38 @@ export default function AdminFirmsPage() {
                     ))}
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {confirmDeleteId && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-brand-dark/90 backdrop-blur-sm">
+                    <div className="w-full max-w-md bg-brand-gray-900 rounded-3xl border border-white/10 p-8 shadow-2xl">
+                        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 text-red-500 mx-auto">
+                            <AlertTriangle size={32} />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white text-center mb-2">Are you sure?</h2>
+                        <p className="text-center text-foreground/50 mb-8 leading-relaxed">
+                            You are about to delete <span className="text-white font-bold">{firms.find(f => f.id === confirmDeleteId)?.name}</span>. This action is <span className="text-red-500 font-bold uppercase underline">irreversible</span> and will unlink all associated deals and team members.
+                        </p>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="flex-1 rounded-xl bg-white/5 py-4 text-sm font-bold text-white transition-all hover:bg-white/10"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    deleteFirm(confirmDeleteId);
+                                    setConfirmDeleteId(null);
+                                }}
+                                className="flex-1 rounded-xl bg-red-500 py-4 text-sm font-bold text-white transition-all hover:bg-red-600 shadow-lg shadow-red-500/20"
+                            >
+                                Confirm Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

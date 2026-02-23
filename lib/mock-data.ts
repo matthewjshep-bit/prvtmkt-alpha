@@ -5,6 +5,10 @@ export const MOCK_FIRMS = [
         slug: "grand-peaks",
         logoUrl: "https://www.grandpeaks.com/wp-content/themes/grandpeaks/assets/images/logo.png",
         primaryColor: "#c5a059",
+        bio: "Institutional investment firm focused on the acquisition and management of luxury multifamily communities.",
+        backgroundColor: "#0a0a0a",
+        fontColor: "#ffffff",
+        showAgencyBranding: true
     },
     {
         id: "f2",
@@ -12,6 +16,10 @@ export const MOCK_FIRMS = [
         slug: "prvt-mkt",
         logoUrl: "/master-logo.png",
         primaryColor: "#c5a059",
+        bio: "Private market capital specialists providing exclusive access to curated real estate investment opportunities.",
+        backgroundColor: "#050505",
+        fontColor: "#ffffff",
+        showAgencyBranding: true
     }
 ];
 
