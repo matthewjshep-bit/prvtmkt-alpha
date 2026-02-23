@@ -154,8 +154,17 @@ export default function AdminPeoplePage() {
                                             <input
                                                 type="text"
                                                 className="bg-transparent border-b border-white/5 text-lg font-bold text-white focus:border-brand-gold focus:border-b-2 outline-none w-full transition-all"
-                                                value={member.name}
-                                                onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
+                                                defaultValue={member.name}
+                                                onBlur={(e) => {
+                                                    if (e.target.value !== member.name) {
+                                                        updateTeamMember(member.id, { name: e.target.value });
+                                                    }
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        (e.target as HTMLInputElement).blur();
+                                                    }
+                                                }}
                                             />
                                         </div>
                                         <p className="mt-2 text-xs text-brand-gold/70 font-medium italic">{member.role}</p>

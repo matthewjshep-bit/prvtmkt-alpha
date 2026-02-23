@@ -16,7 +16,14 @@ import {
 } from "lucide-react";
 
 export default function AdminDashboard() {
-    const { firms, deals, teamMembers, addFirm } = useData();
+    const data = useData();
+    const { firms, deals, teamMembers, addFirm } = data;
+
+    // Debug log
+    if (typeof window !== 'undefined' && !addFirm) {
+        console.error("AdminDashboard: addFirm is undefined!", data);
+    }
+
     const [isAddingFirm, setIsAddingFirm] = useState(false);
     const [newFirm, setNewFirm] = useState({
         name: "",

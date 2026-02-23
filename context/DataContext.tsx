@@ -155,5 +155,9 @@ export function useData() {
     if (context === undefined) {
         throw new Error('useData must be used within a DataProvider');
     }
+    // Debug log to verify context integrity
+    if (typeof window !== 'undefined' && !context.addFirm) {
+        console.warn("DataContext: addFirm is missing from context!", context);
+    }
     return context;
 }
