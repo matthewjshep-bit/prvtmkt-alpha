@@ -90,7 +90,7 @@ export const ProgressSlider: FC<ProgressSliderProps> = ({
         if (getChildren && 'props' in getChildren) {
             const childrenArray = React.Children.toArray((getChildren.props as any).children) as React.ReactElement[];
             const values = childrenArray.map(
-                (child) => child.props.value as string
+                (child: any) => child.props.value as string
             );
             setSliderValues(values);
         }

@@ -1,11 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useData } from "@/context/DataContext";
 import { Briefcase, Building2, MapPin, Eye, Edit3, Trash2, Plus, X, Save, Upload } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 export default function AdminDealsPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-brand-dark flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-brand-gold/30 border-t-brand-gold" /></div>}>
+            <AdminDealsContent />
+        </Suspense>
+    );
+}
+
+function AdminDealsContent() {
     const { firms, deals, teamMembers, addDeal, updateDeal, deleteDeal } = useData();
     const [editingDeal, setEditingDeal] = useState<any | null>(null);
     const [isAddingDeal, setIsAddingDeal] = useState(false);
@@ -15,9 +24,9 @@ export default function AdminDealsPage() {
         firmId: string;
         assetType: string;
         strategy: string;
-        purchaseAmount: number;
-        rehabAmount: number;
-        arv: number;
+        purchaseAmount?: number | null;
+        rehabAmount?: number | null;
+        arv?: number | null;
         financingType: string;
         isPublic: boolean;
         teamMemberId: string;
@@ -29,9 +38,9 @@ export default function AdminDealsPage() {
         firmId: firms[0]?.id || "",
         assetType: "MULTIFAMILY",
         strategy: "BUY_AND_HOLD",
-        purchaseAmount: 0,
-        rehabAmount: 0,
-        arv: 0,
+        purchaseAmount: null,
+        rehabAmount: null,
+        arv: null,
         financingType: "Debt Financing",
         isPublic: true,
         teamMemberId: teamMembers[0]?.id || "",
@@ -41,13 +50,22 @@ export default function AdminDealsPage() {
     };
 
     const [newDeal, setNewDeal] = useState(DEFAULT_TOMBSTONE);
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        if (searchParams.get("add") === "true") {
+            setIsAddingDeal(true);
+        }
+    }, [searchParams]);
 
     const handleAddDeal = (e: React.FormEvent) => {
         e.preventDefault();
         const dealToAdd = {
             ...newDeal,
             id: `d-${Date.now()}`,
-            financedAmount: newDeal.purchaseAmount * 0.7, // Mock financing
+            purchaseAmount: newDeal.purchaseAmount || null,
+            financedAmount: newDeal.purchaseAmount ? newDeal.purchaseAmount * 0.7 : null, // Mock financing
+            stillImageURL: newDeal.images && newDeal.images.length > 0 ? newDeal.images[0] : newDeal.stillImageURL,
             capRate: 5.0, // Default for mock
             sqFt: 20000,   // Default for mock
         };
@@ -60,7 +78,11 @@ export default function AdminDealsPage() {
     const handleUpdateDeal = (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingDeal) return;
-        updateDeal(editingDeal.id, editingDeal);
+        const updatedDeal = {
+            ...editingDeal,
+            stillImageURL: editingDeal.images && editingDeal.images.length > 0 ? editingDeal.images[0] : editingDeal.stillImageURL,
+        };
+        updateDeal(editingDeal.id, updatedDeal);
         setEditingDeal(null);
     };
 
@@ -243,12 +265,11 @@ export default function AdminDealsPage() {
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Purchase Amount ($)</label>
                                     <input
-                                        required
                                         type="number"
                                         placeholder="12500000"
                                         className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white placeholder:text-white/10 focus:border-brand-gold/50 focus:outline-none"
-                                        value={newDeal.purchaseAmount || ""}
-                                        onChange={(e) => setNewDeal({ ...newDeal, purchaseAmount: Number(e.target.value) })}
+                                        value={newDeal.purchaseAmount === null ? "" : newDeal.purchaseAmount}
+                                        onChange={(e) => setNewDeal({ ...newDeal, purchaseAmount: e.target.value ? Number(e.target.value) : null })}
                                     />
                                 </div>
 
@@ -286,7 +307,7 @@ export default function AdminDealsPage() {
                                     >
                                         <option value="">Select a team member...</option>
                                         {teamMembers.map(member => (
-                                            <option key={member.id} value={member.id}>{member.name} ({firms.find(f => f.id === member.firmId)?.name})</option>
+                                            <option key={member.id} value={member.id}>{member.name} ({firms.filter(f => (member.firmIds || []).includes(f.id)).map(f => f.name).join(', ')})</option>
                                         ))}
                                     </select>
                                 </div>
@@ -484,7 +505,7 @@ export default function AdminDealsPage() {
                                         >
                                             <option value="">Select a team member...</option>
                                             {teamMembers.map(member => (
-                                                <option key={member.id} value={member.id}>{member.name} ({firms.find(f => f.id === member.firmId)?.name})</option>
+                                                <option key={member.id} value={member.id}>{member.name} ({firms.filter(f => (member.firmIds || []).includes(f.id)).map(f => f.name).join(', ')})</option>
                                             ))}
                                         </select>
                                     </div>

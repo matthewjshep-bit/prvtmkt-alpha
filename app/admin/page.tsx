@@ -12,7 +12,8 @@ import {
     Plus,
     Settings,
     X,
-    Save
+    Save,
+    UserPlus
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -57,13 +58,29 @@ export default function AdminDashboard() {
                         <h1 className="text-4xl font-bold text-white">System <span className="text-brand-gold">Admin</span></h1>
                         <p className="mt-2 text-foreground/50">Manage platform entities and global configurations.</p>
                     </div>
-                    <button
-                        onClick={() => setIsAddingFirm(true)}
-                        className="flex items-center gap-2 rounded-xl bg-brand-gold px-6 py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/20"
-                    >
-                        <Plus size={18} />
-                        Generate New Firm
-                    </button>
+                    <div className="flex items-center gap-4">
+                        <Link
+                            href="/admin/deals?add=true"
+                            className="flex items-center gap-2 rounded-xl border-2 border-brand-gold/30 px-6 py-3 text-sm font-bold text-brand-gold transition-all hover:bg-brand-gold hover:text-brand-dark"
+                        >
+                            <Briefcase size={18} />
+                            Add New Deal
+                        </Link>
+                        <Link
+                            href="/admin/people?add=true"
+                            className="flex items-center gap-2 rounded-xl border-2 border-brand-gold/30 px-6 py-3 text-sm font-bold text-brand-gold transition-all hover:bg-brand-gold hover:text-brand-dark"
+                        >
+                            <UserPlus size={18} />
+                            Generate New Member
+                        </Link>
+                        <button
+                            onClick={() => setIsAddingFirm(true)}
+                            className="flex items-center gap-2 rounded-xl bg-brand-gold px-6 py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/20"
+                        >
+                            <Plus size={18} />
+                            Generate New Firm
+                        </button>
+                    </div>
                 </div>
 
                 {/* New Firm Modal */}

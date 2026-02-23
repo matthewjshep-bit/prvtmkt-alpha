@@ -21,7 +21,7 @@ export default function IntakeFormPage() {
         images: [] as File[],
     });
 
-    const nextStep = () => setStep((s) => Math.min(s + 1, 3));
+    const nextStep = () => setStep((s) => Math.min(s + 1, 2));
     const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
     const handleComplete = () => {
@@ -35,9 +35,10 @@ export default function IntakeFormPage() {
                 address: form.address,
                 assetType: form.assetType,
                 strategy: form.strategy,
-                purchaseAmount: Number(form.purchaseAmount),
-                financedAmount: Number(form.purchaseAmount) * 0.7,
+                purchaseAmount: form.purchaseAmount ? Number(form.purchaseAmount) : null,
+                financedAmount: form.purchaseAmount ? Number(form.purchaseAmount) * 0.7 : null,
                 stillImageURL: form.images.length > 0 ? URL.createObjectURL(form.images[0]) : "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800&auto=format&fit=crop",
+                images: form.images.map(img => URL.createObjectURL(img)),
                 isPublic: form.isPublic,
                 capRate: 5.0,
                 sqFt: 25000,
@@ -54,7 +55,7 @@ export default function IntakeFormPage() {
             <div className="container mx-auto max-w-2xl px-6">
                 {/* Progress bar */}
                 <div className="mb-12 flex items-center justify-between">
-                    {[1, 2, 3].map((s) => (
+                    {[1, 2].map((s) => (
                         <div key={s} className="flex items-center">
                             <div
                                 className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all ${step >= s
@@ -64,7 +65,7 @@ export default function IntakeFormPage() {
                             >
                                 {step > s ? <CheckCircle2 size={20} /> : s}
                             </div>
-                            {s < 3 && (
+                            {s < 2 && (
                                 <div
                                     className={`h-0.5 w-16 md:w-32 transition-all ${step > s ? "bg-brand-gold" : "bg-white/10"
                                         }`}
@@ -218,62 +219,7 @@ export default function IntakeFormPage() {
                             </motion.div>
                         )}
 
-                        {step === 3 && (
-                            <motion.div
-                                key="step3"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                className="space-y-6"
-                            >
-                                <h2 className="text-3xl font-bold text-foreground">Asset Presentation</h2>
-                                <div className="space-y-6">
-                                    <div className="rounded-2xl border border-brand-gold/20 bg-brand-gold/5 p-6">
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-gold text-brand-dark">
-                                                <Video size={24} />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-bold text-foreground">AI Video Generator</h4>
-                                                <p className="text-sm text-foreground/50">Generate a cinematic fly-through video for this asset.</p>
-                                            </div>
-                                        </div>
-
-                                        {isGenerating ? (
-                                            <div className="mt-6 space-y-3">
-                                                <div className="h-2 w-full overflow-hidden rounded-full bg-brand-gray-900">
-                                                    <motion.div
-                                                        className="h-full bg-brand-gold"
-                                                        initial={{ width: "0%" }}
-                                                        animate={{ width: "100%" }}
-                                                        transition={{ duration: 3 }}
-                                                    />
-                                                </div>
-                                                <p className="text-center text-[10px] font-bold uppercase tracking-widest text-brand-gold animate-pulse">Processing Aerial Data...</p>
-                                            </div>
-                                        ) : (
-                                            <button
-                                                onClick={handleComplete}
-                                                className="mt-4 w-full rounded-xl bg-brand-gold py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/20"
-                                            >
-                                                Generate Asset Video & Finalize
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {!isGenerating && (
-                                        <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-brand-gray-900 p-4">
-                                            <ImageIcon className="text-brand-gold" size={20} />
-                                            <div className="flex-1">
-                                                <p className="text-sm font-bold text-foreground">Digital Tombstone Ready</p>
-                                                <p className="text-xs text-foreground/50">Your asset presentation is being prepared.</p>
-                                            </div>
-                                            <CheckCircle2 className="text-green-500" size={20} />
-                                        </div>
-                                    )}
-                                </div>
-                            </motion.div>
-                        )}
+                        {/* Asset Presentation deprecated */}
                     </AnimatePresence>
 
                     {/* Navigation */}
@@ -288,13 +234,13 @@ export default function IntakeFormPage() {
                         </button>
 
                         <button
-                            onClick={step === 3 ? handleComplete : nextStep}
+                            onClick={step === 2 ? handleComplete : nextStep}
                             disabled={isGenerating}
                             className={`flex items-center gap-2 rounded-xl bg-brand-gold px-8 py-3 text-sm font-bold text-brand-dark shadow-lg shadow-brand-gold/20 transition-all hover:translate-x-1 ${isGenerating ? 'opacity-50 cursor-wait' : ''
                                 }`}
                         >
-                            {step === 3 ? (isGenerating ? "Finalizing..." : "Complete Intake") : "Next Segment"}
-                            {step !== 3 && <ChevronRight size={20} />}
+                            {step === 2 ? (isGenerating ? "Finalizing..." : "Complete Intake") : "Next Segment"}
+                            {step !== 2 && <ChevronRight size={20} />}
                         </button>
                     </div>
                 </div>

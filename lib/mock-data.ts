@@ -8,6 +8,7 @@ export const MOCK_FIRMS = [
         bio: "Institutional investment firm focused on the acquisition and management of luxury multifamily communities.",
         backgroundColor: "#0a0a0a",
         fontColor: "#ffffff",
+        secondaryColor: "#f5f5f5",
         showAgencyBranding: true
     },
     {
@@ -19,6 +20,7 @@ export const MOCK_FIRMS = [
         bio: "Private market capital specialists providing exclusive access to curated real estate investment opportunities.",
         backgroundColor: "#050505",
         fontColor: "#ffffff",
+        secondaryColor: "#f5f5f5",
         showAgencyBranding: true
     }
 ];
@@ -26,21 +28,25 @@ export const MOCK_FIRMS = [
 export const MOCK_TEAM_MEMBERS = [
     {
         id: "cm1",
-        firmId: "f2",
+        firmIds: ["f2"],
         name: "Michael Chen",
         slug: "michael-chen",
         role: "Acquisitions Associate",
         email: "michael@prvtmkt.com",
+        phoneNumber: "555-0123",
+        linkedInUrl: "https://linkedin.com/in/michael-chen",
         imageURL: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&h=200&auto=format&fit=crop",
         bio: "Michael leads the acquisitions team with a focus on value-add multifamily assets across the Sunbelt region.",
     },
     {
         id: "cm2",
-        firmId: "f2",
+        firmIds: ["f2"],
         name: "Sarah Jenkins",
         slug: "sarah-jenkins",
         role: "Director of Capital Markets",
         email: "sarah@prvtmkt.com",
+        phoneNumber: "555-0124",
+        linkedInUrl: "https://linkedin.com/in/sarah-jenkins",
         imageURL: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&h=200&auto=format&fit=crop",
         bio: "Sarah oversees all financing activities and equity relationships for PRVT MKT.",
     },

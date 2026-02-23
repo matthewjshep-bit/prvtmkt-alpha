@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { MOCK_FIRMS, MOCK_DEALS, MOCK_TEAM_MEMBERS } from '@/lib/mock-data';
+import { storage } from '@/lib/storage';
 
 interface Firm {
     id: string;
@@ -12,16 +13,19 @@ interface Firm {
     bio?: string;
     backgroundColor?: string;
     fontColor?: string;
+    secondaryColor?: string;
     showAgencyBranding?: boolean;
 }
 
 interface TeamMember {
     id: string;
-    firmId: string;
+    firmIds: string[];
     name: string;
     slug: string;
     role: string;
     email: string;
+    phoneNumber?: string;
+    linkedInUrl?: string;
     imageURL: string;
     bio: string;
 }
@@ -32,13 +36,13 @@ interface Deal {
     address: string;
     assetType: string;
     strategy: string;
-    purchaseAmount: number;
-    financedAmount: number;
+    purchaseAmount?: number | null;
+    financedAmount?: number | null;
     stillImageURL: string;
     images?: string[];
     isPublic: boolean;
-    capRate: number;
-    sqFt: number;
+    capRate?: number | null;
+    sqFt?: number | null;
     teamMemberId: string;
     context?: string;
     financingType?: "Debt Financing" | "Equity Ownership";
@@ -69,55 +73,77 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>(MOCK_TEAM_MEMBERS);
     const [isInitialized, setIsInitialized] = useState(false);
 
-    // Load from localStorage on mount
+    // Robust loading from storage (IndexedDB with LocalStorage fallback/migration)
     useEffect(() => {
-        const savedFirms = localStorage.getItem('prvtmkt_firms');
-        const savedDeals = localStorage.getItem('prvtmkt_deals');
-        const savedTeam = localStorage.getItem('prvtmkt_team');
-
-        if (savedFirms) {
+        const loadInitialData = async () => {
             try {
-                setFirms(JSON.parse(savedFirms));
-            } catch (e) {
-                console.error("Failed to parse saved firms", e);
-            }
-        }
+                // 1. Try to load from IndexedDB (the new source of truth)
+                const savedFirms = await storage.getItem<Firm[]>('prvtmkt_firms');
+                const savedDeals = await storage.getItem<Deal[]>('prvtmkt_deals');
+                const savedTeam = await storage.getItem<TeamMember[]>('prvtmkt_team');
 
-        if (savedDeals) {
-            try {
-                setDeals(JSON.parse(savedDeals));
-            } catch (e) {
-                console.error("Failed to parse saved deals", e);
-            }
-        }
+                if (savedFirms) setFirms(savedFirms);
+                if (savedDeals) setDeals(savedDeals);
+                if (savedTeam) {
+                    // Normalize legacy data: Ensure firmIds array exists
+                    const normalizedTeam = savedTeam.map((m: any) => ({
+                        ...m,
+                        firmIds: m.firmIds || (m.firmId ? [m.firmId] : [])
+                    }));
+                    setTeamMembers(normalizedTeam);
+                }
 
-        if (savedTeam) {
-            try {
-                setTeamMembers(JSON.parse(savedTeam));
-            } catch (e) {
-                console.error("Failed to parse saved team", e);
-            }
-        }
+                // 2. Fallback/Migration: If IndexedDB is empty, check LocalStorage
+                if (!savedFirms && !savedDeals && !savedTeam) {
+                    const legacyFirms = localStorage.getItem('prvtmkt_firms');
+                    const legacyDeals = localStorage.getItem('prvtmkt_deals');
+                    const legacyTeam = localStorage.getItem('prvtmkt_team');
 
-        setIsInitialized(true);
+                    if (legacyFirms) setFirms(JSON.parse(legacyFirms));
+                    if (legacyDeals) setDeals(JSON.parse(legacyDeals));
+                    if (legacyTeam) {
+                        const parsedTeam = JSON.parse(legacyTeam);
+                        const normalizedTeam = parsedTeam.map((m: any) => ({
+                            ...m,
+                            firmIds: m.firmIds || (m.firmId ? [m.firmId] : [])
+                        }));
+                        setTeamMembers(normalizedTeam);
+                    }
+
+                    console.log("Storage: Migrated legacy data from LocalStorage to IndexedDB.");
+                }
+            } catch (error) {
+                console.error("Storage: Failed to initialize data from persistence layer.", error);
+            } finally {
+                setIsInitialized(true);
+            }
+        };
+
+        loadInitialData();
     }, []);
 
-    // Save to localStorage when state changes
+    // Save to IndexedDB when state changes
     useEffect(() => {
         if (isInitialized) {
-            localStorage.setItem('prvtmkt_firms', JSON.stringify(firms));
+            storage.setItem('prvtmkt_firms', firms).catch(e =>
+                console.error("Storage: Failed to save firms.", e)
+            );
         }
     }, [firms, isInitialized]);
 
     useEffect(() => {
         if (isInitialized) {
-            localStorage.setItem('prvtmkt_deals', JSON.stringify(deals));
+            storage.setItem('prvtmkt_deals', deals).catch(e =>
+                console.error("Storage: Failed to save deals (QuotaExceeded fix).", e)
+            );
         }
     }, [deals, isInitialized]);
 
     useEffect(() => {
         if (isInitialized) {
-            localStorage.setItem('prvtmkt_team', JSON.stringify(teamMembers));
+            storage.setItem('prvtmkt_team', teamMembers).catch(e =>
+                console.error("Storage: Failed to save team.", e)
+            );
         }
     }, [teamMembers, isInitialized]);
 
@@ -151,9 +177,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const deleteFirm = (id: string) => {
         setFirms(prev => prev.filter(f => f.id !== id));
-        // Cascading: Unlink deals and team members
+        // Cascading: Unlink deals (keep single firmId logic for deals)
         setDeals(prev => prev.map(d => d.firmId === id ? { ...d, firmId: "" } : d));
-        setTeamMembers(prev => prev.map(m => m.firmId === id ? { ...m, firmId: "" } : m));
+        // Cascading: Remove firm from team member firmIds
+        setTeamMembers(prev => prev.map(m => ({
+            ...m,
+            firmIds: m.firmIds.filter(fId => fId !== id)
+        })));
     };
 
     return (

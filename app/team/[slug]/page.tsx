@@ -3,7 +3,7 @@
 import { use } from "react";
 import { useData } from "@/context/DataContext";
 import DealCard from "@/components/DealCard";
-import { Mail, Briefcase, Award, Building2, ChevronLeft } from "lucide-react";
+import { Mail, Briefcase, Award, Building2, ChevronLeft, Linkedin, Phone } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -42,7 +42,7 @@ export default function TeamMemberPage({
                     <p className="text-foreground/50 mb-8">The professional profile you're looking for doesn't exist or has been moved.</p>
                     <Link href="/" className="inline-flex items-center gap-2 rounded-xl bg-brand-gold px-6 py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/20">
                         <ChevronLeft size={18} />
-                        Return to Directory
+                        Return to Team
                     </Link>
                 </div>
             </div>
@@ -50,13 +50,14 @@ export default function TeamMemberPage({
     }
 
     const memberDeals = deals.filter((d) => d.teamMemberId === member.id);
-    const firm = firms.find(f => f.id === member.firmId);
+    const firm = firms.find(f => (member.firmIds || []).includes(f.id)); // Use first associated firm for branding
 
     // Dynamic Theming Inheritance
     const themeStyles = {
         '--firm-bg': firm?.backgroundColor || '#0a0a0a',
         '--firm-text': firm?.fontColor || '#ffffff',
         '--firm-primary': firm?.primaryColor || '#c5a059',
+        '--firm-secondary': firm?.secondaryColor || '#f5f5f5',
     } as React.CSSProperties;
 
     return (
@@ -77,7 +78,7 @@ export default function TeamMemberPage({
                         style={{ color: 'var(--firm-text)' }}
                     >
                         <ChevronLeft size={16} />
-                        {firm ? `Back to ${firm.name}` : 'Back to Directory'}
+                        {firm ? `Back to ${firm.name}` : 'Back to Team'}
                     </Link>
                 </div>
 
@@ -129,8 +130,28 @@ export default function TeamMemberPage({
                                 style={{ backgroundColor: 'var(--firm-primary)', color: 'var(--firm-bg)' }}
                             >
                                 <Mail size={18} />
-                                Contact Profile
+                                Contact Email
                             </a>
+                            {member.linkedInUrl && (
+                                <a
+                                    href={member.linkedInUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 rounded-xl border border-white/5 bg-white/5 px-6 py-3 text-sm font-bold transition-all hover:bg-[var(--firm-primary)] hover:text-[var(--firm-bg)]"
+                                >
+                                    <Linkedin size={18} />
+                                    LinkedIn Profile
+                                </a>
+                            )}
+                            {member.phoneNumber && (
+                                <a
+                                    href={`tel:${member.phoneNumber}`}
+                                    className="flex items-center gap-2 rounded-xl border border-white/5 bg-white/5 px-6 py-3 text-sm font-bold transition-all hover:bg-[var(--firm-primary)] hover:text-[var(--firm-bg)]"
+                                >
+                                    <Phone size={18} />
+                                    {member.phoneNumber}
+                                </a>
+                            )}
                             <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/5 px-6 py-3 text-sm font-bold">
                                 <Briefcase size={18} style={{ color: 'var(--firm-primary)' }} />
                                 <span className="opacity-60">{memberDeals.length} Deals Completed</span>

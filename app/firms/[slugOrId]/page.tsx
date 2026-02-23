@@ -35,7 +35,7 @@ export default function FirmProfilePage({
         notFound();
     }
 
-    const firmTeamMembers = teamMembers.filter((m) => m.firmId === firm.id);
+    const firmTeamMembers = teamMembers.filter((m) => (m.firmIds || []).includes(firm.id));
 
     const filteredDeals = deals.filter((deal) => {
         const isFirmDeal = deal.firmId === firm.id;
@@ -49,6 +49,7 @@ export default function FirmProfilePage({
         '--firm-bg': firm.backgroundColor || '#0a0a0a',
         '--firm-text': firm.fontColor || '#ffffff',
         '--firm-primary': firm.primaryColor || '#c5a059',
+        '--firm-secondary': firm.secondaryColor || '#f5f5f5',
     } as React.CSSProperties;
 
     return (
@@ -75,10 +76,10 @@ export default function FirmProfilePage({
                     </div>
                 )}
 
-                {/* Distinct Firm Header (Light Grey Oval) */}
-                <div className={`mb-8 rounded-full bg-[#f5f5f5] p-10 md:p-14 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-10 ${firm.showAgencyBranding !== false ? 'mt-8' : ''}`}>
+                {/* Distinct Firm Header (Soft-Rectangular) */}
+                <div className={`mb-8 rounded-[2.5rem] p-10 md:p-14 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-10 ${firm.showAgencyBranding !== false ? 'mt-8' : ''}`} style={{ backgroundColor: 'var(--firm-secondary)' }}>
                     <div className="flex flex-col lg:flex-row items-center gap-12">
-                        <div className="h-24 w-72 flex-shrink-0">
+                        <div className="h-32 w-80 flex-shrink-0">
                             {firm.logoUrl ? (
                                 <img
                                     src={firm.logoUrl}
@@ -87,51 +88,51 @@ export default function FirmProfilePage({
                                 />
                             ) : (
                                 <div className="flex items-center gap-4 h-full" style={{ color: 'var(--firm-primary)' }}>
-                                    <Building2 size={56} />
-                                    <span className="text-4xl font-black uppercase tracking-widest">{firm.name}</span>
+                                    <Building2 size={64} />
+                                    <span className="text-5xl font-black uppercase tracking-widest">{firm.name}</span>
                                 </div>
                             )}
                         </div>
                         <div className="text-center lg:text-left">
-                            <h1 className="mb-4 text-6xl font-black tracking-tight text-black">
+                            <h1 className="mb-4 text-7xl font-black tracking-tight text-black">
                                 {firm.name}
                             </h1>
-                            <p className="text-xl font-bold text-black/40 leading-relaxed max-w-2xl">
+                            <p className="text-2xl font-bold text-black/40 leading-relaxed max-w-2xl">
                                 {firm.bio || "Professional institutional track record and specialized team directory."}
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Distinct Search & Navigation Area (Light Grey Oval) */}
-                <div className="mb-16 rounded-full bg-[#f5f5f5] p-4 pr-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden">
+                {/* Distinct Search & Navigation Area (Soft-Rectangular) */}
+                <div className="mb-16 rounded-[2rem] p-4 pr-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden" style={{ backgroundColor: 'var(--firm-secondary)' }}>
                     <div className="flex flex-1 items-center gap-4 w-full">
                         <div className="relative flex-1 group">
                             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-black/30 group-focus-within:text-black transition-colors" size={20} />
                             <input
                                 type="text"
-                                placeholder="Search proprietary portfolio..."
-                                className="h-14 w-full rounded-full bg-white/50 border border-black/5 pl-14 pr-6 text-base font-bold text-black outline-none transition-all focus:bg-white focus:border-black/10 placeholder:text-black/20"
+                                placeholder="Search..."
+                                className="h-16 w-full rounded-2xl bg-white/50 border border-black/5 pl-14 pr-6 text-lg font-bold text-black outline-none transition-all focus:bg-white focus:border-black/10 placeholder:text-black/20"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div className="flex h-14 items-center rounded-full bg-white/50 p-1.5 border border-black/5">
+                    <div className="flex h-16 items-center rounded-2xl bg-white/50 p-2 border border-black/5">
                         <button
                             onClick={() => setActiveTab("DEALS")}
-                            className={`flex h-full items-center gap-3 rounded-full px-10 text-xs font-black uppercase tracking-widest transition-all ${activeTab === "DEALS" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
+                            className={`flex h-full items-center gap-3 rounded-xl px-12 text-xs font-black uppercase tracking-widest transition-all ${activeTab === "DEALS" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
                         >
-                            <LayoutGrid size={18} />
+                            <LayoutGrid size={20} />
                             Portfolio
                         </button>
                         <button
                             onClick={() => setActiveTab("PEOPLE")}
-                            className={`flex h-full items-center gap-3 rounded-full px-10 text-xs font-black uppercase tracking-widest transition-all ${activeTab === "PEOPLE" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
+                            className={`flex h-full items-center gap-3 rounded-xl px-12 text-xs font-black uppercase tracking-widest transition-all ${activeTab === "PEOPLE" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
                         >
-                            <Globe size={18} />
-                            Directory
+                            <Globe size={20} />
+                            Team
                         </button>
                     </div>
                 </div>
@@ -150,12 +151,12 @@ export default function FirmProfilePage({
                                         <button
                                             key={cat}
                                             onClick={() => setFilter(cat)}
-                                            className={`rounded-full px-6 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all ${filter === cat
+                                            className={`rounded-xl px-6 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all ${filter === cat
                                                 ? "shadow-xl scale-105"
-                                                : "bg-white/5 opacity-50 hover:bg-white/10 hover:opacity-100"
+                                                : "border border-black/5 opacity-50 hover:bg-white/10 hover:opacity-100"
                                                 }`}
                                             style={{
-                                                backgroundColor: filter === cat ? 'var(--firm-primary)' : '',
+                                                backgroundColor: filter === cat ? 'var(--firm-primary)' : 'var(--firm-secondary)',
                                                 color: filter === cat ? 'var(--firm-bg)' : 'var(--firm-text)'
                                             }}
                                         >
@@ -170,10 +171,10 @@ export default function FirmProfilePage({
                                     </div>
                                 </div>
 
-                                {/* Portfolio Grid */}
+                                {/* Portfolio Grid (Scaled by 25% via column reduction for prominence) */}
                                 <motion.div
                                     layout
-                                    className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3"
+                                    className="grid gap-12 sm:grid-cols-2 lg:grid-cols-2"
                                 >
                                     <AnimatePresence mode="popLayout">
                                         {filteredDeals.map((deal, index) => (

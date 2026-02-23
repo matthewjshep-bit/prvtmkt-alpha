@@ -223,7 +223,6 @@ export default function AdminFirmsPage() {
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
-                                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Primary Brand Color</h4>
                                                 <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-brand-dark px-3 py-2">
                                                     <input
                                                         type="color"
@@ -232,6 +231,18 @@ export default function AdminFirmsPage() {
                                                         onChange={(e) => updateFirm(firm.id, { primaryColor: e.target.value })}
                                                     />
                                                     <span className="text-[10px] font-mono text-foreground/60 uppercase">{firm.primaryColor || "#c5a059"}</span>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Secondary Background / Shade</h4>
+                                                <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-brand-dark px-3 py-2">
+                                                    <input
+                                                        type="color"
+                                                        className="h-6 w-6 rounded border-none bg-transparent cursor-pointer"
+                                                        value={firm.secondaryColor || "#f5f5f5"}
+                                                        onChange={(e) => updateFirm(firm.id, { secondaryColor: e.target.value })}
+                                                    />
+                                                    <span className="text-[10px] font-mono text-foreground/60 uppercase">{firm.secondaryColor || "#f5f5f5"}</span>
                                                 </div>
                                             </div>
                                             <div className="flex items-center justify-between rounded-xl border border-white/5 bg-brand-dark px-4 py-3">
@@ -255,7 +266,7 @@ export default function AdminFirmsPage() {
                                     <div className="mt-6 border-t border-white/5 pt-4">
                                         <h4 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-foreground/30">Associated Team</h4>
                                         <div className="flex flex-wrap gap-2">
-                                            {teamMembers.filter(m => m.firmId === firm.id).map(member => (
+                                            {teamMembers.filter(m => (m.firmIds || []).includes(firm.id)).map(member => (
                                                 <div key={member.id} className="flex items-center gap-2 rounded-lg bg-white/5 p-2 pr-3 border border-white/5 group/member">
                                                     <div className="group/photo relative h-6 w-6 overflow-hidden rounded-md border border-white/10">
                                                         <img src={member.imageURL} alt={member.name} className="h-full w-full object-cover" />
@@ -294,19 +305,20 @@ export default function AdminFirmsPage() {
                                                     value=""
                                                     onChange={(e) => {
                                                         const memberId = e.target.value;
-                                                        if (memberId) {
-                                                            updateTeamMember(memberId, { firmId: firm.id });
+                                                        const member = teamMembers.find(m => m.id === memberId);
+                                                        if (memberId && member && !(member.firmIds || []).includes(firm.id)) {
+                                                            updateTeamMember(memberId, { firmIds: [...(member.firmIds || []), firm.id] });
                                                         }
                                                     }}
                                                 >
                                                     <option value="" disabled>+ Link Member</option>
                                                     {teamMembers
-                                                        .filter(m => m.firmId !== firm.id)
+                                                        .filter(m => !(m.firmIds || []).includes(firm.id))
                                                         .map(member => {
-                                                            const otherFirm = firms.find(f => f.id === member.firmId);
+                                                            const otherFirms = firms.filter(f => (member.firmIds || []).includes(f.id));
                                                             return (
                                                                 <option key={member.id} value={member.id}>
-                                                                    {member.name} {otherFirm ? `(Transfer from ${otherFirm.name})` : '(Independent)'}
+                                                                    {member.name} {otherFirms.length > 0 ? `(Linked to ${otherFirms.map(f => f.name).join(', ')})` : '(Independent)'}
                                                                 </option>
                                                             );
                                                         })
