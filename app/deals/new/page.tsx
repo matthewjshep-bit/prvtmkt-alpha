@@ -1,22 +1,52 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Upload, CheckCircle2, ChevronRight, ChevronLeft, Image as ImageIcon, Video, DollarSign, MapPin } from "lucide-react";
+import { useData } from "@/context/DataContext";
+import { useRouter } from "next/navigation";
+import { Upload, CheckCircle2, ChevronRight, ChevronLeft, Image as ImageIcon, Video, DollarSign, MapPin, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function IntakeFormPage() {
+    const { addDeal } = useData();
+    const router = useRouter();
     const [step, setStep] = useState(1);
+    const [isGenerating, setIsGenerating] = useState(false);
     const [form, setForm] = useState({
         address: "",
         assetType: "INDUSTRIAL",
         strategy: "BUY_AND_HOLD",
         purchaseAmount: "",
         isPublic: true,
-        stillImage: null as File | null,
+        images: [] as File[],
     });
 
     const nextStep = () => setStep((s) => Math.min(s + 1, 3));
     const prevStep = () => setStep((s) => Math.max(s - 1, 1));
+
+    const handleComplete = () => {
+        setIsGenerating(true);
+        // Simulate AI Video generation progress
+        setTimeout(() => {
+            const newId = `d-${Date.now()}`;
+            const newDeal = {
+                id: newId,
+                firmId: "f1", // Default for now
+                address: form.address,
+                assetType: form.assetType,
+                strategy: form.strategy,
+                purchaseAmount: Number(form.purchaseAmount),
+                financedAmount: Number(form.purchaseAmount) * 0.7,
+                stillImageURL: form.images.length > 0 ? URL.createObjectURL(form.images[0]) : "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800&auto=format&fit=crop",
+                isPublic: form.isPublic,
+                capRate: 5.0,
+                sqFt: 25000,
+                teamMemberId: "cm1"
+            };
+            // @ts-ignore
+            addDeal(newDeal);
+            router.push(`/admin/deals`);
+        }, 3000);
+    };
 
     return (
         <div className="min-h-screen bg-brand-dark pt-32 pb-20">
@@ -136,11 +166,32 @@ export default function IntakeFormPage() {
 
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Upload Imagery</label>
-                                        <div className="group relative flex h-40 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/10 bg-brand-gray-900/50 transition-all hover:border-brand-gold/30 hover:bg-brand-gray-900">
-                                            <Upload className="mb-2 text-brand-gold transition-transform group-hover:-translate-y-1" size={32} />
-                                            <p className="text-sm font-medium text-foreground/60">Drag and drop or click to upload</p>
-                                            <p className="text-[10px] text-foreground/30 mt-1 uppercase tracking-wider font-bold">PNG, JPG up to 10MB</p>
-                                            <input type="file" className="absolute inset-0 cursor-pointer opacity-0" />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {form.images.map((file, i) => (
+                                                <div key={i} className="group relative aspect-video overflow-hidden rounded-xl border border-white/10">
+                                                    <img src={URL.createObjectURL(file)} className="h-full w-full object-cover" />
+                                                    <button
+                                                        onClick={() => setForm({ ...form, images: form.images.filter((_, idx) => idx !== i) })}
+                                                        className="absolute right-2 top-2 rounded-full bg-brand-dark/80 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            <div className="group relative flex aspect-video flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/10 bg-brand-gray-900/50 transition-all hover:border-brand-gold/30 hover:bg-brand-gray-900">
+                                                <Upload className="mb-2 text-brand-gold transition-transform group-hover:-translate-y-1" size={24} />
+                                                <p className="px-4 text-center text-[10px] font-bold uppercase tracking-wider text-foreground/40">Add Photos</p>
+                                                <input
+                                                    type="file"
+                                                    multiple
+                                                    className="absolute inset-0 cursor-pointer opacity-0"
+                                                    onChange={(e) => {
+                                                        if (e.target.files) {
+                                                            setForm({ ...form, images: [...form.images, ...Array.from(e.target.files)] });
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -167,19 +218,39 @@ export default function IntakeFormPage() {
                                                 <p className="text-sm text-foreground/50">Generate a cinematic fly-through video for this asset.</p>
                                             </div>
                                         </div>
-                                        <button className="mt-4 w-full rounded-xl bg-brand-gold py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/20">
-                                            Generate Asset Video
-                                        </button>
+
+                                        {isGenerating ? (
+                                            <div className="mt-6 space-y-3">
+                                                <div className="h-2 w-full overflow-hidden rounded-full bg-brand-gray-900">
+                                                    <motion.div
+                                                        className="h-full bg-brand-gold"
+                                                        initial={{ width: "0%" }}
+                                                        animate={{ width: "100%" }}
+                                                        transition={{ duration: 3 }}
+                                                    />
+                                                </div>
+                                                <p className="text-center text-[10px] font-bold uppercase tracking-widest text-brand-gold animate-pulse">Processing Aerial Data...</p>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={handleComplete}
+                                                className="mt-4 w-full rounded-xl bg-brand-gold py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/20"
+                                            >
+                                                Generate Asset Video & Finalize
+                                            </button>
+                                        )}
                                     </div>
 
-                                    <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-brand-gray-900 p-4">
-                                        <ImageIcon className="text-brand-gold" size={20} />
-                                        <div className="flex-1">
-                                            <p className="text-sm font-bold text-foreground">Digital Tombstone Ready</p>
-                                            <p className="text-xs text-foreground/50">Your asset presentation is being prepared.</p>
+                                    {!isGenerating && (
+                                        <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-brand-gray-900 p-4">
+                                            <ImageIcon className="text-brand-gold" size={20} />
+                                            <div className="flex-1">
+                                                <p className="text-sm font-bold text-foreground">Digital Tombstone Ready</p>
+                                                <p className="text-xs text-foreground/50">Your asset presentation is being prepared.</p>
+                                            </div>
+                                            <CheckCircle2 className="text-green-500" size={20} />
                                         </div>
-                                        <CheckCircle2 className="text-green-500" size={20} />
-                                    </div>
+                                    )}
                                 </div>
                             </motion.div>
                         )}
@@ -197,10 +268,12 @@ export default function IntakeFormPage() {
                         </button>
 
                         <button
-                            onClick={step === 3 ? undefined : nextStep}
-                            className="flex items-center gap-2 rounded-xl bg-brand-gold px-8 py-3 text-sm font-bold text-brand-dark shadow-lg shadow-brand-gold/20 transition-all hover:translate-x-1"
+                            onClick={step === 3 ? handleComplete : nextStep}
+                            disabled={isGenerating}
+                            className={`flex items-center gap-2 rounded-xl bg-brand-gold px-8 py-3 text-sm font-bold text-brand-dark shadow-lg shadow-brand-gold/20 transition-all hover:translate-x-1 ${isGenerating ? 'opacity-50 cursor-wait' : ''
+                                }`}
                         >
-                            {step === 3 ? "Complete Intake" : "Next Segment"}
+                            {step === 3 ? (isGenerating ? "Finalizing..." : "Complete Intake") : "Next Segment"}
                             {step !== 3 && <ChevronRight size={20} />}
                         </button>
                     </div>

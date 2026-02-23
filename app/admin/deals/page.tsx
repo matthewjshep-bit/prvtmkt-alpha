@@ -6,7 +6,7 @@ import { Briefcase, Building2, MapPin, Eye, Edit3, Trash2, Plus, X, Save } from 
 import Link from "next/link";
 
 export default function AdminDealsPage() {
-    const { firms, deals, addDeal, deleteDeal } = useData();
+    const { firms, deals, teamMembers, addDeal, deleteDeal } = useData();
     const [isAddingDeal, setIsAddingDeal] = useState(false);
     const [newDeal, setNewDeal] = useState({
         address: "",
@@ -15,6 +15,7 @@ export default function AdminDealsPage() {
         strategy: "BUY_AND_HOLD",
         purchaseAmount: 0,
         isPublic: true,
+        teamMemberId: teamMembers[0]?.id || "",
         stillImageURL: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800&auto=format&fit=crop"
     });
 
@@ -24,7 +25,6 @@ export default function AdminDealsPage() {
             ...newDeal,
             id: `d-${Date.now()}`,
             financedAmount: newDeal.purchaseAmount * 0.7, // Mock financing
-            teamMemberId: "cm1", // Mock associate
             capRate: 5.0, // Default for mock
             sqFt: 20000,   // Default for mock
         };
@@ -38,6 +38,7 @@ export default function AdminDealsPage() {
             strategy: "BUY_AND_HOLD",
             purchaseAmount: 0,
             isPublic: true,
+            teamMemberId: teamMembers[0]?.id || "",
             stillImageURL: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800&auto=format&fit=crop"
         });
     };
@@ -137,6 +138,20 @@ export default function AdminDealsPage() {
                                         value={newDeal.purchaseAmount || ""}
                                         onChange={(e) => setNewDeal({ ...newDeal, purchaseAmount: Number(e.target.value) })}
                                     />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Responsible Party</label>
+                                    <select
+                                        className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none appearance-none"
+                                        value={newDeal.teamMemberId}
+                                        onChange={(e) => setNewDeal({ ...newDeal, teamMemberId: e.target.value })}
+                                    >
+                                        <option value="">Select a team member...</option>
+                                        {teamMembers.map(member => (
+                                            <option key={member.id} value={member.id}>{member.name} ({firms.find(f => f.id === member.firmId)?.name})</option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 <div className="space-y-2">
