@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, use } from "react";
-import { MOCK_DEALS, MOCK_FIRMS } from "@/lib/mock-data";
+import { useData } from "@/context/DataContext";
 import DealCard from "@/components/DealCard";
 import { motion, AnimatePresence } from "framer-motion";
 import { Filter, Search, LayoutGrid, List, Globe } from "lucide-react";
@@ -14,17 +14,18 @@ export default function FirmDashboardPage({
 }: {
   params: Promise<{ firmSlug: string }>;
 }) {
+  const { firms, deals } = useData();
   const { firmSlug } = use(params);
   const [filter, setFilter] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const firm = MOCK_FIRMS.find((f) => f.slug === firmSlug);
+  const firm = firms.find((f) => f.slug === firmSlug);
 
   if (!firm) {
     notFound();
   }
 
-  const filteredDeals = MOCK_DEALS.filter((deal) => {
+  const filteredDeals = deals.filter((deal) => {
     const isFirmDeal = deal.firmId === firm.id;
     const matchesFilter = filter === "ALL" || deal.assetType === filter;
     const matchesSearch = deal.address.toLowerCase().includes(searchQuery.toLowerCase());
@@ -82,8 +83,8 @@ export default function FirmDashboardPage({
               key={cat}
               onClick={() => setFilter(cat)}
               className={`rounded-full px-5 py-2 text-[11px] font-bold uppercase tracking-wider transition-all ${filter === cat
-                  ? "bg-brand-gold text-brand-dark shadow-lg shadow-brand-gold/20"
-                  : "bg-brand-gray-900 text-foreground/50 hover:bg-brand-gray-800 hover:text-foreground"
+                ? "bg-brand-gold text-brand-dark shadow-lg shadow-brand-gold/20"
+                : "bg-brand-gray-900 text-foreground/50 hover:bg-brand-gray-800 hover:text-foreground"
                 }`}
             >
               {cat.replace("_", " ")}

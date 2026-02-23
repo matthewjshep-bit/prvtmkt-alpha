@@ -1,16 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { MOCK_FIRMS } from "@/lib/mock-data";
-import { Building2, Save, Upload, ExternalLink, Shield } from "lucide-react";
+import { useData } from "@/context/DataContext";
+import { Building2, Save, Upload, ExternalLink, Shield, Check } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminFirmsPage() {
-    const [firms, setFirms] = useState(MOCK_FIRMS);
+    const { firms, updateFirm } = useData();
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [saveStatus, setSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
 
     const handleUpdateLogo = (id: string, newUrl: string) => {
-        setFirms(firms.map(f => f.id === id ? { ...f, logoUrl: newUrl } : f));
+        updateFirm(id, { logoUrl: newUrl });
+        // Reset save status if logo changed
+        setSaveStatus({ ...saveStatus, [id]: 'idle' });
+    };
+
+    const handleSave = (id: string) => {
+        setSaveStatus({ ...saveStatus, [id]: 'saving' });
+
+        // Data is already updated in context via handleUpdateLogo
+        // This just mocks the "saving" process for user feedback
+        setTimeout(() => {
+            setSaveStatus({ ...saveStatus, [id]: 'saved' });
+
+            // Revert to idle after 2 seconds
+            setTimeout(() => {
+                setSaveStatus(prev => ({ ...prev, [id]: 'idle' }));
+            }, 2000);
+        }, 800);
     };
 
     return (
@@ -46,7 +64,18 @@ export default function AdminFirmsPage() {
                                             <label className="cursor-pointer font-bold text-xs text-brand-gold flex items-center gap-2">
                                                 <Upload size={14} />
                                                 Change Logo
-                                                <input type="file" className="hidden" />
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            const url = URL.createObjectURL(file);
+                                                            handleUpdateLogo(firm.id, url);
+                                                        }
+                                                    }}
+                                                />
                                             </label>
                                         </div>
                                     </div>
@@ -80,9 +109,22 @@ export default function AdminFirmsPage() {
                                         <ExternalLink size={16} />
                                         View Live
                                     </Link>
-                                    <button className="flex items-center gap-2 rounded-xl bg-brand-gold px-5 py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/30">
-                                        <Save size={16} />
-                                        Update
+                                    <button
+                                        onClick={() => handleSave(firm.id)}
+                                        disabled={saveStatus[firm.id] === 'saving'}
+                                        className={`flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition-all ${saveStatus[firm.id] === 'saved'
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-brand-gold text-brand-dark hover:shadow-lg hover:shadow-brand-gold/30'
+                                            } ${saveStatus[firm.id] === 'saving' ? 'opacity-70 cursor-wait' : ''}`}
+                                    >
+                                        {saveStatus[firm.id] === 'saving' ? (
+                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-dark/30 border-t-brand-dark" />
+                                        ) : saveStatus[firm.id] === 'saved' ? (
+                                            <Check size={16} />
+                                        ) : (
+                                            <Save size={16} />
+                                        )}
+                                        {saveStatus[firm.id] === 'saving' ? 'Saving...' : saveStatus[firm.id] === 'saved' ? 'Saved' : 'Update'}
                                     </button>
                                 </div>
 
