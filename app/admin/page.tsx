@@ -1,12 +1,15 @@
+"use client";
+
 import Link from "next/link";
-import { MOCK_FIRMS, MOCK_DEALS, MOCK_TEAM_MEMBERS } from "@/lib/mock-data";
+import { useData } from "@/context/DataContext";
 import { LayoutDashboard, Building2, Briefcase, Users, ArrowUpRight, Plus, Settings } from "lucide-react";
 
 export default function AdminDashboard() {
+    const { firms, deals, teamMembers } = useData();
     const stats = [
-        { label: "Total Firms", value: MOCK_FIRMS.length, icon: <Building2 className="text-brand-gold" size={20} />, href: "/admin/firms" },
-        { label: "Total Deals", value: MOCK_DEALS.length, icon: <Briefcase className="text-brand-gold" size={20} />, href: "/admin/deals" },
-        { label: "Active Team Members", value: MOCK_TEAM_MEMBERS.length, icon: <Users className="text-brand-gold" size={20} />, href: "/admin/people" },
+        { label: "Total Firms", value: firms.length, icon: <Building2 className="text-brand-gold" size={20} />, href: "/admin/firms" },
+        { label: "Total Deals", value: deals.length, icon: <Briefcase className="text-brand-gold" size={20} />, href: "/admin/deals" },
+        { label: "Active Team Members", value: teamMembers.length, icon: <Users className="text-brand-gold" size={20} />, href: "/admin/people" },
     ];
 
     return (
@@ -51,7 +54,7 @@ export default function AdminDashboard() {
                             <Link href="/admin/firms" className="text-xs font-bold uppercase tracking-widest text-brand-gold hover:underline">View All</Link>
                         </div>
                         <div className="space-y-4">
-                            {MOCK_FIRMS.map((firm) => (
+                            {firms.slice(0, 5).map((firm) => (
                                 <div key={firm.id} className="flex items-center justify-between rounded-xl bg-brand-gray-900/50 p-4 border border-white/5">
                                     <div className="flex items-center gap-4">
                                         <div className="h-10 w-24 flex items-center justify-center rounded-lg bg-white/5 p-1">
@@ -62,7 +65,7 @@ export default function AdminDashboard() {
                                             <p className="text-xs text-foreground/40">/{firm.slug}</p>
                                         </div>
                                     </div>
-                                    <Link href={`/admin/firms/${firm.id}`} className="rounded-lg p-2 text-foreground/40 transition-all hover:bg-brand-gray-800 hover:text-brand-gold">
+                                    <Link href={`/admin/firms`} className="rounded-lg p-2 text-foreground/40 transition-all hover:bg-brand-gray-800 hover:text-brand-gold">
                                         <Settings size={18} />
                                     </Link>
                                 </div>

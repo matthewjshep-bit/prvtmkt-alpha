@@ -6,7 +6,7 @@ import { Building2, Save, Upload, ExternalLink, Shield, Check } from "lucide-rea
 import Link from "next/link";
 
 export default function AdminFirmsPage() {
-    const { firms, updateFirm } = useData();
+    const { firms, teamMembers, updateFirm, updateTeamMember } = useData();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [saveStatus, setSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
 
@@ -100,6 +100,26 @@ export default function AdminFirmsPage() {
                                             <span className="text-foreground/40 font-medium">Brand Color:</span>
                                             <div className="h-3 w-3 rounded-full" style={{ backgroundColor: firm.primaryColor || '#c5a059' }} />
                                             <span className="text-foreground font-bold">{firm.primaryColor}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Team Members Section */}
+                                    <div className="mt-6 border-t border-white/5 pt-4">
+                                        <h4 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-foreground/30">Associated Team</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {teamMembers.filter(m => m.firmId === firm.id).map(member => (
+                                                <div key={member.id} className="flex items-center gap-2 rounded-lg bg-white/5 p-2 pr-3 border border-white/5 group/member">
+                                                    <div className="h-6 w-6 overflow-hidden rounded-md border border-white/10">
+                                                        <img src={member.imageURL} alt={member.name} className="h-full w-full object-cover" />
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        className="bg-transparent text-xs font-bold text-white outline-none focus:border-b focus:border-brand-gold w-24"
+                                                        value={member.name}
+                                                        onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
+                                                    />
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>

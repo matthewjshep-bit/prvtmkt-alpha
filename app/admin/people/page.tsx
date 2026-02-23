@@ -42,13 +42,16 @@ export default function AdminPeoplePage() {
                                         <img src={member.imageURL || ""} alt={member.name} className="h-full w-full object-cover" />
                                     </div>
                                     <div className="flex-1">
-                                        <input
-                                            type="text"
-                                            className="bg-transparent border-b border-white/10 text-lg font-bold text-white focus:border-brand-gold outline-none w-full mb-1"
-                                            value={member.name}
-                                            onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
-                                        />
-                                        <p className="text-xs text-brand-gold font-medium">{member.role}</p>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-brand-gold/40">Name</span>
+                                            <input
+                                                type="text"
+                                                className="bg-transparent border-b border-white/5 text-lg font-bold text-white focus:border-brand-gold focus:border-b-2 outline-none w-full transition-all"
+                                                value={member.name}
+                                                onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
+                                            />
+                                        </div>
+                                        <p className="mt-2 text-xs text-brand-gold/70 font-medium italic">{member.role}</p>
                                     </div>
                                 </div>
 
