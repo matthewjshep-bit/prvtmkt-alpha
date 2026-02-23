@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Firm {
+  id           String       @id @default(cuid())
+  name         String
+  slug         String       @unique
+  logoUrl      String?
+  primaryColor String?      @default("#c5a059")
+  teamMembers  TeamMember[]
+  deals        Deal[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  role      String
+  email     String?  @unique
+  imageURL  String?
+  firmId    String
+  firm      Firm     @relation(fields: [firmId], references: [id])
+  deals     Deal[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Deal {
+  id                String      @id @default(cuid())
+  address           String
+  assetType         AssetType
+  strategy          Strategy
+  purchaseAmount    Float?
+  financedAmount    Float?
+  stillImageURL     String?
+  generatedVideoURL String?
+  isPublic          Boolean     @default(false)
+  
+  // Stats (Deal Sheet)
+  capRate           Float?
+  sqFt              Float?
+  
+  firmId            String
+  firm              Firm        @relation(fields: [firmId], references: [id])
+  
+  teamMemberId      String
+  teamMember        TeamMember  @relation(fields: [teamMemberId], references: [id])
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+enum AssetType {
+  INDUSTRIAL
+  RETAIL
+  MULTIFAMILY
+  SF
+}
+
+enum Strategy {
+  BUY_AND_HOLD
+  FIX_FLIP
+}
