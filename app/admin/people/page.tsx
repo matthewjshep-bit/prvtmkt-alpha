@@ -2,12 +2,40 @@
 
 import { useState } from "react";
 import { useData } from "@/context/DataContext";
-import { Users, Building2, Mail, ExternalLink, Settings, Save, Check } from "lucide-react";
+import { Users, Building2, Mail, ExternalLink, Settings, Save, Check, Plus, X } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminPeoplePage() {
-    const { firms, teamMembers, updateTeamMember } = useData();
+    const { firms, teamMembers, updateTeamMember, addTeamMember } = useData();
     const [saveStatus, setSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
+    const [isAddingPerson, setIsAddingPerson] = useState(false);
+    const [newPerson, setNewPerson] = useState({
+        name: "",
+        firmId: firms[0]?.id || "",
+        role: "Associate",
+        email: "",
+        imageURL: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
+        bio: ""
+    });
+
+    const handleAddPerson = (e: React.FormEvent) => {
+        e.preventDefault();
+        const personToAdd = {
+            ...newPerson,
+            id: `p-${Date.now()}`,
+            slug: newPerson.name.toLowerCase().replace(/\s+/g, '-'),
+        };
+        addTeamMember(personToAdd);
+        setIsAddingPerson(false);
+        setNewPerson({
+            name: "",
+            firmId: firms[0]?.id || "",
+            role: "Associate",
+            email: "",
+            imageURL: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
+            bio: ""
+        });
+    };
 
     const handleSave = (id: string) => {
         setSaveStatus({ ...saveStatus, [id]: 'saving' });
@@ -27,10 +55,89 @@ export default function AdminPeoplePage() {
                         <h1 className="text-4xl font-bold text-white">Platform <span className="text-brand-gold">People</span></h1>
                         <p className="mt-2 text-foreground/50">Manage individual profiles and professional track records.</p>
                     </div>
-                    <Link href="/admin" className="text-sm font-bold text-foreground/40 hover:text-white">
-                        Return to Dashboard
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setIsAddingPerson(true)}
+                            className="flex items-center gap-2 rounded-xl bg-brand-gold px-6 py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/20"
+                        >
+                            <Plus size={18} />
+                            Add Person
+                        </button>
+                        <Link href="/admin" className="text-sm font-bold text-foreground/40 hover:text-white">
+                            Return to Dashboard
+                        </Link>
+                    </div>
                 </div>
+
+                {/* New Person Modal */}
+                {isAddingPerson && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-dark/90 backdrop-blur-sm p-4">
+                        <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-brand-gray-900 p-8 shadow-2xl animate-in zoom-in duration-300">
+                            <div className="mb-6 flex items-center justify-between">
+                                <h3 className="text-2xl font-bold text-white">Onboard <span className="text-brand-gold">New Person</span></h3>
+                                <button onClick={() => setIsAddingPerson(false)} className="rounded-full p-2 text-foreground/40 hover:bg-white/5 hover:text-white">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleAddPerson} className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Full Name</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white outline-none focus:border-brand-gold/50"
+                                        placeholder="e.g. John Doe"
+                                        value={newPerson.name}
+                                        onChange={(e) => setNewPerson({ ...newPerson, name: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Associated Firm</label>
+                                    <select
+                                        className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white outline-none focus:border-brand-gold/50"
+                                        value={newPerson.firmId}
+                                        onChange={(e) => setNewPerson({ ...newPerson, firmId: e.target.value })}
+                                    >
+                                        {firms.map(firm => (
+                                            <option key={firm.id} value={firm.id}>{firm.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Role</label>
+                                        <input
+                                            type="text"
+                                            className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white outline-none focus:border-brand-gold/50"
+                                            value={newPerson.role}
+                                            onChange={(e) => setNewPerson({ ...newPerson, role: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Email</label>
+                                        <input
+                                            type="email"
+                                            className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white outline-none focus:border-brand-gold/50"
+                                            value={newPerson.email}
+                                            onChange={(e) => setNewPerson({ ...newPerson, email: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-gold py-4 mt-4 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/30"
+                                >
+                                    <Plus size={18} />
+                                    Add Person to Platform
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {teamMembers.map((member) => {

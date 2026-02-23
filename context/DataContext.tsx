@@ -43,6 +43,8 @@ interface DataContextType {
     teamMembers: TeamMember[];
     updateFirm: (id: string, updates: Partial<Firm>) => void;
     updateTeamMember: (id: string, updates: Partial<TeamMember>) => void;
+    addFirm: (firm: Firm) => void;
+    addTeamMember: (member: TeamMember) => void;
     addDeal: (deal: Deal) => void;
     deleteDeal: (id: string) => void;
 }
@@ -115,6 +117,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
     };
 
+    const addFirm = (firm: Firm) => {
+        setFirms(prev => [firm, ...prev]);
+    };
+
+    const addTeamMember = (member: TeamMember) => {
+        setTeamMembers(prev => [member, ...prev]);
+    };
+
     const addDeal = (deal: Deal) => {
         setDeals(prev => [deal, ...prev]);
     };
@@ -124,7 +134,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <DataContext.Provider value={{ firms, deals, teamMembers, updateFirm, updateTeamMember, addDeal, deleteDeal }}>
+        <DataContext.Provider value={{
+            firms,
+            deals,
+            teamMembers,
+            updateFirm,
+            updateTeamMember,
+            addFirm,
+            addTeamMember,
+            addDeal,
+            deleteDeal
+        }}>
             {children}
         </DataContext.Provider>
     );
