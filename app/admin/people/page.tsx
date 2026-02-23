@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { useData } from "@/context/DataContext";
 import { Users, Building2, Mail, ExternalLink, Settings, Save, Check } from "lucide-react";
@@ -73,8 +75,8 @@ export default function AdminPeoplePage() {
                                         onClick={() => handleSave(member.id)}
                                         disabled={saveStatus[member.id] === 'saving'}
                                         className={`rounded-xl px-4 py-3 text-sm font-bold transition-all ${saveStatus[member.id] === 'saved'
-                                                ? 'bg-green-500 text-white'
-                                                : 'bg-brand-gold text-brand-dark hover:shadow-lg hover:shadow-brand-gold/30'
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-brand-gold text-brand-dark hover:shadow-lg hover:shadow-brand-gold/30'
                                             } ${saveStatus[member.id] === 'saving' ? 'opacity-70 cursor-wait' : ''}`}
                                     >
                                         {saveStatus[member.id] === 'saving' ? (
