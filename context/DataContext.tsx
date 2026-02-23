@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { MOCK_FIRMS, MOCK_DEALS } from '@/lib/mock-data';
+import { MOCK_FIRMS, MOCK_DEALS, MOCK_TEAM_MEMBERS } from '@/lib/mock-data';
 
 interface Firm {
     id: string;
@@ -9,6 +9,17 @@ interface Firm {
     slug: string;
     logoUrl: string;
     primaryColor: string;
+}
+
+interface TeamMember {
+    id: string;
+    firmId: string;
+    name: string;
+    slug: string;
+    role: string;
+    email: string;
+    imageURL: string;
+    bio: string;
 }
 
 interface Deal {
@@ -29,7 +40,9 @@ interface Deal {
 interface DataContextType {
     firms: Firm[];
     deals: Deal[];
+    teamMembers: TeamMember[];
     updateFirm: (id: string, updates: Partial<Firm>) => void;
+    updateTeamMember: (id: string, updates: Partial<TeamMember>) => void;
     addDeal: (deal: Deal) => void;
     deleteDeal: (id: string) => void;
 }
@@ -39,12 +52,14 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export function DataProvider({ children }: { children: React.ReactNode }) {
     const [firms, setFirms] = useState<Firm[]>(MOCK_FIRMS);
     const [deals, setDeals] = useState<Deal[]>(MOCK_DEALS);
+    const [teamMembers, setTeamMembers] = useState<TeamMember[]>(MOCK_TEAM_MEMBERS);
     const [isInitialized, setIsInitialized] = useState(false);
 
     // Load from localStorage on mount
     useEffect(() => {
         const savedFirms = localStorage.getItem('prvtmkt_firms');
         const savedDeals = localStorage.getItem('prvtmkt_deals');
+        const savedTeam = localStorage.getItem('prvtmkt_team');
 
         if (savedFirms) {
             try {
@@ -59,6 +74,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 setDeals(JSON.parse(savedDeals));
             } catch (e) {
                 console.error("Failed to parse saved deals", e);
+            }
+        }
+
+        if (savedTeam) {
+            try {
+                setTeamMembers(JSON.parse(savedTeam));
+            } catch (e) {
+                console.error("Failed to parse saved team", e);
             }
         }
 
@@ -78,8 +101,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
     }, [deals, isInitialized]);
 
+    useEffect(() => {
+        if (isInitialized) {
+            localStorage.setItem('prvtmkt_team', JSON.stringify(teamMembers));
+        }
+    }, [teamMembers, isInitialized]);
+
     const updateFirm = (id: string, updates: Partial<Firm>) => {
         setFirms(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
+    };
+
+    const updateTeamMember = (id: string, updates: Partial<TeamMember>) => {
+        setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
     };
 
     const addDeal = (deal: Deal) => {
@@ -91,7 +124,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <DataContext.Provider value={{ firms, deals, updateFirm, addDeal, deleteDeal }}>
+        <DataContext.Provider value={{ firms, deals, teamMembers, updateFirm, updateTeamMember, addDeal, deleteDeal }}>
             {children}
         </DataContext.Provider>
     );

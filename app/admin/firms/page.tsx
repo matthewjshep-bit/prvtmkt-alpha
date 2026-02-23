@@ -83,9 +83,14 @@ export default function AdminFirmsPage() {
 
                                 {/* Details Section */}
                                 <div className="lg:col-span-6">
-                                    <div className="flex items-center gap-3 mb-2">
+                                    <div className="flex items-center gap-3 mb-4">
                                         <Building2 size={20} className="text-brand-gold" />
-                                        <h2 className="text-2xl font-bold text-white">{firm.name}</h2>
+                                        <input
+                                            type="text"
+                                            className="bg-transparent border-b border-white/10 text-2xl font-bold text-white focus:border-brand-gold outline-none w-full"
+                                            value={firm.name}
+                                            onChange={(e) => updateFirm(firm.id, { name: e.target.value })}
+                                        />
                                     </div>
                                     <div className="flex gap-4">
                                         <div className="rounded-lg bg-brand-dark px-3 py-1.5 text-xs border border-white/5">

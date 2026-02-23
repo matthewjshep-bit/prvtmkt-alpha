@@ -1,10 +1,22 @@
-"use client";
-
-import { MOCK_TEAM_MEMBERS, MOCK_FIRMS } from "@/lib/mock-data";
-import { Users, Building2, Mail, ExternalLink, Settings } from "lucide-react";
+import { useState } from "react";
+import { useData } from "@/context/DataContext";
+import { Users, Building2, Mail, ExternalLink, Settings, Save, Check } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminPeoplePage() {
+    const { firms, teamMembers, updateTeamMember } = useData();
+    const [saveStatus, setSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
+
+    const handleSave = (id: string) => {
+        setSaveStatus({ ...saveStatus, [id]: 'saving' });
+        setTimeout(() => {
+            setSaveStatus({ ...saveStatus, [id]: 'saved' });
+            setTimeout(() => {
+                setSaveStatus(prev => ({ ...prev, [id]: 'idle' }));
+            }, 2000);
+        }, 800);
+    };
+
     return (
         <div className="min-h-screen bg-brand-dark pt-28 pb-20">
             <div className="container mx-auto px-6">
@@ -19,16 +31,21 @@ export default function AdminPeoplePage() {
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {MOCK_TEAM_MEMBERS.map((member) => {
-                        const firm = MOCK_FIRMS.find(f => f.id === member.firmId);
+                    {teamMembers.map((member) => {
+                        const firm = firms.find(f => f.id === member.firmId);
                         return (
                             <div key={member.id} className="glass group overflow-hidden rounded-3xl border border-white/5 bg-brand-gray-900/30 p-6 transition-all hover:border-brand-gold/20">
                                 <div className="flex items-center gap-4 mb-6">
                                     <div className="h-16 w-16 overflow-hidden rounded-2xl border-2 border-brand-gold/10">
                                         <img src={member.imageURL || ""} alt={member.name} className="h-full w-full object-cover" />
                                     </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold text-white">{member.name}</h3>
+                                    <div className="flex-1">
+                                        <input
+                                            type="text"
+                                            className="bg-transparent border-b border-white/10 text-lg font-bold text-white focus:border-brand-gold outline-none w-full mb-1"
+                                            value={member.name}
+                                            onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
+                                        />
                                         <p className="text-xs text-brand-gold font-medium">{member.role}</p>
                                     </div>
                                 </div>
@@ -52,8 +69,21 @@ export default function AdminPeoplePage() {
                                         <ExternalLink size={14} />
                                         Public Profile
                                     </Link>
-                                    <button className="rounded-xl bg-brand-dark border border-white/5 p-3 text-foreground/40 transition-all hover:text-brand-gold">
-                                        <Settings size={16} />
+                                    <button
+                                        onClick={() => handleSave(member.id)}
+                                        disabled={saveStatus[member.id] === 'saving'}
+                                        className={`rounded-xl px-4 py-3 text-sm font-bold transition-all ${saveStatus[member.id] === 'saved'
+                                                ? 'bg-green-500 text-white'
+                                                : 'bg-brand-gold text-brand-dark hover:shadow-lg hover:shadow-brand-gold/30'
+                                            } ${saveStatus[member.id] === 'saving' ? 'opacity-70 cursor-wait' : ''}`}
+                                    >
+                                        {saveStatus[member.id] === 'saving' ? (
+                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-dark/30 border-t-brand-dark" />
+                                        ) : saveStatus[member.id] === 'saved' ? (
+                                            <Check size={16} />
+                                        ) : (
+                                            <Save size={16} />
+                                        )}
                                     </button>
                                 </div>
                             </div>
