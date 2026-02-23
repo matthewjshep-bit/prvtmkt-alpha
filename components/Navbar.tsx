@@ -25,25 +25,25 @@ export default function Navbar() {
                     borderColor: 'rgba(255,255,255,0.05)'
                 }}
             >
-                <div className="container mx-auto flex h-16 items-center justify-between px-6">
-                    <Link href={`/firms/${currentFirm.slug || currentFirm.id}`} className="flex items-center gap-3">
+                <div className="container mx-auto flex h-20 items-center justify-between px-6">
+                    <Link href={`/firms/${currentFirm.slug || currentFirm.id}`} className="flex items-center gap-4">
                         {currentFirm.logoUrl ? (
-                            <img src={currentFirm.logoUrl} alt={currentFirm.name} className="h-8 object-contain" />
+                            <img src={currentFirm.logoUrl} alt={currentFirm.name} className="h-12 object-contain" />
                         ) : (
-                            <span className="text-lg font-bold" style={{ color: currentFirm.fontColor || '#ffffff' }}>{currentFirm.name}</span>
+                            <span className="text-2xl font-black uppercase tracking-widest" style={{ color: currentFirm.fontColor || '#ffffff' }}>{currentFirm.name}</span>
                         )}
                     </Link>
 
                     <Link
                         href="/"
-                        className="flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all hover:opacity-80"
+                        className="flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-widest transition-all hover:scale-105"
                         style={{
                             backgroundColor: currentFirm.primaryColor || '#c5a059',
                             color: currentFirm.backgroundColor || '#0a0a0a'
                         }}
                     >
-                        <ArrowLeft size={14} />
-                        Agency Home
+                        <ArrowLeft size={16} />
+                        Return Home
                     </Link>
                 </div>
             </nav>

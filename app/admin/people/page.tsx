@@ -127,7 +127,7 @@ export default function AdminPeoplePage() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-1.5">
+                                <div className="space-y-3">
                                     <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Biography</label>
                                     <textarea
                                         className="w-full h-24 rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white outline-none focus:border-brand-gold/50 resize-none"
@@ -135,6 +135,36 @@ export default function AdminPeoplePage() {
                                         value={newPerson.bio}
                                         onChange={(e) => setNewPerson({ ...newPerson, bio: e.target.value })}
                                     />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Profile Image (Desktop Upload)</label>
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-16 w-16 overflow-hidden rounded-2xl border border-white/10 bg-brand-dark">
+                                            <img src={newPerson.imageURL} className="h-full w-full object-cover" />
+                                        </div>
+                                        <div className="relative flex-1">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="absolute inset-0 z-10 w-full cursor-pointer opacity-0"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onloadend = () => {
+                                                            setNewPerson({ ...newPerson, imageURL: reader.result as string });
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                }}
+                                            />
+                                            <div className="flex items-center justify-center rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-xs font-bold text-white transition-all hover:bg-white/5">
+                                                <Plus size={14} className="mr-2" />
+                                                Choose File
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <button
@@ -155,8 +185,26 @@ export default function AdminPeoplePage() {
                         return (
                             <div key={member.id} className="glass group overflow-hidden rounded-3xl border border-white/5 bg-brand-gray-900/30 p-6 transition-all hover:border-brand-gold/20">
                                 <div className="flex items-center gap-4 mb-6">
-                                    <div className="h-16 w-16 overflow-hidden rounded-2xl border-2 border-brand-gold/10">
+                                    <div className="group relative h-16 w-16 overflow-hidden rounded-2xl border-2 border-brand-gold/10">
                                         <img src={member.imageURL || ""} alt={member.name} className="h-full w-full object-cover" />
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="absolute inset-0 cursor-pointer opacity-0"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onloadend = () => {
+                                                            updateTeamMember(member.id, { imageURL: reader.result as string });
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                }}
+                                            />
+                                            <Plus size={16} className="text-white" />
+                                        </div>
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex flex-col gap-1">

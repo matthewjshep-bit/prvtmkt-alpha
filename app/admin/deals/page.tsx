@@ -16,6 +16,9 @@ export default function AdminDealsPage() {
         assetType: string;
         strategy: string;
         purchaseAmount: number;
+        rehabAmount: number;
+        arv: number;
+        financingType: string;
         isPublic: boolean;
         teamMemberId: string;
         stillImageURL: string;
@@ -27,6 +30,9 @@ export default function AdminDealsPage() {
         assetType: "MULTIFAMILY",
         strategy: "BUY_AND_HOLD",
         purchaseAmount: 0,
+        rehabAmount: 0,
+        arv: 0,
+        financingType: "Debt Financing",
         isPublic: true,
         teamMemberId: teamMembers[0]?.id || "",
         stillImageURL: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800&auto=format&fit=crop",
@@ -129,14 +135,16 @@ export default function AdminDealsPage() {
                                     </select>
                                 </div>
 
-                                <div className="md:col-span-2 space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Deal highlights & Context</label>
-                                    <textarea
-                                        placeholder="Add deal highlights or specific highlights..."
-                                        className="w-full h-32 rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white placeholder:text-white/10 focus:border-brand-gold/50 focus:outline-none resize-none"
-                                        value={newDeal.context || ""}
-                                        onChange={(e) => setNewDeal({ ...newDeal, context: e.target.value })}
-                                    />
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Deal Overview (Narrative)</label>
+                                        <textarea
+                                            placeholder="General project narrative..."
+                                            className="w-full h-32 rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white placeholder:text-white/10 focus:border-brand-gold/50 focus:outline-none resize-none"
+                                            value={newDeal.context || ""}
+                                            onChange={(e) => setNewDeal({ ...newDeal, context: e.target.value })}
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="md:col-span-2 space-y-4">
@@ -209,21 +217,31 @@ export default function AdminDealsPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Investment Strategy</label>
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Deal Strategy</label>
                                     <select
                                         className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none appearance-none"
                                         value={newDeal.strategy}
                                         onChange={(e) => setNewDeal({ ...newDeal, strategy: e.target.value })}
                                     >
-                                        <option value="BUY_AND_HOLD">Buy & Hold</option>
-                                        <option value="FIX_FLIP">Fix & Flip</option>
+                                        <option value="BUY_AND_HOLD">Buy and Hold</option>
+                                        <option value="FIX_FLIP">Fix and Flip</option>
                                     </select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">
-                                        Purchase Amount ($) <span className="text-brand-gold ml-1 text-[8px] italic">REQUIRED FIELD</span>
-                                    </label>
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Financing Type</label>
+                                    <select
+                                        className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none appearance-none"
+                                        value={newDeal.financingType}
+                                        onChange={(e) => setNewDeal({ ...newDeal, financingType: e.target.value })}
+                                    >
+                                        <option value="Debt Financing">Debt Financing</option>
+                                        <option value="Equity Ownership">Equity Ownership</option>
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Purchase Amount ($)</label>
                                     <input
                                         required
                                         type="number"
@@ -231,6 +249,28 @@ export default function AdminDealsPage() {
                                         className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white placeholder:text-white/10 focus:border-brand-gold/50 focus:outline-none"
                                         value={newDeal.purchaseAmount || ""}
                                         onChange={(e) => setNewDeal({ ...newDeal, purchaseAmount: Number(e.target.value) })}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Rehab Amount ($)</label>
+                                    <input
+                                        type="number"
+                                        placeholder="0"
+                                        className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white placeholder:text-white/10 focus:border-brand-gold/50 focus:outline-none"
+                                        value={newDeal.rehabAmount || ""}
+                                        onChange={(e) => setNewDeal({ ...newDeal, rehabAmount: Number(e.target.value) })}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">After Repair Value (ARV) ($)</label>
+                                    <input
+                                        type="number"
+                                        placeholder="0"
+                                        className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white placeholder:text-white/10 focus:border-brand-gold/50 focus:outline-none"
+                                        value={newDeal.arv || ""}
+                                        onChange={(e) => setNewDeal({ ...newDeal, arv: Number(e.target.value) })}
                                     />
                                 </div>
 
@@ -326,14 +366,16 @@ export default function AdminDealsPage() {
                                         </select>
                                     </div>
 
-                                    <div className="md:col-span-2 space-y-2">
-                                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Deal Context & Highlights</label>
-                                        <textarea
-                                            placeholder="Add deal highlights..."
-                                            className="w-full h-24 rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none resize-none"
-                                            value={editingDeal.context || ""}
-                                            onChange={(e) => setEditingDeal({ ...editingDeal, context: e.target.value })}
-                                        />
+                                    <div className="md:col-span-2 space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Deal Overview (Narrative)</label>
+                                            <textarea
+                                                placeholder="General project narrative..."
+                                                className="w-full h-32 rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none resize-none"
+                                                value={editingDeal.context || ""}
+                                                onChange={(e) => setEditingDeal({ ...editingDeal, context: e.target.value })}
+                                            />
+                                        </div>
                                     </div>
 
                                     <div className="md:col-span-2 space-y-4">
@@ -391,6 +433,18 @@ export default function AdminDealsPage() {
                                     </div>
 
                                     <div className="space-y-2">
+                                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Financing Type</label>
+                                        <select
+                                            className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none appearance-none"
+                                            value={editingDeal.financingType}
+                                            onChange={(e) => setEditingDeal({ ...editingDeal, financingType: e.target.value })}
+                                        >
+                                            <option value="Debt Financing">Debt Financing</option>
+                                            <option value="Equity Ownership">Equity Ownership</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
                                         <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Purchase Amount ($)</label>
                                         <input
                                             required
@@ -398,6 +452,26 @@ export default function AdminDealsPage() {
                                             className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none"
                                             value={editingDeal.purchaseAmount}
                                             onChange={(e) => setEditingDeal({ ...editingDeal, purchaseAmount: Number(e.target.value) })}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Rehab Amount ($)</label>
+                                        <input
+                                            type="number"
+                                            className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none"
+                                            value={editingDeal.rehabAmount || ""}
+                                            onChange={(e) => setEditingDeal({ ...editingDeal, rehabAmount: Number(e.target.value) })}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">ARV ($)</label>
+                                        <input
+                                            type="number"
+                                            className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none"
+                                            value={editingDeal.arv || ""}
+                                            onChange={(e) => setEditingDeal({ ...editingDeal, arv: Number(e.target.value) })}
                                         />
                                     </div>
 

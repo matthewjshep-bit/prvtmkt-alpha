@@ -75,66 +75,64 @@ export default function FirmProfilePage({
                     </div>
                 )}
 
-                {/* Firm Brand Header */}
-                <div className={`mb-12 flex flex-col justify-between gap-6 lg:flex-row lg:items-end ${firm.showAgencyBranding !== false ? 'pt-8' : ''}`}>
-                    <div className="space-y-4 max-w-2xl">
-                        <div className="h-12 w-48">
+                {/* Distinct Firm Header (Light Grey Oval) */}
+                <div className={`mb-8 rounded-full bg-[#f5f5f5] p-10 md:p-14 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-10 ${firm.showAgencyBranding !== false ? 'mt-8' : ''}`}>
+                    <div className="flex flex-col lg:flex-row items-center gap-12">
+                        <div className="h-24 w-72 flex-shrink-0">
                             {firm.logoUrl ? (
                                 <img
                                     src={firm.logoUrl}
                                     alt={firm.name}
-                                    className="h-full object-contain object-left"
+                                    className="h-full w-full object-contain object-left"
                                 />
                             ) : (
-                                <div className="flex items-center gap-2 h-full" style={{ color: 'var(--firm-primary)' }}>
-                                    <Building2 size={32} />
-                                    <span className="text-xl font-bold uppercase tracking-widest">{firm.name}</span>
+                                <div className="flex items-center gap-4 h-full" style={{ color: 'var(--firm-primary)' }}>
+                                    <Building2 size={56} />
+                                    <span className="text-4xl font-black uppercase tracking-widest">{firm.name}</span>
                                 </div>
                             )}
                         </div>
-                        <div>
-                            <h1 className="mb-2 text-4xl font-bold tracking-tight" style={{ color: 'var(--firm-text)' }}>
-                                {firm.name} <span style={{ color: 'var(--firm-primary)' }}>Platform</span>
+                        <div className="text-center lg:text-left">
+                            <h1 className="mb-4 text-6xl font-black tracking-tight text-black">
+                                {firm.name}
                             </h1>
-                            <p className="text-lg opacity-60 leading-relaxed">
-                                {firm.bio || "Institutional track record and professional team."}
+                            <p className="text-xl font-bold text-black/40 leading-relaxed max-w-2xl">
+                                {firm.bio || "Professional institutional track record and specialized team directory."}
                             </p>
                         </div>
                     </div>
+                </div>
 
-                    <div className="flex flex-wrap items-center gap-4">
-                        {activeTab === "DEALS" && deals.filter(d => d.firmId === firm.id).length > 0 && (
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" size={18} />
-                                <input
-                                    type="text"
-                                    placeholder="Search portfolio..."
-                                    className="h-11 w-full rounded-xl border border-white/5 bg-white/5 pl-10 pr-4 text-sm outline-none transition-all focus:border-brand-gold/50 md:w-64"
-                                    style={{ color: 'var(--firm-text)' }}
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                        )}
-
-                        <div className="flex h-11 items-center rounded-xl bg-white/5 border border-white/5 p-1">
-                            <button
-                                onClick={() => setActiveTab("DEALS")}
-                                className={`flex h-full items-center gap-2 rounded-lg px-4 text-xs font-bold transition-all ${activeTab === "DEALS" ? "bg-white/10" : "opacity-40 hover:opacity-100"}`}
-                                style={{ color: activeTab === "DEALS" ? 'var(--firm-primary)' : 'inherit' }}
-                            >
-                                <LayoutGrid size={16} />
-                                Portfolio
-                            </button>
-                            <button
-                                onClick={() => setActiveTab("PEOPLE")}
-                                className={`flex h-full items-center gap-2 rounded-lg px-4 text-xs font-bold transition-all ${activeTab === "PEOPLE" ? "bg-white/10" : "opacity-40 hover:opacity-100"}`}
-                                style={{ color: activeTab === "PEOPLE" ? 'var(--firm-primary)' : 'inherit' }}
-                            >
-                                <Globe size={16} />
-                                Team
-                            </button>
+                {/* Distinct Search & Navigation Area (Light Grey Oval) */}
+                <div className="mb-16 rounded-full bg-[#f5f5f5] p-4 pr-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden">
+                    <div className="flex flex-1 items-center gap-4 w-full">
+                        <div className="relative flex-1 group">
+                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-black/30 group-focus-within:text-black transition-colors" size={20} />
+                            <input
+                                type="text"
+                                placeholder="Search proprietary portfolio..."
+                                className="h-14 w-full rounded-full bg-white/50 border border-black/5 pl-14 pr-6 text-base font-bold text-black outline-none transition-all focus:bg-white focus:border-black/10 placeholder:text-black/20"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
                         </div>
+                    </div>
+
+                    <div className="flex h-14 items-center rounded-full bg-white/50 p-1.5 border border-black/5">
+                        <button
+                            onClick={() => setActiveTab("DEALS")}
+                            className={`flex h-full items-center gap-3 rounded-full px-10 text-xs font-black uppercase tracking-widest transition-all ${activeTab === "DEALS" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
+                        >
+                            <LayoutGrid size={18} />
+                            Portfolio
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("PEOPLE")}
+                            className={`flex h-full items-center gap-3 rounded-full px-10 text-xs font-black uppercase tracking-widest transition-all ${activeTab === "PEOPLE" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
+                        >
+                            <Globe size={18} />
+                            Directory
+                        </button>
                     </div>
                 </div>
 
@@ -142,14 +140,18 @@ export default function FirmProfilePage({
                     <>
                         {deals.filter(d => d.firmId === firm.id).length > 0 ? (
                             <>
-                                {/* Filter Bar */}
-                                <div className="mb-10 flex flex-wrap gap-2">
+                                {/* Standardized Filter Bar */}
+                                <div className="mb-12 flex flex-wrap items-center gap-3">
+                                    <div className="mr-6 flex items-center gap-2 text-xs font-black uppercase tracking-widest opacity-30">
+                                        <Filter size={14} />
+                                        Asset Type
+                                    </div>
                                     {CATEGORIES.map((cat) => (
                                         <button
                                             key={cat}
                                             onClick={() => setFilter(cat)}
-                                            className={`rounded-full px-5 py-2 text-[11px] font-bold uppercase tracking-wider transition-all ${filter === cat
-                                                ? "shadow-lg"
+                                            className={`rounded-full px-6 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all ${filter === cat
+                                                ? "shadow-xl scale-105"
                                                 : "bg-white/5 opacity-50 hover:bg-white/10 hover:opacity-100"
                                                 }`}
                                             style={{
@@ -161,9 +163,8 @@ export default function FirmProfilePage({
                                         </button>
                                     ))}
 
-                                    <div className="ml-auto hidden items-center gap-2 lg:flex opacity-40">
-                                        <Filter size={16} style={{ color: 'var(--firm-primary)' }} />
-                                        <span className="text-xs font-semibold">
+                                    <div className="ml-auto hidden items-center gap-2 lg:flex opacity-30">
+                                        <span className="text-xs font-black uppercase tracking-widest">
                                             {filteredDeals.length} assets identified
                                         </span>
                                     </div>
@@ -172,7 +173,7 @@ export default function FirmProfilePage({
                                 {/* Portfolio Grid */}
                                 <motion.div
                                     layout
-                                    className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3"
+                                    className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3"
                                 >
                                     <AnimatePresence mode="popLayout">
                                         {filteredDeals.map((deal, index) => (
@@ -182,11 +183,11 @@ export default function FirmProfilePage({
                                 </motion.div>
 
                                 {filteredDeals.length === 0 && (
-                                    <div className="flex h-64 flex-col items-center justify-center rounded-3xl border-2 border-dashed border-white/5 bg-white/5">
-                                        <p className="text-lg font-medium opacity-40">No assets found in this segment</p>
+                                    <div className="flex h-64 flex-col items-center justify-center rounded-[3rem] border-2 border-dashed border-white/5 bg-white/5">
+                                        <p className="text-lg font-bold opacity-30 uppercase tracking-widest">No matching assets</p>
                                         <button
                                             onClick={() => { setFilter("ALL"); setSearchQuery(""); }}
-                                            className="mt-4 transition-all hover:opacity-70"
+                                            className="mt-4 font-black uppercase tracking-widest text-xs transition-all hover:opacity-70"
                                             style={{ color: 'var(--firm-primary)' }}
                                         >
                                             Reset filters
@@ -196,76 +197,76 @@ export default function FirmProfilePage({
                             </>
                         ) : (
                             /* Empty Portfolio State */
-                            <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-white/10 bg-white/5 p-20 text-center">
-                                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-black/20">
-                                    <FilePlus size={32} className="animate-pulse" style={{ color: 'var(--firm-primary)' }} />
+                            <div className="flex flex-col items-center justify-center rounded-[4rem] border-2 border-dashed border-white/10 bg-white/5 p-24 text-center">
+                                <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-black/20">
+                                    <FilePlus size={40} className="animate-pulse" style={{ color: 'var(--firm-primary)' }} />
                                 </div>
-                                <h2 className="text-2xl font-bold">No Assets Published</h2>
-                                <p className="mt-2 max-w-sm opacity-40">
-                                    Capture your firm's market velocity. Start building your digital track record today.
+                                <h2 className="text-3xl font-black">Private Portfolio Hidden</h2>
+                                <p className="mt-4 max-w-sm font-bold opacity-30 leading-relaxed uppercase text-xs tracking-widest">
+                                    Capture your firm's market velocity. Standardized digital track record required.
                                 </p>
                                 <Link
                                     href="/deals/new"
-                                    className="mt-8 rounded-xl px-8 py-3 text-sm font-bold transition-all hover:shadow-lg"
+                                    className="mt-10 rounded-full px-10 py-5 text-xs font-black uppercase tracking-widest transition-all hover:scale-105 hover:shadow-2xl"
                                     style={{
                                         backgroundColor: 'var(--firm-primary)',
                                         color: 'var(--firm-bg)'
                                     }}
                                 >
-                                    Create Your First Tombstone
+                                    Establish Digital Tombstone
                                 </Link>
                             </div>
                         )}
                     </>
                 ) : (
-                    /* People Grid */
+                    /* Enhanced People Grid with Persona Scaling */
                     <>
                         {firmTeamMembers.length > 0 ? (
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
+                                className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4"
                             >
                                 {firmTeamMembers.map((member) => (
                                     <Link
                                         key={member.id}
                                         href={`/team/${member.slug || member.id}`}
-                                        className="glass group overflow-hidden rounded-3xl border border-white/5 bg-white/5 p-4 transition-all hover:border-white/20"
+                                        className="group overflow-hidden rounded-[3rem] bg-[#f5f5f5] p-6 transition-all hover:scale-[1.03] hover:shadow-2xl"
                                     >
-                                        <div className="aspect-square w-full overflow-hidden rounded-2xl mb-4">
+                                        <div className="aspect-square w-full overflow-hidden rounded-[2.5rem] mb-6 shadow-md border-4 border-white">
                                             <img
                                                 src={member.imageURL}
                                                 alt={member.name}
-                                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                                             />
                                         </div>
-                                        <div>
-                                            <h3 className="text-lg font-bold group-hover:opacity-80 transition-colors" style={{ color: 'var(--firm-text)' }}>{member.name}</h3>
-                                            <p className="text-xs font-bold uppercase tracking-widest opacity-60" style={{ color: 'var(--firm-primary)' }}>{member.role}</p>
-                                            <p className="mt-3 text-sm leading-relaxed opacity-40 line-clamp-3">{member.bio}</p>
+                                        <div className="space-y-1 px-2">
+                                            <h3 className="text-2xl font-black text-black">{member.name}</h3>
+                                            <p className="text-xs font-black uppercase tracking-[0.2em] text-black/40">{member.role}</p>
+                                            <p className="mt-4 text-sm font-bold leading-relaxed text-black/60 line-clamp-3">{member.bio}</p>
                                         </div>
                                     </Link>
                                 ))}
                             </motion.div>
                         ) : (
                             /* Empty Team State */
-                            <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-white/10 bg-white/5 p-20 text-center">
-                                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-black/20">
-                                    <UserPlus size={32} style={{ color: 'var(--firm-primary)' }} />
+                            <div className="flex flex-col items-center justify-center rounded-[4rem] border-2 border-dashed border-white/10 bg-white/5 p-24 text-center">
+                                <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-black/20">
+                                    <UserPlus size={40} style={{ color: 'var(--firm-primary)' }} />
                                 </div>
-                                <h2 className="text-2xl font-bold">No Team Directory</h2>
-                                <p className="mt-2 max-w-sm opacity-40">
-                                    Showcase the experts behind your firm. Add team members to build trust with investors.
+                                <h2 className="text-3xl font-black">Team Directory Active</h2>
+                                <p className="mt-4 max-w-sm font-bold opacity-30 leading-relaxed uppercase text-xs tracking-widest">
+                                    Showcase the experts behind your firm. High-contrast profile required.
                                 </p>
                                 <Link
                                     href="/admin/people"
-                                    className="mt-8 rounded-xl border px-8 py-3 text-sm font-bold transition-all hover:opacity-70"
+                                    className="mt-10 rounded-full border-2 px-10 py-5 text-xs font-black uppercase tracking-widest transition-all hover:opacity-70"
                                     style={{
                                         borderColor: 'var(--firm-primary)',
                                         color: 'var(--firm-primary)'
                                     }}
                                 >
-                                    Onboard Team
+                                    ONBOARD LEADERSHIP
                                 </Link>
                             </div>
                         )}
@@ -273,14 +274,13 @@ export default function FirmProfilePage({
                 )}
 
                 {/* Footer Utility */}
-                <div className="mt-20 border-t border-white/5 py-12 text-center">
-                    <Link
-                        href="/"
-                        className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-20 hover:opacity-100 transition-all"
+                <div className="mt-32 pt-16 text-center">
+                    <div
+                        className="inline-flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.5em] opacity-10"
                         style={{ color: 'var(--firm-text)' }}
                     >
-                        Powered by The PRVT MKT Agency
-                    </Link>
+                        {firm.name} proprietary portal // closed ecosystem
+                    </div>
                 </div>
             </div>
         </div>

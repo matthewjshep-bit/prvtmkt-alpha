@@ -41,6 +41,9 @@ interface Deal {
     sqFt: number;
     teamMemberId: string;
     context?: string;
+    financingType?: "Debt Financing" | "Equity Ownership";
+    rehabAmount?: number;
+    arv?: number;
 }
 
 interface DataContextType {

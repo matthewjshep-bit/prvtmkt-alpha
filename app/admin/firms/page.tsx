@@ -257,8 +257,26 @@ export default function AdminFirmsPage() {
                                         <div className="flex flex-wrap gap-2">
                                             {teamMembers.filter(m => m.firmId === firm.id).map(member => (
                                                 <div key={member.id} className="flex items-center gap-2 rounded-lg bg-white/5 p-2 pr-3 border border-white/5 group/member">
-                                                    <div className="h-6 w-6 overflow-hidden rounded-md border border-white/10">
+                                                    <div className="group/photo relative h-6 w-6 overflow-hidden rounded-md border border-white/10">
                                                         <img src={member.imageURL} alt={member.name} className="h-full w-full object-cover" />
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover/photo:opacity-100 cursor-pointer">
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                className="absolute inset-0 cursor-pointer opacity-0"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (file) {
+                                                                        const reader = new FileReader();
+                                                                        reader.onloadend = () => {
+                                                                            updateTeamMember(member.id, { imageURL: reader.result as string });
+                                                                        };
+                                                                        reader.readAsDataURL(file);
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <Plus size={10} className="text-white" />
+                                                        </div>
                                                     </div>
                                                     <input
                                                         type="text"

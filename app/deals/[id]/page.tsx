@@ -1,11 +1,12 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useData } from "@/context/DataContext";
 import { formatCurrency } from "@/lib/utils";
-import { MapPin, TrendingUp, Maximize2, Layers, Calendar, ChevronLeft, ShieldCheck, Briefcase, Building2, Mail, Award } from "lucide-react";
+import { MapPin, TrendingUp, Maximize2, Layers, Calendar, ChevronLeft, ShieldCheck, Briefcase, Building2, Mail, Award, Info } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { ProgressSlider, SliderContent, SliderWrapper, SliderBtnGroup, SliderBtn } from "@/components/ui/progressive-carousel";
 
 export default function DealPage({
     params,
@@ -16,7 +17,6 @@ export default function DealPage({
     const { deals, teamMembers, firms } = useData();
 
     const deal = deals.find((d) => d.id === id);
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
     if (!deal) {
         return (
@@ -33,152 +33,177 @@ export default function DealPage({
     const firm = firms.find(f => f.id === deal.firmId);
     const allImages = deal.images && deal.images.length > 0 ? deal.images : [deal.stillImageURL];
 
+    // Dynamic Theming
+    const themeStyles = {
+        '--firm-bg': firm?.backgroundColor || '#0a0a0a',
+        '--firm-text': firm?.fontColor || '#ffffff',
+        '--firm-primary': firm?.primaryColor || '#c5a059',
+    } as React.CSSProperties;
+
     return (
-        <div className="relative min-h-screen bg-brand-dark overflow-hidden">
-            {/* Hero Carousel Background */}
-            <div className="absolute inset-0 z-0">
-                <AnimatePresence mode="wait">
-                    <motion.img
-                        key={currentImageIndex}
-                        src={allImages[currentImageIndex] || ""}
-                        alt={deal.address}
-                        initial={{ opacity: 0, scale: 1.1 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 1 }}
-                        className="h-full w-full object-cover"
-                    />
-                </AnimatePresence>
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/60 to-brand-dark/30" />
+        <div
+            className="min-h-screen pt-28 pb-32 transition-colors duration-500"
+            style={{
+                ...themeStyles,
+                backgroundColor: 'var(--firm-bg)',
+                color: 'var(--firm-text)'
+            }}
+        >
+            <div className="container mx-auto px-6">
+                {/* Back Link */}
+                <div className="mb-12">
+                    <Link
+                        href={firm ? `/firms/${firm.slug || firm.id}` : "/"}
+                        className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest opacity-60 transition-all hover:opacity-100 hover:text-[var(--firm-primary)]"
+                        style={{ color: 'var(--firm-text)' }}
+                    >
+                        <ChevronLeft size={18} />
+                        Return to {firm?.name || "Portfolio"}
+                    </Link>
+                </div>
 
-                {/* Carousel Controls */}
-                {allImages.length > 1 && (
-                    <div className="absolute bottom-10 left-1/2 z-20 flex -translate-x-1/2 gap-3">
-                        {allImages.map((_, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => setCurrentImageIndex(idx)}
-                                className={`h-1 rounded-full transition-all ${idx === currentImageIndex ? 'w-8 bg-brand-gold' : 'w-4 bg-white/20'}`}
-                            />
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* Back Button */}
-            <div className="relative z-10 pt-28 px-6 container mx-auto">
-                <Link
-                    href={firm ? `/firms/${firm.slug || firm.id}` : "/"}
-                    className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-foreground/60 transition-all hover:text-brand-gold"
-                >
-                    <ChevronLeft size={18} />
-                    Return to {firm?.name || "Portfolio"}
-                </Link>
-            </div>
-
-            {/* Main Content Overlay */}
-            <div className="relative z-10 container mx-auto px-6 pt-12 pb-20">
-                <div className="grid gap-12 lg:grid-cols-2 lg:items-start">
-                    {/* Left: Asset Title & Identity */}
-                    <div className="space-y-8">
-                        <div className="space-y-6">
+                {/* Hero Section: Split-Pane Identity & Carousel */}
+                <div className="grid gap-16 lg:grid-cols-[450px_1fr] items-start">
+                    {/* Left Pane: Identity & Enhanced Lead Card */}
+                    <div className="space-y-12 animate-in fade-in slide-in-from-left-4 duration-700">
+                        <div className="space-y-8">
                             <div className="flex flex-wrap gap-2">
-                                <span className="glass-dark rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-brand-gold">
+                                <span className="rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest border border-white/10 bg-white/5" style={{ color: 'var(--firm-primary)' }}>
                                     {deal.assetType.replace("_", " ")}
                                 </span>
-                                <span className="glass-dark rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-foreground">
-                                    {deal.strategy.replace("_", " ")}
+                                <span className="rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest border border-white/10 bg-white/5 opacity-70">
+                                    {deal.isPublic ? "Public Transaction" : "Private Offering"}
                                 </span>
                             </div>
 
-                            <h1 className="text-5xl font-bold tracking-tight text-white md:text-7xl lg:max-w-xl">
+                            <h1 className="text-5xl font-bold tracking-tight md:text-7xl leading-[1.1]">
                                 {deal.address.split(",")[0]}
-                                <span className="block text-2xl font-medium text-foreground/60 mt-2">
+                                <span className="block text-2xl font-medium mt-3 opacity-50 tracking-normal">
                                     {deal.address.split(",").slice(1).join(",")}
                                 </span>
                             </h1>
 
-                            <div className="flex items-center gap-4 pt-4">
-                                <div className="h-12 w-12 overflow-hidden rounded-full border-2 border-brand-gold/20">
+                            {/* Enhanced Persona Lead Card in Light Grey Oval */}
+                            <div className="inline-flex items-center gap-6 rounded-full bg-[#F5F5F5] p-3 pr-10 shadow-xl transition-transform hover:scale-[1.02]">
+                                <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white shadow-md">
                                     <img
                                         src={member?.imageURL || ""}
                                         alt={member?.name}
                                         className="h-full w-full object-cover"
                                     />
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-foreground/40">Deal Managed By</p>
-                                    <Link href={`/team/${member?.slug}`} className="text-sm font-bold text-brand-gold hover:underline">
+                                <div className="space-y-0.5">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/40">Transaction Lead</p>
+                                    <Link href={`/team/${member?.slug}`} className="text-xl font-black text-black hover:text-[var(--firm-primary)] transition-colors">
                                         {member?.name}
                                     </Link>
+                                    <p className="text-xs font-bold text-black/60 uppercase tracking-wider">{member?.role}</p>
                                 </div>
                             </div>
                         </div>
-
-                        {/* Deal Overview & Highlights */}
-                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-                            <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-brand-gold">Deal Overview & Highlights</h3>
-                            <div className="glass-dark rounded-2xl border border-white/5 p-6 md:p-8">
-                                <p className="text-lg leading-relaxed text-foreground/70 italic">
-                                    {deal.context || "This transaction represents a strategic positioning within a high-growth market, leveraging institutional-grade asset management to drive superior risk-adjusted returns."}
-                                </p>
-                            </div>
-                        </div>
                     </div>
 
-                    {/* Right: Deal Sheet Overlay */}
-                    <div className="glass-dark sticky top-32 rounded-3xl p-8 lg:p-10 border border-white/10 shadow-2xl">
-                        <div className="mb-8 flex items-center justify-between border-b border-white/5 pb-6">
-                            <h3 className="text-xl font-bold text-foreground">Digital Tombstone</h3>
-                            <ShieldCheck className="text-brand-gold" size={24} />
-                        </div>
+                    {/* Right Pane: Dominant Visuals */}
+                    <div className="overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/5 shadow-2xl transition-all duration-500 hover:border-[var(--firm-primary)]/30">
+                        <ProgressSlider activeSlider="slide-0" className="w-full">
+                            <SliderContent>
+                                {allImages.map((img, idx) => (
+                                    <SliderWrapper key={idx} value={`slide-${idx}`}>
+                                        <div className="aspect-[16/9] w-full overflow-hidden">
+                                            <img
+                                                src={img}
+                                                alt={`Deal view ${idx + 1}`}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        </div>
+                                    </SliderWrapper>
+                                ))}
+                            </SliderContent>
 
-                        <div className="grid gap-8 sm:grid-cols-2">
-                            <div className="space-y-1">
-                                <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-foreground/40">
-                                    <TrendingUp size={12} className="text-brand-gold" />
-                                    Market Cap Rate
-                                </p>
-                                <p className="text-3xl font-bold text-foreground">{deal.capRate}%</p>
-                            </div>
-
-                            <div className="space-y-1">
-                                <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-foreground/40">
-                                    <Maximize2 size={12} className="text-brand-gold" />
-                                    Total Size
-                                </p>
-                                <p className="text-3xl font-bold text-foreground">{deal.sqFt?.toLocaleString()} SF</p>
-                            </div>
-
-                            <div className="space-y-1">
-                                <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-foreground/40">
-                                    <Layers size={12} className="text-brand-gold" />
-                                    Purchase Price
-                                </p>
-                                <p className="text-3xl font-bold text-foreground">
-                                    {deal.isPublic ? formatCurrency(deal.purchaseAmount || 0) : "Confidential"}
-                                </p>
-                            </div>
-
-                            <div className="space-y-1">
-                                <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-foreground/40">
-                                    <Calendar size={12} className="text-brand-gold" />
-                                    Closed Date
-                                </p>
-                                <p className="text-3xl font-bold text-foreground">Oct 2025</p>
-                            </div>
-                        </div>
-
-                        <button className="mt-10 w-full rounded-xl bg-brand-gold py-4 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/30">
-                            Download Investor Summary
-                        </button>
+                            <SliderBtnGroup className="grid grid-cols-2 divide-x divide-white/10 border-t border-white/10 bg-black/40 backdrop-blur-xl">
+                                <SliderBtn
+                                    value="slide-0"
+                                    className="py-4 text-center transition-all hover:bg-white/5"
+                                    progressBarClass="bg-[var(--firm-primary)] h-1 bottom-0 absolute"
+                                >
+                                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Property Gallery</span>
+                                </SliderBtn>
+                                <SliderBtn
+                                    value={`slide-${Math.min(1, allImages.length - 1)}`}
+                                    className="py-4 text-center transition-all hover:bg-white/5"
+                                    progressBarClass="bg-[var(--firm-primary)] h-1 bottom-0 absolute"
+                                >
+                                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Site Perspectives</span>
+                                </SliderBtn>
+                            </SliderBtnGroup>
+                        </ProgressSlider>
                     </div>
                 </div>
-            </div>
 
-            {/* Bottom Subtle Overlay */}
-            <div className="absolute bottom-4 right-6 text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/20">
-                PRVT MKT ALPHA PROJECT v1.1
+                {/* Containerized Metrics Bar (Light Grey Oval) */}
+                <div className="mt-16 rounded-full bg-[#F5F5F5] p-8 md:p-12 shadow-2xl overflow-hidden">
+                    <div className="grid grid-cols-2 gap-y-10 md:grid-cols-3 lg:grid-cols-6 divide-x divide-black/5">
+                        <div className="px-6 space-y-1">
+                            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
+                                <TrendingUp size={12} className="text-black/60" />
+                                Purchase
+                            </p>
+                            <p className="text-3xl font-black text-black">{deal.isPublic ? formatCurrency(deal.purchaseAmount || 0) : "Confidential"}</p>
+                        </div>
+
+                        <div className="px-6 space-y-1 border-l border-black/5">
+                            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
+                                <Layers size={12} className="text-black/60" />
+                                Rehab
+                            </p>
+                            <p className="text-3xl font-black text-black">{formatCurrency(deal.rehabAmount || 0)}</p>
+                        </div>
+
+                        <div className="px-6 space-y-1 border-l border-black/5">
+                            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
+                                <Award size={12} className="text-black/60" />
+                                Exit (ARV)
+                            </p>
+                            <p className="text-3xl font-black text-black">{formatCurrency(deal.arv || 0)}</p>
+                        </div>
+
+                        <div className="px-6 space-y-1 border-l border-black/5">
+                            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
+                                <Maximize2 size={12} className="text-black/60" />
+                                Total Size
+                            </p>
+                            <p className="text-3xl font-black text-black">{deal.sqFt?.toLocaleString()} <span className="text-xs opacity-50">SF</span></p>
+                        </div>
+
+                        <div className="px-6 space-y-1 border-l border-black/5">
+                            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
+                                <Briefcase size={12} className="text-black/60" />
+                                Strategy
+                            </p>
+                            <p className="text-sm font-black uppercase tracking-tight text-black opacity-80">{deal.strategy?.replace("_", " ")}</p>
+                        </div>
+
+                        <div className="px-6 space-y-1 border-l border-black/5">
+                            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
+                                <ShieldCheck size={12} className="text-black/60" />
+                                Financing
+                            </p>
+                            <p className="text-sm font-black uppercase tracking-tight text-black opacity-80">{deal.financingType}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Standalone Narrative Section (Light Grey Oval) */}
+                <div className="mt-24 rounded-[3rem] bg-[#F5F5F5] p-12 md:p-16 shadow-2xl max-w-5xl">
+                    <div className="space-y-8">
+                        <h2 className="text-sm font-black uppercase tracking-[0.4em] text-black/30">Investment Overview</h2>
+                        <div className="prose prose-lg max-w-none">
+                            <p className="text-3xl font-bold leading-[1.6] text-black/80">
+                                {deal.context || "No project overview available. This transaction represents a strategic positioning within the target submarket, leveraging institutional-grade management and favorable capital structures to maximize risk-adjusted returns."}
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
