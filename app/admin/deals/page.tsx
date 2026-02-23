@@ -140,64 +140,57 @@ export default function AdminDealsPage() {
                                 </div>
 
                                 <div className="md:col-span-2 space-y-4">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Tombstone Media (Image Gallery)</label>
-                                    <div className="space-y-3">
-                                        {newDeal.images && newDeal.images.map((img, idx) => (
-                                            <div key={idx} className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    className="grow rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-xs text-white placeholder:text-white/10 focus:border-brand-gold/50 focus:outline-none"
-                                                    value={img}
-                                                    onChange={(e) => {
-                                                        const newImages = [...(newDeal.images || [])];
-                                                        newImages[idx] = e.target.value;
-                                                        setNewDeal({ ...newDeal, images: newImages });
-                                                    }}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const newImages = (newDeal.images || []).filter((_, i) => i !== idx);
-                                                        setNewDeal({ ...newDeal, images: newImages });
-                                                    }}
-                                                    className="flex items-center justify-center rounded-xl bg-red-500/10 px-3 text-red-500 hover:bg-red-500 hover:text-white transition-all"
-                                                >
-                                                    <X size={14} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                        <div className="flex gap-2">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Tombstone Media (Upload from Desktop)</label>
+                                    <div className="space-y-4">
+                                        {/* File Input */}
+                                        <div className="relative">
                                             <input
-                                                id="new-image-url"
-                                                type="text"
-                                                placeholder="https://images.unsplash.com/..."
-                                                className="grow rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-xs text-white placeholder:text-white/10 focus:border-brand-gold/50 focus:outline-none"
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        const val = (e.target as HTMLInputElement).value;
-                                                        if (val) {
-                                                            setNewDeal({ ...newDeal, images: [...(newDeal.images || []), val] });
-                                                            (e.target as HTMLInputElement).value = "";
-                                                        }
-                                                    }
+                                                type="file"
+                                                multiple
+                                                accept="image/*"
+                                                className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                                                onChange={(e) => {
+                                                    const files = Array.from(e.target.files || []);
+                                                    files.forEach(file => {
+                                                        const reader = new FileReader();
+                                                        reader.onloadend = () => {
+                                                            const base64String = reader.result as string;
+                                                            setNewDeal(prev => ({
+                                                                ...prev,
+                                                                images: [...(prev.images || []), base64String]
+                                                            }));
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    });
                                                 }}
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const input = document.getElementById('new-image-url') as HTMLInputElement;
-                                                    if (input.value) {
-                                                        setNewDeal({ ...newDeal, images: [...(newDeal.images || []), input.value] });
-                                                        input.value = "";
-                                                    }
-                                                }}
-                                                className="flex items-center gap-2 rounded-xl bg-white/5 px-4 text-xs font-bold text-white hover:bg-white/10 transition-all"
-                                            >
-                                                <Plus size={14} />
-                                                Add Image
-                                            </button>
+                                            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/10 bg-white/5 py-10 transition-all hover:border-brand-gold/50 hover:bg-white/10">
+                                                <Upload size={32} className="mb-2 text-brand-gold" />
+                                                <p className="text-sm font-bold text-white">Select Images from Desktop</p>
+                                                <p className="text-[10px] font-bold uppercase tracking-widest text-foreground/40 mt-1">PNG, JPG or WEBP (Multiple allowed)</p>
+                                            </div>
                                         </div>
+
+                                        {/* Image Gallery Preview */}
+                                        {newDeal.images && newDeal.images.length > 0 && (
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                {newDeal.images.map((img, idx) => (
+                                                    <div key={idx} className="group relative aspect-video overflow-hidden rounded-xl border border-white/10">
+                                                        <img src={img} className="h-full w-full object-cover" />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newImages = (newDeal.images || []).filter((_, i) => i !== idx);
+                                                                setNewDeal({ ...newDeal, images: newImages });
+                                                            }}
+                                                            className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                                                        >
+                                                            <X size={12} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -344,64 +337,56 @@ export default function AdminDealsPage() {
                                     </div>
 
                                     <div className="md:col-span-2 space-y-4">
-                                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Tombstone Media (Image Gallery)</label>
-                                        <div className="space-y-3">
-                                            {editingDeal.images && editingDeal.images.map((img: string, idx: number) => (
-                                                <div key={idx} className="flex gap-2">
-                                                    <input
-                                                        type="text"
-                                                        className="grow rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-xs text-white placeholder:text-white/10 focus:border-brand-gold/50 focus:outline-none"
-                                                        value={img}
-                                                        onChange={(e) => {
-                                                            const newImages = [...(editingDeal.images || [])];
-                                                            newImages[idx] = e.target.value;
-                                                            setEditingDeal({ ...editingDeal, images: newImages });
-                                                        }}
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const newImages = (editingDeal.images || []).filter((_: any, i: number) => i !== idx);
-                                                            setEditingDeal({ ...editingDeal, images: newImages });
-                                                        }}
-                                                        className="flex items-center justify-center rounded-xl bg-red-500/10 px-3 text-red-500 hover:bg-red-500 hover:text-white transition-all"
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                            <div className="flex gap-2">
+                                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Tombstone Media (Upload from Desktop)</label>
+                                        <div className="space-y-4">
+                                            {/* File Input */}
+                                            <div className="relative">
                                                 <input
-                                                    id="edit-new-image-url"
-                                                    type="text"
-                                                    placeholder="Add another image URL..."
-                                                    className="grow rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-xs text-white placeholder:text-white/10 focus:border-brand-gold/50 focus:outline-none"
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            e.preventDefault();
-                                                            const val = (e.target as HTMLInputElement).value;
-                                                            if (val) {
-                                                                setEditingDeal({ ...editingDeal, images: [...(editingDeal.images || []), val] });
-                                                                (e.target as HTMLInputElement).value = "";
-                                                            }
-                                                        }
+                                                    type="file"
+                                                    multiple
+                                                    accept="image/*"
+                                                    className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                                                    onChange={(e) => {
+                                                        const files = Array.from(e.target.files || []);
+                                                        files.forEach(file => {
+                                                            const reader = new FileReader();
+                                                            reader.onloadend = () => {
+                                                                const base64String = reader.result as string;
+                                                                setEditingDeal((prev: any) => ({
+                                                                    ...prev,
+                                                                    images: [...(prev.images || []), base64String]
+                                                                }));
+                                                            };
+                                                            reader.readAsDataURL(file);
+                                                        });
                                                     }}
                                                 />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const input = document.getElementById('edit-new-image-url') as HTMLInputElement;
-                                                        if (input.value) {
-                                                            setEditingDeal({ ...editingDeal, images: [...(editingDeal.images || []), input.value] });
-                                                            input.value = "";
-                                                        }
-                                                    }}
-                                                    className="flex items-center gap-2 rounded-xl bg-white/5 px-4 text-xs font-bold text-white hover:bg-white/10 transition-all"
-                                                >
-                                                    <Plus size={14} />
-                                                    Add
-                                                </button>
+                                                <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/10 bg-white/5 py-8 transition-all hover:border-brand-gold/50 hover:bg-white/10">
+                                                    <Upload size={24} className="mb-2 text-brand-gold" />
+                                                    <p className="text-xs font-bold text-white">Add Images from Desktop</p>
+                                                </div>
                                             </div>
+
+                                            {/* Image Gallery Preview */}
+                                            {editingDeal.images && editingDeal.images.length > 0 && (
+                                                <div className="grid grid-cols-4 gap-3">
+                                                    {editingDeal.images.map((img: string, idx: number) => (
+                                                        <div key={idx} className="group relative aspect-square overflow-hidden rounded-xl border border-white/10">
+                                                            <img src={img} className="h-full w-full object-cover" />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const newImages = (editingDeal.images || []).filter((_: any, i: number) => i !== idx);
+                                                                    setEditingDeal({ ...editingDeal, images: newImages });
+                                                                }}
+                                                                className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                                                            >
+                                                                <X size={10} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
