@@ -1,22 +1,37 @@
-import { notFound } from "next/navigation";
-import { MOCK_DEALS, MOCK_TEAM_MEMBERS } from "@/lib/mock-data";
+"use client";
+
+import { use } from "react";
+import { useData } from "@/context/DataContext";
 import { formatCurrency } from "@/lib/utils";
 import { MapPin, TrendingUp, Maximize2, Layers, Calendar, ChevronLeft, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
-export default async function DealPage({
+export default function DealPage({
     params,
 }: {
     params: Promise<{ id: string }>;
 }) {
-    const { id } = await params;
-    const deal = MOCK_DEALS.find((d) => d.id === id);
+    const { id } = use(params);
+    const { deals, teamMembers } = useData();
+
+    const deal = deals.find((d) => d.id === id);
 
     if (!deal) {
-        notFound();
+        // Since this is a client component, we might need a better way to handle notFound 
+        // if the deal is truly missing vs just loading.
+        // For now, let's just return a placeholder or redirect.
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-brand-dark text-white">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold mb-4">Deal Not Found</h2>
+                    <Link href="/" className="text-brand-gold hover:underline">Return to Portfolio</Link>
+                </div>
+            </div>
+        );
     }
 
-    const member = MOCK_TEAM_MEMBERS.find((m) => m.id === deal.teamMemberId);
+    const member = teamMembers.find((m) => m.id === deal.teamMemberId);
 
     return (
         <div className="relative min-h-screen bg-brand-dark overflow-hidden">

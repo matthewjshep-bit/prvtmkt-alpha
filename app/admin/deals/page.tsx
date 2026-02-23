@@ -7,17 +7,19 @@ import Link from "next/link";
 
 export default function AdminDealsPage() {
     const { firms, deals, teamMembers, addDeal, deleteDeal } = useData();
-    const [isAddingDeal, setIsAddingDeal] = useState(false);
-    const [newDeal, setNewDeal] = useState({
+    const DEFAULT_TOMBSTONE = {
         address: "",
-        firmId: firms[0].id,
+        firmId: firms[0]?.id || "",
         assetType: "MULTIFAMILY",
         strategy: "BUY_AND_HOLD",
         purchaseAmount: 0,
         isPublic: true,
         teamMemberId: teamMembers[0]?.id || "",
         stillImageURL: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800&auto=format&fit=crop"
-    });
+    };
+
+    const [isAddingDeal, setIsAddingDeal] = useState(false);
+    const [newDeal, setNewDeal] = useState(DEFAULT_TOMBSTONE);
 
     const handleAddDeal = (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,16 +33,7 @@ export default function AdminDealsPage() {
         // @ts-ignore - Ignoring enum mismatch for simplicity in mock
         addDeal(dealToAdd);
         setIsAddingDeal(false);
-        setNewDeal({
-            address: "",
-            firmId: firms[0].id,
-            assetType: "MULTIFAMILY",
-            strategy: "BUY_AND_HOLD",
-            purchaseAmount: 0,
-            isPublic: true,
-            teamMemberId: teamMembers[0]?.id || "",
-            stillImageURL: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800&auto=format&fit=crop"
-        });
+        setNewDeal(DEFAULT_TOMBSTONE);
     };
 
     return (
@@ -69,11 +62,23 @@ export default function AdminDealsPage() {
                 {isAddingDeal && (
                     <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
                         <div className="glass overflow-hidden rounded-3xl border border-white/10 bg-brand-gray-900/50 p-8">
-                            <div className="flex items-center justify-between mb-8">
-                                <h2 className="text-2xl font-bold text-white">New <span className="text-brand-gold">Digital Tombstone</span></h2>
-                                <button onClick={() => setIsAddingDeal(false)} className="text-foreground/40 hover:text-white">
-                                    <X size={24} />
-                                </button>
+                            <div className="flex items-center justify-between mb-8 text-center sm:text-left">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-white">Digital <span className="text-brand-gold">Tombstone Editor</span></h2>
+                                    <p className="text-xs text-foreground/40 mt-1 uppercase tracking-widest font-bold">Standardized Transaction Template</p>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setNewDeal(DEFAULT_TOMBSTONE)}
+                                        className="text-[10px] font-bold uppercase tracking-widest text-brand-gold hover:opacity-70"
+                                    >
+                                        Reset to Template
+                                    </button>
+                                    <button onClick={() => setIsAddingDeal(false)} className="text-foreground/40 hover:text-white">
+                                        <X size={24} />
+                                    </button>
+                                </div>
                             </div>
 
                             <form onSubmit={handleAddDeal} className="grid gap-6 md:grid-cols-2">
@@ -129,7 +134,9 @@ export default function AdminDealsPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Purchase Amount ($)</label>
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">
+                                        Purchase Amount ($) <span className="text-brand-gold ml-1 text-[8px] italic">REQUIRED FIELD</span>
+                                    </label>
                                     <input
                                         required
                                         type="number"
@@ -141,8 +148,11 @@ export default function AdminDealsPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Responsible Party</label>
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">
+                                        Responsible Party <span className="text-brand-gold ml-1 text-[8px] italic">REQUIRED FIELD</span>
+                                    </label>
                                     <select
+                                        required
                                         className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none appearance-none"
                                         value={newDeal.teamMemberId}
                                         onChange={(e) => setNewDeal({ ...newDeal, teamMemberId: e.target.value })}
@@ -177,10 +187,13 @@ export default function AdminDealsPage() {
                                 <div className="md:col-span-2 pt-4">
                                     <button
                                         type="submit"
-                                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-gold py-4 text-sm font-bold text-brand-dark transition-all hover:bg-brand-gold/90"
+                                        className="flex w-full flex-col items-center justify-center gap-1 rounded-xl bg-brand-gold py-4 text-sm font-bold text-brand-dark transition-all hover:bg-brand-gold/90"
                                     >
-                                        <Save size={18} />
-                                        Create Digital Tombstone
+                                        <div className="flex items-center gap-2">
+                                            <Save size={18} />
+                                            <span>Finalize Digital Tombstone</span>
+                                        </div>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">Publish to Platform Portfolio</span>
                                     </button>
                                 </div>
                             </form>

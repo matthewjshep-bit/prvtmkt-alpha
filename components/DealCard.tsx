@@ -1,9 +1,8 @@
-"use client";
-
 import { motion } from "framer-motion";
-import { MapPin, TrendingUp, Maximize2, Lock } from "lucide-react";
+import { MapPin, TrendingUp, Maximize2, Lock, User } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
+import { useData } from "@/context/DataContext";
 
 interface DealCardProps {
     deal: {
@@ -16,11 +15,15 @@ interface DealCardProps {
         isPublic: boolean;
         capRate: number | null;
         sqFt: number | null;
+        teamMemberId: string;
     };
     index: number;
 }
 
 export default function DealCard({ deal, index }: DealCardProps) {
+    const { teamMembers } = useData();
+    const member = teamMembers.find(m => m.id === deal.teamMemberId);
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -79,16 +82,19 @@ export default function DealCard({ deal, index }: DealCardProps) {
                     </div>
 
                     <div className="space-y-1">
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-foreground/40">Metrics</p>
-                        <div className="flex gap-3">
-                            <div className="flex items-center gap-1 text-sm font-semibold">
-                                <TrendingUp size={12} className="text-brand-gold" />
-                                {deal.capRate}%
-                            </div>
-                            <div className="flex items-center gap-1 text-sm font-semibold">
-                                <Maximize2 size={12} className="text-brand-gold" />
-                                {deal.sqFt?.toLocaleString()} SF
-                            </div>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-foreground/40">Associate</p>
+                        <div className="flex items-center gap-2">
+                            {member ? (
+                                <>
+                                    <img src={member.imageURL} alt={member.name} className="h-5 w-5 rounded-full object-cover border border-brand-gold/20" />
+                                    <span className="text-xs font-semibold text-foreground truncate">{member.name}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <User size={12} className="text-foreground/20" />
+                                    <span className="text-xs font-medium text-foreground/20 italic">Unassigned</span>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

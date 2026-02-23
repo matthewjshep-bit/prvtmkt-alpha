@@ -2,18 +2,36 @@
 
 import { useState } from "react";
 import { useData } from "@/context/DataContext";
-import { Building2, Save, Upload, ExternalLink, Shield, Check } from "lucide-react";
+import { Building2, Save, Upload, ExternalLink, Shield, Check, Plus, X } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminFirmsPage() {
-    const { firms, teamMembers, updateFirm, updateTeamMember } = useData();
+    const { firms, teamMembers, updateFirm, updateTeamMember, addFirm } = useData();
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [isAddingFirm, setIsAddingFirm] = useState(false);
+    const [newFirm, setNewFirm] = useState({
+        name: "",
+        slug: "",
+        logoUrl: "",
+        primaryColor: "#c5a059"
+    });
     const [saveStatus, setSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
 
     const handleUpdateLogo = (id: string, newUrl: string) => {
         updateFirm(id, { logoUrl: newUrl });
         // Reset save status if logo changed
         setSaveStatus({ ...saveStatus, [id]: 'idle' });
+    };
+
+    const handleAddFirm = (e: React.FormEvent) => {
+        e.preventDefault();
+        const firmToAdd = {
+            ...newFirm,
+            id: `f-${Date.now()}`,
+        };
+        addFirm(firmToAdd);
+        setIsAddingFirm(false);
+        setNewFirm({ name: "", slug: "", logoUrl: "", primaryColor: "#c5a059" });
     };
 
     const handleSave = (id: string) => {
@@ -42,10 +60,73 @@ export default function AdminFirmsPage() {
                         </div>
                         <h1 className="text-4xl font-bold text-white">Manage <span className="text-brand-gold">Firms</span></h1>
                     </div>
-                    <Link href="/admin" className="text-sm font-bold text-foreground/40 hover:text-white">
-                        Return to Dashboard
-                    </Link>
+                    <div className="flex items-center gap-6">
+                        <button
+                            onClick={() => setIsAddingFirm(true)}
+                            className="flex items-center gap-2 rounded-xl bg-brand-gold px-6 py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/30"
+                        >
+                            <Plus size={18} />
+                            Add New Firm
+                        </button>
+                        <Link href="/admin" className="text-sm font-bold text-foreground/40 hover:text-white">
+                            Return to Dashboard
+                        </Link>
+                    </div>
                 </div>
+
+                {/* Add Firm Form */}
+                {isAddingFirm && (
+                    <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
+                        <div className="glass overflow-hidden rounded-3xl border border-white/10 bg-brand-gray-900/50 p-8">
+                            <div className="flex items-center justify-between mb-8">
+                                <h2 className="text-2xl font-bold text-white">Scaffold <span className="text-brand-gold">New Firm Platform</span></h2>
+                                <button onClick={() => setIsAddingFirm(false)} className="text-foreground/40 hover:text-white">
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleAddFirm} className="grid gap-6 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Firm Name</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        placeholder="e.g. Blackstone"
+                                        className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none"
+                                        value={newFirm.name}
+                                        onChange={(e) => {
+                                            const name = e.target.value;
+                                            const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+                                            setNewFirm({ ...newFirm, name, slug });
+                                        }}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">URL Slug</label>
+                                    <div className="flex items-center gap-2 rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white">
+                                        <span className="text-foreground/40">/</span>
+                                        <input
+                                            required
+                                            type="text"
+                                            className="bg-transparent outline-none w-full"
+                                            value={newFirm.slug}
+                                            onChange={(e) => setNewFirm({ ...newFirm, slug: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <button
+                                        type="submit"
+                                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-gold py-4 text-sm font-bold text-brand-dark transition-all hover:bg-brand-gold/90"
+                                    >
+                                        <Building2 size={18} />
+                                        Initialize Firm Portfolio & Team Scaffolding
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
 
                 <div className="space-y-6">
                     {firms.map((firm) => (
