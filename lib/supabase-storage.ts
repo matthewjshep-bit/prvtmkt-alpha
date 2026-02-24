@@ -15,6 +15,10 @@ export async function uploadToSupabase(
     fileName: string,
     contentType: string
 ): Promise<string> {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+        throw new Error("Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY) are not configured.");
+    }
+
     const { data, error } = await supabase.storage
         .from(bucketName)
         .upload(fileName, fileBuffer, {

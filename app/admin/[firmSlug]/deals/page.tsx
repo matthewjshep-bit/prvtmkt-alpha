@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, use } from "react";
 import { useData } from "@/context/DataContext";
-import { Briefcase, Building2, MapPin, Eye, Edit3, Trash2, Plus, X, Save, Upload, Search, GripVertical, ListChecks } from "lucide-react";
+import { Briefcase, Building2, MapPin, Eye, Edit3, Trash2, Plus, X, Save, Upload, Search, GripVertical, ListChecks, TrendingUp } from "lucide-react";
 import { useSearchParams, useParams } from "next/navigation";
 import Link from "next/link";
 
@@ -30,6 +30,8 @@ function TenantDealsContent() {
     const [changedDealIds, setChangedDealIds] = useState<Set<string>>(new Set());
     const [activeMediaDealId, setActiveMediaDealId] = useState<string | null>(null);
     const [aiProcessingIds, setAiProcessingIds] = useState<Set<string>>(new Set());
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
 
     const handleGenerateAIVideo = async (dealId: string, imageUrl: string) => {
         try {
@@ -97,8 +99,34 @@ function TenantDealsContent() {
     }, [deals, isInitialized, firm?.id]);
 
     const handleLocalUpdate = (dealId: string, updates: any) => {
-        setLocalDeals(prev => prev.map(d => d.id === dealId ? { ...d, ...updates } : d));
+        // 1. Update UI-local state (for immediate feedback)
+        setLocalDeals(prev => prev.map(d => {
+            if (d.id !== dealId) return d;
+            const newDeal = { ...d };
+            Object.keys(updates).forEach(key => {
+                if (typeof updates[key] === 'function') {
+                    newDeal[key] = updates[key](d[key]);
+                } else {
+                    newDeal[key] = updates[key];
+                }
+            });
+            return newDeal;
+        }));
         setChangedDealIds(prev => new Set(prev).add(dealId));
+
+        // 2. Immediately PERSIST to DataContext (IndexedDB)
+        // This solves the 'disappearing' media issue by saving URLs instantly.
+        updateDeal(dealId, (prev) => {
+            const delta: any = {};
+            Object.keys(updates).forEach(key => {
+                if (typeof updates[key] === 'function') {
+                    delta[key] = updates[key](prev[key]);
+                } else {
+                    delta[key] = updates[key];
+                }
+            });
+            return delta;
+        });
     };
 
     const handleSaveAll = () => {
@@ -449,7 +477,13 @@ function TenantDealsContent() {
                                                 onClick={() => setActiveMediaDealId(deal.id)}
                                                 className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl bg-brand-gray-900 border border-white/10 group/media"
                                             >
-                                                <img src={deal.stillImageURL || ""} className="h-full w-full object-cover group-hover/media:scale-110 transition-transform" />
+                                                {deal.stillImageURL ? (
+                                                    <img src={deal.stillImageURL} className="h-full w-full object-cover group-hover/media:scale-110 transition-transform" />
+                                                ) : (
+                                                    <div className="h-full w-full bg-white/5 flex items-center justify-center">
+                                                        <Upload size={16} className="text-white/20" />
+                                                    </div>
+                                                )}
                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/media:opacity-100 flex items-center justify-center transition-opacity">
                                                     <Upload size={16} className="text-white" />
                                                 </div>
@@ -639,46 +673,138 @@ function TenantDealsContent() {
                             </button>
                         </div>
 
+                        {uploadError && (
+                            <div className="mx-10 mt-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3 text-red-500 animate-in slide-in-from-top-2">
+                                <Trash2 size={18} />
+                                <div className="flex-1">
+                                    <p className="text-[10px] font-black uppercase tracking-widest">Upload Failed</p>
+                                    <p className="text-xs font-bold">{uploadError}</p>
+                                </div>
+                                <button onClick={() => setUploadError(null)} className="hover:text-white">
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        )}
+
                         <div className="p-10 overflow-y-auto max-h-[calc(85vh-180px)] custom-scrollbar">
                             <div className="grid gap-10">
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 ml-1">Upload New Assets</label>
-                                    <div className="relative group">
-                                        <input
-                                            type="file"
-                                            multiple
-                                            accept="image/*,video/*"
-                                            className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
-                                            onChange={async (e) => {
-                                                const files = Array.from(e.target.files || []);
-                                                for (const file of files) {
-                                                    const formData = new FormData();
-                                                    formData.append("file", file);
-                                                    formData.append("dealId", activeMediaDeal.id);
+                                <div className="grid md:grid-cols-2 gap-10">
+                                    {/* Standard Portfolio Media */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between ml-1">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40">Manual Portfolio Media</label>
+                                            <span className="text-[8px] font-bold text-foreground/20 uppercase tracking-widest">Photos & Videos</span>
+                                        </div>
+                                        <div className="relative group">
+                                            <input
+                                                type="file"
+                                                multiple
+                                                accept="image/*,video/*"
+                                                className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                                                onChange={async (e) => {
+                                                    const files = Array.from(e.target.files || []);
+                                                    if (files.length === 0) return;
 
-                                                    const res = await fetch("/api/upload", {
-                                                        method: "POST",
-                                                        body: formData
-                                                    });
-                                                    const { url } = await res.json();
+                                                    setIsUploading(true);
+                                                    setUploadError(null);
+                                                    try {
+                                                        for (const file of files) {
+                                                            const formData = new FormData();
+                                                            formData.append("file", file);
+                                                            formData.append("dealId", activeMediaDeal.id);
 
-                                                    const currentImages = activeMediaDeal.images || [];
-                                                    handleLocalUpdate(activeMediaDeal.id, {
-                                                        images: [...currentImages, url],
-                                                        stillImageURL: currentImages.length === 0 ? url : activeMediaDeal.stillImageURL
-                                                    });
+                                                            const res = await fetch("/api/upload", {
+                                                                method: "POST",
+                                                                body: formData
+                                                            });
 
-                                                    // Auto-trigger Kling for the first image in gallery
-                                                    if (currentImages.length === 0) {
-                                                        handleGenerateAIVideo(activeMediaDeal.id, url);
+                                                            if (!res.ok) {
+                                                                const errData = await res.json();
+                                                                throw new Error(errData.error || "Upload failed");
+                                                            }
+                                                            const { url } = await res.json();
+
+                                                            if (!url) throw new Error("No URL returned from server.");
+
+                                                            handleLocalUpdate(activeMediaDeal.id, {
+                                                                images: (prev: string[]) => [...(prev || []), url],
+                                                                stillImageURL: (prev: string) => !prev ? url : prev
+                                                            });
+                                                            console.log("Portfolio Upload Success:", url);
+                                                        }
+                                                    } catch (err: any) {
+                                                        console.error("Upload Error:", err);
+                                                        setUploadError(err.message || "Failed to upload some assets.");
+                                                    } finally {
+                                                        setIsUploading(false);
                                                     }
-                                                }
-                                            }}
-                                        />
-                                        <div className="flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-white/10 bg-white/2 py-16 transition-all group-hover:border-brand-gold/50 group-hover:bg-brand-gold/5">
-                                            <Upload size={40} className="mb-3 text-brand-gold group-hover:scale-110 transition-transform" />
-                                            <p className="text-sm font-bold text-white">Drop property media here</p>
-                                            <p className="text-[10px] font-bold text-foreground/30 mt-2">Supports JPG, PNG, MP4, MOV</p>
+                                                }}
+                                            />
+                                            <div className="flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-white/10 bg-white/2 py-16 transition-all group-hover:border-white/20 group-hover:bg-white/5">
+                                                <Upload size={32} className="mb-3 text-foreground/20 group-hover:text-white transition-colors" />
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Standard Upload</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* AI Drone Cinematic Engine */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between ml-1">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold">AI Drone Cinematic Engine</label>
+                                            <div className="flex items-center gap-1.5">
+                                                <div className="h-1 w-1 rounded-full bg-brand-gold animate-pulse" />
+                                                <span className="text-[8px] font-black text-brand-gold uppercase tracking-widest">Kling v1 High-Fi</span>
+                                            </div>
+                                        </div>
+                                        <div className="relative group">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+
+                                                    setIsUploading(true);
+                                                    setUploadError(null);
+                                                    try {
+                                                        const formData = new FormData();
+                                                        formData.append("file", file);
+                                                        formData.append("dealId", activeMediaDeal.id);
+
+                                                        const res = await fetch("/api/upload", {
+                                                            method: "POST",
+                                                            body: formData
+                                                        });
+
+                                                        if (!res.ok) {
+                                                            const errData = await res.json();
+                                                            throw new Error(errData.error || "Upload failed");
+                                                        }
+                                                        const { url } = await res.json();
+
+                                                        if (!url) throw new Error("No URL returned from server.");
+
+                                                        handleLocalUpdate(activeMediaDeal.id, {
+                                                            images: (prev: string[]) => [...(prev || []), url],
+                                                            stillImageURL: (prev: string) => !prev ? url : prev
+                                                        });
+                                                        console.log("AI Engine Upload Success:", url);
+
+                                                        // Force Trigger Kling for this specific uploader
+                                                        handleGenerateAIVideo(activeMediaDeal.id, url);
+                                                    } catch (err: any) {
+                                                        console.error("AI Upload Error:", err);
+                                                        setUploadError(err.message || "Failed to initiate AI generation.");
+                                                    } finally {
+                                                        setIsUploading(false);
+                                                    }
+                                                }}
+                                            />
+                                            <div className="flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-brand-gold/20 bg-brand-gold/5 py-16 transition-all group-hover:border-brand-gold/50 group-hover:bg-brand-gold/10">
+                                                <TrendingUp size={32} className="mb-3 text-brand-gold group-hover:scale-110 transition-transform" />
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold">Generate Living Drone View</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -696,7 +822,7 @@ function TenantDealsContent() {
                                                     <span className="text-xs font-black w-4">{idx + 1}</span>
                                                 </div>
                                                 <div className="h-20 w-32 overflow-hidden rounded-xl bg-brand-dark border border-white/5 relative group/img">
-                                                    <img src={img} className="h-full w-full object-cover" />
+                                                    {img && <img src={img} className="h-full w-full object-cover" />}
                                                     {activeMediaDeal.generatedVideoURL && idx === 0 ? (
                                                         <div className="absolute inset-0 bg-brand-gold/20 flex items-center justify-center">
                                                             <div className="rounded-full bg-brand-gold p-1 animate-pulse">
@@ -710,7 +836,7 @@ function TenantDealsContent() {
                                                         </div>
                                                     ) : (
                                                         <button
-                                                            onClick={() => handleGenerateAIVideo(activeMediaDeal.id, img)}
+                                                            onClick={() => img && handleGenerateAIVideo(activeMediaDeal.id, img)}
                                                             className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-all"
                                                         >
                                                             <div className="flex flex-col items-center gap-1">
@@ -722,7 +848,17 @@ function TenantDealsContent() {
                                                 </div>
                                                 <div className="flex-1">
                                                     <p className="text-[10px] font-black uppercase tracking-widest text-foreground/40">Asset File</p>
-                                                    <p className="text-xs font-bold text-white mt-1 truncate max-w-[200px]">{img.substring(0, 50)}...</p>
+                                                    <p className="text-xs font-bold text-white mt-1 truncate max-w-[200px]">
+                                                        {img ? (
+                                                            (() => {
+                                                                const parts = img.split('/');
+                                                                const filename = parts[parts.length - 1];
+                                                                // Remove timestamp prefix if exists (common in our upload route)
+                                                                const cleanName = filename.replace(/^\d+-/, '');
+                                                                return decodeURIComponent(cleanName || "Unnamed Asset");
+                                                            })()
+                                                        ) : "Processing..."}
+                                                    </p>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <button
@@ -754,9 +890,15 @@ function TenantDealsContent() {
                                                 </div>
                                             </div>
                                         ))}
-                                        {(activeMediaDeal.images || []).length === 0 && (
+                                        {(activeMediaDeal.images || []).length === 0 && !isUploading && (
                                             <div className="flex flex-col items-center justify-center py-20 rounded-[2rem] border border-white/5 bg-white/2">
                                                 <p className="text-xs font-bold text-foreground/30 italic">No media assets found for this deal.</p>
+                                            </div>
+                                        )}
+                                        {isUploading && (
+                                            <div className="flex flex-col items-center justify-center py-20 rounded-[2rem] border border-dashed border-brand-gold/20 bg-brand-gold/5">
+                                                <div className="h-8 w-8 border-2 border-brand-gold/30 border-t-brand-gold animate-spin rounded-full mb-3" />
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold">Transferring to Cloud...</p>
                                             </div>
                                         )}
                                     </div>
@@ -764,14 +906,19 @@ function TenantDealsContent() {
                             </div>
                         </div>
 
-                        <div className="p-10 border-t border-white/5 bg-brand-dark/20 flex justify-end">
+                        <div className="p-8 border-t border-white/5 bg-brand-dark/30 flex justify-end">
                             <button
-                                onClick={() => setActiveMediaDealId(null)}
-                                className="px-10 py-4 rounded-2xl bg-brand-gold text-brand-dark text-xs font-black uppercase tracking-[0.2em] hover:shadow-xl hover:shadow-brand-gold/10 transition-all"
+                                onClick={() => {
+                                    handleSaveAll();
+                                    setActiveMediaDealId(null);
+                                }}
+                                className="flex items-center gap-2 rounded-xl bg-brand-gold px-10 py-4 text-xs font-black uppercase tracking-widest text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/20"
                             >
+                                <Save size={16} />
                                 Done Managing Assets
                             </button>
                         </div>
+
                     </div>
                 </div>
             )}

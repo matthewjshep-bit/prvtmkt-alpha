@@ -345,8 +345,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         storage.removeItem('prvtmkt_session');
     };
 
-    const updateDeal = (id: string, updates: Partial<Deal>) => {
-        setDeals(prev => prev.map(d => d.id === id ? { ...d, ...updates } : d));
+    const updateDeal = (id: string, updates: Partial<Deal> | ((prev: Deal) => Partial<Deal>)) => {
+        setDeals(prev => prev.map(d => {
+            if (d.id !== id) return d;
+            const resolvedUpdates = typeof updates === 'function' ? updates(d) : updates;
+            return { ...d, ...resolvedUpdates };
+        }));
     };
 
     const deleteDeal = (id: string) => {
