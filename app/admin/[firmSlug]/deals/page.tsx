@@ -102,10 +102,10 @@ function TenantDealsContent() {
         // 1. Update UI-local state (for immediate feedback)
         setLocalDeals(prev => prev.map(d => {
             if (d.id !== dealId) return d;
-            const newDeal = { ...d };
+            const newDeal = { ...d } as any;
             Object.keys(updates).forEach(key => {
                 if (typeof updates[key] === 'function') {
-                    newDeal[key] = updates[key](d[key]);
+                    newDeal[key] = updates[key]((d as any)[key]);
                 } else {
                     newDeal[key] = updates[key];
                 }
@@ -120,7 +120,7 @@ function TenantDealsContent() {
             const delta: any = {};
             Object.keys(updates).forEach(key => {
                 if (typeof updates[key] === 'function') {
-                    delta[key] = updates[key](prev[key]);
+                    delta[key] = updates[key]((prev as any)[key]);
                 } else {
                     delta[key] = updates[key];
                 }

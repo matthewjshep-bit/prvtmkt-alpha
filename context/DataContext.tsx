@@ -82,7 +82,7 @@ interface DataContextType {
     users: User[];
     updateFirm: (id: string, updates: Partial<Firm>) => void;
     updateTeamMember: (id: string, updates: Partial<TeamMember>) => void;
-    updateDeal: (id: string, updates: Partial<Deal>) => void;
+    updateDeal: (id: string, updates: Partial<Deal> | ((prev: Deal) => Partial<Deal>)) => void;
     addFirm: (firm: Firm) => void;
     addTeamMember: (member: TeamMember) => void;
     addDeal: (deal: Deal) => void;
