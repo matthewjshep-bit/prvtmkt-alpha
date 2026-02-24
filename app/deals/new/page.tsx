@@ -7,7 +7,7 @@ import { Upload, CheckCircle2, ChevronRight, ChevronLeft, Image as ImageIcon, Vi
 import { AnimatePresence, motion } from "framer-motion";
 
 export default function IntakeFormPage() {
-    const { addDeal, firms } = useData();
+    const { addDeal, firms, isInitialized } = useData();
     const router = useRouter();
     const [step, setStep] = useState(1);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -29,8 +29,8 @@ export default function IntakeFormPage() {
         // Simulate AI Video generation progress
         setTimeout(() => {
             const newId = `d-${Date.now()}`;
-            // FIX: Ensure firmId is correctly mapped and has a fallback
             const finalFirmId = form.firmId || (firms.length > 0 ? firms[0].id : "");
+            const firm = firms.find(f => f.id === finalFirmId);
 
             const newDeal = {
                 id: newId,
@@ -50,9 +50,12 @@ export default function IntakeFormPage() {
                 context: "Generated via System Intake workflow."
             };
             addDeal(newDeal);
-            router.push(`/admin/deals`);
+            // Redirect to the specific firm's deals page for better context
+            router.push(`/admin/${firm?.slug || 'deals'}/deals`);
         }, 3000);
     };
+
+    if (!isInitialized) return null;
 
     return (
         <div className="min-h-screen bg-brand-dark pt-32 pb-20">

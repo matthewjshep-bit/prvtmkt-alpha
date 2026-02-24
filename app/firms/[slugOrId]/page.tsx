@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, use, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useData } from "@/context/DataContext";
 import DealCard from "@/components/DealCard";
 import { motion, AnimatePresence } from "framer-motion";
-import { Filter, Search, LayoutGrid, Globe, Building2, UserPlus, FilePlus, ArrowLeft } from "lucide-react";
+import { Filter, Search, LayoutGrid, Globe, Building2, UserPlus, FilePlus, ArrowLeft, Volume2, VolumeX } from "lucide-react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -23,6 +23,22 @@ export default function FirmProfilePage({
     const [activeTab, setActiveTab] = useState(initialTab);
     const [filter, setFilter] = useState("ALL");
     const [searchQuery, setSearchQuery] = useState("");
+    const [isMuted, setIsMuted] = useState(true);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    const toggleAudio = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const nextMuted = !isMuted;
+        setIsMuted(nextMuted);
+        if (videoRef.current) {
+            videoRef.current.muted = nextMuted;
+            if (!nextMuted) {
+                videoRef.current.volume = 1.0;
+                videoRef.current.play().catch(err => console.error("Unmute play error:", err));
+            }
+        }
+    };
 
     const firm = firms.find((f) => f.id === slugOrId || f.slug === slugOrId);
 
@@ -161,16 +177,61 @@ export default function FirmProfilePage({
                     <div className="mb-16 animate-in fade-in slide-in-from-bottom-6 duration-1000">
                         <div className="relative aspect-[21/9] w-full overflow-hidden rounded-[3rem] border border-white/10 shadow-3xl bg-black/20 backdrop-blur-sm">
                             {isVideo(firm.heroMediaUrl) ? (
-                                <video
-                                    key={firm.heroMediaUrl.slice(-32)} // Unique key based on data suffix to force remount
-                                    src={firm.heroMediaUrl}
-                                    className="h-full w-full object-cover"
-                                    autoPlay
-                                    loop
-                                    muted
-                                    playsInline
-                                    onError={(e) => console.error("Portal Video Error:", e)}
-                                />
+                                <div
+                                    className="group/video relative h-full w-full cursor-pointer"
+                                    onClick={toggleAudio}
+                                >
+                                    <video
+                                        ref={videoRef}
+                                        key={firm.heroMediaUrl.slice(-32)} // Unique key based on data suffix to force remount
+                                        src={firm.heroMediaUrl}
+                                        className="h-full w-full object-cover"
+                                        autoPlay
+                                        loop
+                                        playsInline
+                                        muted={isMuted}
+                                        onError={(e) => console.error("Portal Video Error:", e)}
+                                    />
+                                    {/* Audio Controller Overlay (Small Corner Toggle) */}
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Prevent container click from firing
+                                            setIsMuted(!isMuted);
+                                        }}
+                                        className="absolute bottom-8 right-8 z-10 flex items-center gap-3 rounded-2xl bg-black/40 backdrop-blur-md px-6 py-4 text-xs font-black uppercase tracking-widest text-white border border-white/10 hover:bg-black/60 transition-all opacity-0 group-hover/video:opacity-100 shadow-2xl"
+                                    >
+                                        {isMuted ? (
+                                            <>
+                                                <VolumeX size={18} className="text-red-500" />
+                                                Sound Off
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Volume2 size={18} className="text-brand-gold" />
+                                                Sound On
+                                            </>
+                                        )}
+                                    </button>
+
+                                    {/* Initial "Click to Unmute" Center Overlay */}
+                                    {isMuted && (
+                                        <div
+                                            className="absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity group-hover/video:bg-black/40 z-20"
+                                            onClick={toggleAudio}
+                                        >
+                                            <div className="flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-500">
+                                                <div className="h-24 w-24 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl">
+                                                    <VolumeX size={48} className="text-white animate-pulse" />
+                                                </div>
+                                                <div className="text-center space-y-2">
+                                                    <span className="block text-sm font-black uppercase tracking-[0.4em] text-white drop-shadow-lg">Click to Unmute</span>
+                                                    <span className="block text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Browser Autoplay Initialized Muted</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             ) : (
                                 <img
                                     src={firm.heroMediaUrl}

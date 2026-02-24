@@ -8,9 +8,13 @@ import { LayoutDashboard, Users, PlusCircle, Globe, ArrowLeft } from "lucide-rea
 
 export default function Navbar() {
     const pathname = usePathname();
-    const { firms } = useData();
+    const { firms, currentUser, logout } = useData();
 
     const isWhiteLabelPath = pathname?.startsWith("/firms/");
+    const isTenantAdminPath = pathname?.startsWith("/admin/") && pathname.split("/").length > 2 && pathname.split("/")[2] !== "firms" && pathname.split("/")[2] !== "deals" && pathname.split("/")[2] !== "people";
+
+    if (isTenantAdminPath) return null;
+
     const firmSlugOrId = isWhiteLabelPath ? pathname.split("/")[2] : null;
     const currentFirm = firms.find(f => f.id === firmSlugOrId || f.slug === firmSlugOrId);
 
@@ -50,12 +54,6 @@ export default function Navbar() {
         );
     }
 
-    if (isWhiteLabelPath && (!currentFirm || currentFirm.showAgencyBranding !== false)) {
-        // Continue showing standard navbar or hide it? 
-        // User said: "Instead of rendering the full PRVT MKT header/sidebar, render a simplified Utility Header"
-        // But the prompt also says: "If toggled ON, the standard PRVT MKT navigation remains visible."
-    }
-
     // Default Agency Navbar
     return (
         <nav className="fixed top-0 z-50 w-full border-b border-white/5 bg-brand-dark/80 backdrop-blur-md">
@@ -72,16 +70,48 @@ export default function Navbar() {
 
                 <div className="hidden items-center gap-8 md:flex">
                     <NavLink href="/" icon={<Globe size={18} />} label="Explore Firms" />
-                    <NavLink href="/admin" icon={<LayoutDashboard size={18} />} label="Platform Admin" />
+                    {currentUser?.role === 'SYSTEM_ADMIN' && (
+                        <NavLink href="/admin" icon={<LayoutDashboard size={18} />} label="Platform Admin" />
+                    )}
+                    {currentUser?.role === 'ADMIN' && currentUser.firmId && (
+                        <NavLink
+                            href={`/admin/${firms.find(f => f.id === currentUser.firmId)?.slug || ''}`}
+                            icon={<LayoutDashboard size={18} />}
+                            label="Firm Admin"
+                        />
+                    )}
                     <NavLink href="/deals/new" icon={<PlusCircle size={18} />} label="System Intake" />
                 </div>
 
                 <div className="flex items-center gap-4">
                     <div className="hidden h-10 w-px bg-white/10 sm:block" />
-                    <button className="flex items-center gap-2 rounded-full border border-brand-gold/30 bg-brand-gold/10 px-4 py-2 text-sm font-semibold text-brand-gold transition-all hover:bg-brand-gold hover:text-brand-dark">
-                        <Users size={16} />
-                        Member Login
-                    </button>
+                    {currentUser ? (
+                        <div className="flex items-center gap-4">
+                            <span className="text-xs font-bold text-foreground/40">{currentUser.email}</span>
+                            <button
+                                onClick={logout}
+                                className="rounded-full border border-white/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-foreground/60 transition-all hover:bg-white/5 hover:text-white"
+                            >
+                                Sign Out
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-3">
+                            <Link
+                                href="/auth/login"
+                                className="flex items-center gap-2 rounded-full border border-brand-gold/30 bg-brand-gold/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-brand-gold transition-all hover:bg-brand-gold hover:text-brand-dark"
+                            >
+                                <Users size={16} />
+                                Login
+                            </Link>
+                            <Link
+                                href="/auth/signup"
+                                className="rounded-full bg-white/5 px-4 py-2 text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-white/10"
+                            >
+                                Register Firm
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </div>
         </nav>

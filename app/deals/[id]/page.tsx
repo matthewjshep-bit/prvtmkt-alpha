@@ -50,141 +50,147 @@ export default function DealPage({
                 color: 'var(--firm-text)'
             }}
         >
-            <div className="container mx-auto px-6">
+            <div className="container mx-auto max-w-6xl px-6 space-y-12">
                 {/* Back Link */}
-                <div className="mb-12">
+                <div className="flex items-center justify-between">
                     <Link
                         href={firm ? `/firms/${firm.slug || firm.id}` : "/"}
                         className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest opacity-60 transition-all hover:opacity-100 hover:text-[var(--firm-primary)]"
-                        style={{ color: 'var(--firm-text)' }}
                     >
                         <ChevronLeft size={18} />
-                        Return to {firm?.name || "Portfolio"}
+                        Back to Portfolio
                     </Link>
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] opacity-40">
+                        <ShieldCheck size={14} className="text-[var(--firm-primary)]" />
+                        Verified Transaction
+                    </div>
                 </div>
 
-                {/* Hero Section: Split-Pane Identity & Carousel */}
-                <div className="grid gap-16 lg:grid-cols-[450px_1fr] items-start">
-                    {/* Left Pane: Identity & Enhanced Lead Card */}
-                    <div className="animate-in fade-in slide-in-from-left-4 duration-700">
-                        <div className="flex flex-wrap gap-2 mb-8">
-                            <span className="rounded-lg px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest border border-black/5" style={{ backgroundColor: 'var(--firm-secondary)', color: 'var(--firm-primary)' }}>
-                                {deal.assetType.replace("_", " ")}
-                            </span>
-                            <span className="rounded-lg px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest border border-black/5 opacity-70" style={{ backgroundColor: 'var(--firm-secondary)', color: 'black' }}>
-                                {deal.isPublic ? "Public Transaction" : "Private Offering"}
-                            </span>
+                {/* 1. Firm Identity Header (Inherited) */}
+                <div className="rounded-[3rem] p-10 md:p-16 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ backgroundColor: 'var(--firm-secondary)' }}>
+                    <div className="flex flex-col md:flex-row items-center md:items-start gap-12">
+                        <div className="h-32 w-32 flex-shrink-0 overflow-hidden rounded-[2rem] bg-white/50 p-4 border border-black/5 shadow-inner">
+                            {firm?.logoUrl ? (
+                                <img src={firm.logoUrl} alt={firm.name} className="h-full w-full object-contain" />
+                            ) : (
+                                <Building2 size={64} className="text-black/10" />
+                            )}
                         </div>
-
-                        <div className="space-y-12">
-                            <h1 className="text-5xl font-bold tracking-tight md:text-7xl leading-[1.1]">
-                                {deal.address.split(",")[0]}
-                                <span className="block text-2xl font-medium mt-3 opacity-50 tracking-normal">
-                                    {deal.address.split(",").slice(1).join(",")}
-                                </span>
-                            </h1>
-
-                            {/* Multiple Transaction Leads */}
-                            <div className="space-y-6">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/40">Transaction Leads</p>
-                                <div className="grid gap-6">
-                                    {members.map((m: any) => (
-                                        <div key={m.id} className="inline-flex items-center gap-6 rounded-3xl p-4 pr-12 shadow-xl transition-transform hover:scale-[1.02]" style={{ backgroundColor: 'var(--firm-secondary)' }}>
-                                            <div className="h-24 w-24 overflow-hidden rounded-2xl border-4 border-white shadow-md">
-                                                <img
-                                                    src={m.imageURL}
-                                                    alt={m.name}
-                                                    className="h-full w-full object-cover"
-                                                />
-                                            </div>
-                                            <div className="space-y-0.5">
-                                                <Link href={`/firms/${firm?.slug}/?member=${m.slug}`} className="text-2xl font-black text-black hover:text-[var(--firm-primary)] transition-colors">
-                                                    {m.name}
-                                                </Link>
-                                                <p className="text-xs font-bold text-black/60 uppercase tracking-wider mb-3">{m.role}</p>
-
-                                                <div className="flex items-center gap-3">
-                                                    <a href={`mailto:${m.email}`} className="group/icon flex h-8 w-8 items-center justify-center rounded-lg bg-black/5 text-black/40 transition-all hover:bg-[var(--firm-primary)] hover:text-[var(--firm-bg)]">
-                                                        <Mail size={16} />
-                                                    </a>
-                                                    {m.linkedInUrl && (
-                                                        <a href={m.linkedInUrl} target="_blank" rel="noopener noreferrer" className="group/icon flex h-8 w-8 items-center justify-center rounded-lg bg-black/5 text-black/40 transition-all hover:bg-[var(--firm-primary)] hover:text-[var(--firm-bg)]">
-                                                            <Linkedin size={16} />
-                                                        </a>
-                                                    )}
-                                                    {m.phoneNumber && (
-                                                        <a href={`tel:${m.phoneNumber}`} className="group/icon flex h-8 w-8 items-center justify-center rounded-lg bg-black/5 text-black/40 transition-all hover:bg-[var(--firm-primary)] hover:text-[var(--firm-bg)]">
-                                                            <Phone size={16} />
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                        <div className="flex-1 text-center md:text-left space-y-4">
+                            <h1 className="text-4xl font-black text-black tracking-tight uppercase leading-none">{firm?.name}</h1>
+                            <p className="text-lg font-medium text-black/60 leading-relaxed max-w-2xl italic">
+                                "{firm?.bio || "An institutional leader in private market real estate acquisitions and strategic asset management."}"
+                            </p>
+                            <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-4">
+                                {firm?.linkedInUrl && (
+                                    <a href={firm.linkedInUrl} target="_blank" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-black/5 text-[10px] font-black uppercase tracking-widest text-black/60 hover:bg-[var(--firm-primary)] hover:text-white transition-all">
+                                        <Linkedin size={16} /> LinkedIn
+                                    </a>
+                                )}
+                                {firm?.physicalAddress && (
+                                    <div className="flex items-center gap-2 px-6 py-3 rounded-xl bg-black/5 text-[10px] font-black uppercase tracking-widest text-black/40">
+                                        <MapPin size={16} /> {firm.physicalAddress}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    {/* Right Pane: Dominant Visuals - Top Aligned with Title */}
-                    <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 shadow-2xl transition-all duration-500 hover:border-[var(--firm-primary)]/30 lg:mt-[108px]">
-                        <ProgressSlider activeSlider="slide-0" className="w-full">
-                            <SliderContent>
-                                {allImages.map((img, idx) => (
-                                    <SliderWrapper key={idx} value={`slide-${idx}`}>
-                                        <div className="aspect-[16/9] w-full overflow-hidden">
-                                            <img
-                                                src={img}
-                                                alt={`Deal view ${idx + 1}`}
-                                                className="h-full w-full object-cover"
-                                            />
+                {/* 2. Property & Team Context */}
+                <div className="rounded-[3rem] p-10 md:p-16 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100" style={{ backgroundColor: 'var(--firm-secondary)' }}>
+                    <div className="grid lg:grid-cols-[1fr_400px] gap-16 items-center">
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3">
+                                <span className="rounded-lg px-4 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-sm" style={{ backgroundColor: 'var(--firm-primary)', color: 'white' }}>
+                                    {deal.assetType.replace("_", " ")}
+                                </span>
+                                <span className="rounded-lg border border-black/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest opacity-40">
+                                    {deal.isPublic ? "Public Case Study" : "Private Portfolio Asset"}
+                                </span>
+                            </div>
+                            <h2 className="text-5xl md:text-7xl font-black text-black tracking-tighter leading-[0.9]">
+                                {deal.address.split(',')[0]}
+                                <small className="block text-2xl font-bold opacity-30 tracking-tight mt-4 italic">{deal.address.split(',').slice(1).join(',')}</small>
+                            </h2>
+                        </div>
+
+                        <div className="space-y-6">
+                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-black/20 text-center lg:text-right">Transaction Leads</p>
+                            <div className="flex justify-center lg:justify-end -space-x-4">
+                                {members.map((m: any, i: number) => (
+                                    <div key={m.id} className="relative group" style={{ zIndex: 10 - i }}>
+                                        <div className="h-24 w-24 overflow-hidden rounded-full border-4 border-white shadow-2xl transition-transform group-hover:scale-110 group-hover:z-50">
+                                            <img src={m.imageURL} alt={m.name} title={m.name} className="h-full w-full object-cover" />
                                         </div>
-                                    </SliderWrapper>
+                                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black text-white text-[8px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap font-black uppercase">
+                                            {m.name}
+                                        </div>
+                                    </div>
                                 ))}
-                            </SliderContent>
-
-                            <SliderBtnGroup className="grid grid-cols-2 divide-x divide-white/10 border-t border-white/10 bg-black/40 backdrop-blur-xl">
-                                <SliderBtn
-                                    value="slide-0"
-                                    className="py-4 text-center transition-all hover:bg-white/5"
-                                    progressBarClass="bg-[var(--firm-primary)] h-1 bottom-0 absolute"
-                                >
-                                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Property Gallery</span>
-                                </SliderBtn>
-                                <SliderBtn
-                                    value={`slide-${Math.min(1, allImages.length - 1)}`}
-                                    className="py-4 text-center transition-all hover:bg-white/5"
-                                    progressBarClass="bg-[var(--firm-primary)] h-1 bottom-0 absolute"
-                                >
-                                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Site Perspectives</span>
-                                </SliderBtn>
-                            </SliderBtnGroup>
-                        </ProgressSlider>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Containerized Metrics Bar (Soft-Rectangular) */}
-                <div className="mt-20 rounded-[2rem] p-8 md:p-12 shadow-2xl overflow-hidden" style={{ backgroundColor: 'var(--firm-secondary)' }}>
-                    <div className="grid grid-cols-2 gap-y-10 md:grid-cols-3 lg:grid-cols-6 divide-x divide-black/5">
+                {/* 3. Full-Width Hero Media Carousel */}
+                <div className="rounded-[3rem] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-1000 delay-200 border-8 border-white/5" style={{ backgroundColor: 'var(--firm-secondary)' }}>
+                    <ProgressSlider activeSlider="slide-0" className="w-full">
+                        <SliderContent>
+                            {allImages.map((img, idx) => (
+                                <SliderWrapper key={idx} value={`slide-${idx}`}>
+                                    <div className="aspect-[21/9] w-full overflow-hidden">
+                                        <img
+                                            src={img}
+                                            alt={`Property view ${idx + 1}`}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    </div>
+                                </SliderWrapper>
+                            ))}
+                        </SliderContent>
+
+                        <SliderBtnGroup className="grid grid-cols-2 divide-x divide-black/5 bg-white/50 backdrop-blur-xl">
+                            <SliderBtn
+                                value="slide-0"
+                                className="py-6 text-center transition-all hover:bg-white/40"
+                                progressBarClass="bg-[var(--firm-primary)] h-1.5 bottom-0 absolute"
+                            >
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40">Cinematic Tour</span>
+                            </SliderBtn>
+                            <SliderBtn
+                                value={`slide-${Math.min(1, allImages.length - 1)}`}
+                                className="py-6 text-center transition-all hover:bg-white/40"
+                                progressBarClass="bg-[var(--firm-primary)] h-1.5 bottom-0 absolute"
+                            >
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40">Site Perspectives</span>
+                            </SliderBtn>
+                        </SliderBtnGroup>
+                    </ProgressSlider>
+                </div>
+
+                {/* 4. Transaction Metrics Bar */}
+                <div className="rounded-[3rem] p-10 md:p-16 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 overflow-hidden" style={{ backgroundColor: 'var(--firm-secondary)' }}>
+                    <div className="grid grid-cols-2 gap-y-12 md:grid-cols-3 lg:grid-cols-6 divide-x divide-black/5">
                         <div className="px-6 space-y-1">
                             <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
-                                <TrendingUp size={12} className="text-black/60" />
-                                Purchase
+                                <TrendingUp size={12} className="text-[var(--firm-primary)]" />
+                                Acquisition
                             </p>
-                            <p className="text-3xl font-black text-black">{deal.isPublic ? formatCurrency(deal.purchaseAmount || 0) : "Confidential"}</p>
+                            <p className="text-3xl font-black text-black">{deal.isPublic ? formatCurrency(deal.purchaseAmount || 0) : "Confid."}</p>
                         </div>
 
                         <div className="px-6 space-y-1 border-l border-black/5">
                             <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
-                                <Layers size={12} className="text-black/60" />
-                                Rehab
+                                <Layers size={12} className="text-[var(--firm-primary)]" />
+                                Capital Ex.
                             </p>
                             <p className="text-3xl font-black text-black">{formatCurrency(deal.rehabAmount || 0)}</p>
                         </div>
 
                         <div className="px-6 space-y-1 border-l border-black/5">
                             <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
-                                <Award size={12} className="text-black/60" />
+                                <Award size={12} className="text-[var(--firm-primary)]" />
                                 Exit (ARV)
                             </p>
                             <p className="text-3xl font-black text-black">{formatCurrency(deal.arv || 0)}</p>
@@ -192,39 +198,54 @@ export default function DealPage({
 
                         <div className="px-6 space-y-1 border-l border-black/5">
                             <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
-                                <Maximize2 size={12} className="text-black/60" />
-                                Total Size
+                                <Maximize2 size={12} className="text-[var(--firm-primary)]" />
+                                Dimensions
                             </p>
-                            <p className="text-3xl font-black text-black">{deal.sqFt?.toLocaleString()} <span className="text-xs opacity-50">SF</span></p>
+                            <p className="text-3xl font-black text-black">{deal.sqFt?.toLocaleString()} <span className="text-xs opacity-30">SF</span></p>
                         </div>
 
                         <div className="px-6 space-y-1 border-l border-black/5">
                             <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
-                                <Briefcase size={12} className="text-black/60" />
-                                Strategy
+                                <Briefcase size={12} className="text-[var(--firm-primary)]" />
+                                Objective
                             </p>
-                            <p className="text-sm font-black uppercase tracking-tight text-black opacity-80">{deal.strategy?.replace("_", " ")}</p>
+                            <p className="text-sm font-black uppercase tracking-tight text-black/80">{deal.strategy?.replace("_", " ")}</p>
                         </div>
 
-                        <div className="px-6 space-y-1 border-l border-black/5">
-                            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
-                                <ShieldCheck size={12} className="text-black/60" />
-                                Financing
+                        <div className="px-6 space-y-1 border-l border-black/5 text-right lg:text-left">
+                            <p className="flex lg:inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
+                                <ShieldCheck size={12} className="text-[var(--firm-primary)]" />
+                                Structure
                             </p>
-                            <p className="text-sm font-black uppercase tracking-tight text-black opacity-80">{deal.financingType}</p>
+                            <p className="text-sm font-black uppercase tracking-tight text-black/80">{deal.financingType}</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Standalone Narrative Section (Soft-Rectangular - Width Flush with Metrics) */}
-                <div className="mt-12 rounded-[2rem] p-12 md:p-16 shadow-2xl" style={{ backgroundColor: 'var(--firm-secondary)' }}>
-                    <div className="space-y-8">
-                        <h2 className="text-sm font-black uppercase tracking-[0.4em] text-black/30">Investment Overview</h2>
-                        <div className="prose prose-lg max-w-none">
-                            <p className="text-3xl font-bold leading-[1.6] text-black/80">
-                                {deal.context || "No project overview available. This transaction represents a strategic positioning within the target submarket, leveraging institutional-grade management and favorable capital structures to maximize risk-adjusted returns."}
+                {/* 5. Investment Narrative Section */}
+                <div className="rounded-[3rem] p-12 md:p-20 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-400" style={{ backgroundColor: 'var(--firm-secondary)' }}>
+                    <div className="max-w-4xl mx-auto space-y-12">
+                        <div className="flex flex-col items-center text-center space-y-4">
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.5em] text-[var(--firm-primary)]">Investment Narrative</h3>
+                            <div className="h-1 w-20 bg-black/5 rounded-full" />
+                        </div>
+                        <div className="prose prose-2xl prose-invert max-w-none">
+                            <p className="text-3xl md:text-4xl font-black leading-[1.6] text-black/80 tracking-tight text-center md:text-left">
+                                {deal.investmentOverview || deal.context || "Experience excellence in private market real estate through institutional-grade execution and strategic tactical management."}
                             </p>
                         </div>
+                    </div>
+                </div>
+
+                {/* Footer Branding Persistence */}
+                <div className="pt-20 text-center">
+                    <div className="inline-flex flex-col items-center gap-4 opacity-20 hover:opacity-100 transition-opacity duration-700 group cursor-default">
+                        <div className="h-12 w-12 grayscale group-hover:grayscale-0 transition-all">
+                            {firm?.logoUrl && <img src={firm.logoUrl} className="h-full w-full object-contain" />}
+                        </div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] font-brand-gold">
+                            A {firm?.name} Digital Tombstone
+                        </p>
                     </div>
                 </div>
             </div>

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useData } from "@/context/DataContext";
-import { Building2, Save, Upload, ExternalLink, Shield, Check, Plus, X, Search, Trash2, AlertTriangle, Palette, Type, Layout, Info, Linkedin } from "lucide-react";
+
+import { Building2, Save, Upload, ExternalLink, Shield, Check, Plus, X, Search, Trash2, AlertTriangle, Palette, Type, Layout, Info, Linkedin, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminFirmsPage() {
@@ -494,6 +495,14 @@ export default function AdminFirmsPage() {
                                         )}
                                         {saveStatus[firm.id] === 'saving' ? 'Saving' : saveStatus[firm.id] === 'saved' ? 'Saved' : 'Update'}
                                     </button>
+
+                                    <Link
+                                        href={`/admin/${firm.slug || firm.id}`}
+                                        className="flex items-center justify-center gap-2 rounded-2xl bg-brand-gold/10 px-4 py-4 text-xs font-bold text-brand-gold transition-all hover:bg-brand-gold hover:text-brand-dark"
+                                    >
+                                        <LayoutDashboard size={16} />
+                                        Admin Page
+                                    </Link>
 
                                     <Link
                                         href={`/firms/${firm.slug || firm.id}`}
