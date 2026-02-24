@@ -19,6 +19,9 @@ model Firm {
   slug         String       @unique
   logoUrl      String?
   primaryColor String?      @default("#c5a059")
+  physicalAddress    String?
+  linkedInUrl        String?
+  googleReviewsUrl   String?
   teamMembers  TeamMember[]
   deals        Deal[]
   createdAt    DateTime     @default(now())

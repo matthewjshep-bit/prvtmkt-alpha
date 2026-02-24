@@ -103,6 +103,43 @@ export default function FirmProfilePage({
                             <p className="text-2xl font-bold text-black/40 leading-relaxed max-w-2xl">
                                 {firm.bio || "Professional institutional track record and specialized team directory."}
                             </p>
+
+                            {(firm.linkedInUrl || firm.googleReviewsUrl || firm.physicalAddress) && (
+                                <div className="mt-8 flex flex-wrap items-center gap-6">
+                                    {firm.linkedInUrl && (
+                                        <a
+                                            href={firm.linkedInUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 rounded-full bg-black/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-black/10 transition-all"
+                                        >
+                                            <Globe size={14} className="text-black/40" />
+                                            LinkedIn
+                                        </a>
+                                    )}
+                                    {firm.googleReviewsUrl && (
+                                        <a
+                                            href={firm.googleReviewsUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 rounded-full bg-black/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-black/10 transition-all"
+                                        >
+                                            <div className="flex text-yellow-500">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <svg key={i} className="h-3 w-3 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" /></svg>
+                                                ))}
+                                            </div>
+                                            Reviews
+                                        </a>
+                                    )}
+                                    {firm.physicalAddress && (
+                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-black/40">
+                                            <Building2 size={14} />
+                                            <span className="max-w-[250px] truncate">{firm.physicalAddress}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

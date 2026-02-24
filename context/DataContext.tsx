@@ -15,6 +15,9 @@ interface Firm {
     fontColor?: string;
     secondaryColor?: string;
     showAgencyBranding?: boolean;
+    physicalAddress?: string;
+    linkedInUrl?: string;
+    googleReviewsUrl?: string;
 }
 
 interface TeamMember {

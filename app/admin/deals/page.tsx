@@ -60,9 +60,11 @@ function AdminDealsContent() {
 
     const handleAddDeal = (e: React.FormEvent) => {
         e.preventDefault();
+        // Ensure firmId is correctly captured from newDeal state
         const dealToAdd = {
             ...newDeal,
             id: `d-${Date.now()}`,
+            firmId: newDeal.firmId || firms[0]?.id, // Ensure we have a valid firmId
             purchaseAmount: newDeal.purchaseAmount || null,
             financedAmount: newDeal.purchaseAmount ? newDeal.purchaseAmount * 0.7 : null, // Mock financing
             stillImageURL: newDeal.images && newDeal.images.length > 0 ? newDeal.images[0] : newDeal.stillImageURL,
@@ -583,8 +585,14 @@ function AdminDealsContent() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <Building2 size={14} className="text-brand-gold" />
-                                                <span className="text-sm font-medium text-white">{firm?.name}</span>
+                                                <div className="h-6 w-6 overflow-hidden rounded-md bg-white/5 border border-white/10">
+                                                    {firm?.logoUrl ? (
+                                                        <img src={firm.logoUrl} className="h-full w-full object-contain" />
+                                                    ) : (
+                                                        <Building2 size={12} className="m-auto h-full text-brand-gold" />
+                                                    )}
+                                                </div>
+                                                <span className="text-sm font-medium text-white">{firm?.name || 'Unassigned'}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">

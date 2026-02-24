@@ -9,7 +9,10 @@ export const MOCK_FIRMS = [
         backgroundColor: "#0a0a0a",
         fontColor: "#ffffff",
         secondaryColor: "#f5f5f5",
-        showAgencyBranding: true
+        showAgencyBranding: true,
+        physicalAddress: "123 Aspen Heights, Denver, CO 80202",
+        linkedInUrl: "https://linkedin.com/company/grand-peaks",
+        googleReviewsUrl: "https://goo.gl/maps/grand-peaks-reviews"
     },
     {
         id: "f2",
@@ -21,7 +24,10 @@ export const MOCK_FIRMS = [
         backgroundColor: "#050505",
         fontColor: "#ffffff",
         secondaryColor: "#f5f5f5",
-        showAgencyBranding: true
+        showAgencyBranding: true,
+        physicalAddress: "456 Market St, New York, NY 10001",
+        linkedInUrl: "https://linkedin.com/company/prvt-mkt",
+        googleReviewsUrl: "https://goo.gl/maps/prvt-mkt-reviews"
     }
 ];
 

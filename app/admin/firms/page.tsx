@@ -14,7 +14,10 @@ export default function AdminFirmsPage() {
         name: "",
         slug: "",
         logoUrl: "",
-        primaryColor: "#c5a059"
+        primaryColor: "#c5a059",
+        physicalAddress: "",
+        linkedInUrl: "",
+        googleReviewsUrl: ""
     });
     const [saveStatus, setSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
 
@@ -32,7 +35,15 @@ export default function AdminFirmsPage() {
         };
         addFirm(firmToAdd);
         setIsAddingFirm(false);
-        setNewFirm({ name: "", slug: "", logoUrl: "", primaryColor: "#c5a059" });
+        setNewFirm({
+            name: "",
+            slug: "",
+            logoUrl: "",
+            primaryColor: "#c5a059",
+            physicalAddress: "",
+            linkedInUrl: "",
+            googleReviewsUrl: ""
+        });
     };
 
     const handleSave = (id: string) => {
@@ -115,6 +126,35 @@ export default function AdminFirmsPage() {
                                         />
                                     </div>
                                 </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">LinkedIn Company URL</label>
+                                    <input
+                                        type="url"
+                                        placeholder="https://linkedin.com/company/..."
+                                        className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none"
+                                        value={newFirm.linkedInUrl}
+                                        onChange={(e) => setNewFirm({ ...newFirm, linkedInUrl: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Google Reviews Link</label>
+                                    <input
+                                        type="url"
+                                        placeholder="https://goo.gl/maps/..."
+                                        className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none"
+                                        value={newFirm.googleReviewsUrl}
+                                        onChange={(e) => setNewFirm({ ...newFirm, googleReviewsUrl: e.target.value })}
+                                    />
+                                </div>
+                                <div className="md:col-span-2 space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Firm Physical Address</label>
+                                    <textarea
+                                        placeholder="Enter full physical address..."
+                                        className="w-full h-20 rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none resize-none"
+                                        value={newFirm.physicalAddress}
+                                        onChange={(e) => setNewFirm({ ...newFirm, physicalAddress: e.target.value })}
+                                    />
+                                </div>
                                 <div className="md:col-span-2">
                                     <button
                                         type="submit"
@@ -185,6 +225,38 @@ export default function AdminFirmsPage() {
                                             <span className="text-foreground/40 font-medium">Brand Color:</span>
                                             <div className="h-3 w-3 rounded-full" style={{ backgroundColor: firm.primaryColor || '#c5a059' }} />
                                             <span className="text-foreground font-bold">{firm.primaryColor}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-foreground/30 text-left block">LinkedIn URL</label>
+                                            <input
+                                                type="url"
+                                                className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-2 text-sm text-white focus:border-brand-gold/50 focus:outline-none"
+                                                placeholder="LinkedIn Profile"
+                                                value={firm.linkedInUrl || ""}
+                                                onChange={(e) => updateFirm(firm.id, { linkedInUrl: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-foreground/30 text-left block">Google Reviews</label>
+                                            <input
+                                                type="url"
+                                                className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-2 text-sm text-white focus:border-brand-gold/50 focus:outline-none"
+                                                placeholder="Google Reviews URL"
+                                                value={firm.googleReviewsUrl || ""}
+                                                onChange={(e) => updateFirm(firm.id, { googleReviewsUrl: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 space-y-2">
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-foreground/30 text-left block">Physical Address</label>
+                                            <textarea
+                                                className="w-full h-16 rounded-xl border border-white/5 bg-brand-dark px-4 py-2 text-sm text-white focus:border-brand-gold/50 focus:outline-none resize-none"
+                                                placeholder="Physical Address"
+                                                value={firm.physicalAddress || ""}
+                                                onChange={(e) => updateFirm(firm.id, { physicalAddress: e.target.value })}
+                                            />
                                         </div>
                                     </div>
 
