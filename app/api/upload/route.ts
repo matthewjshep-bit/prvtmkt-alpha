@@ -13,8 +13,14 @@ export async function POST(req: Request) {
 
         console.log(`[Upload API] Received file: ${file.name} (${file.type}, ${file.size} bytes) for dealId: ${dealId}`);
 
+        // Sanitize filename: replace spaces with dashes, remove special characters (except dots/dashes), lowercase
+        const sanitizedName = file.name
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9.-]/g, '');
+
         const buffer = Buffer.from(await file.arrayBuffer());
-        const fileName = `deals/${dealId}/${Date.now()}-${file.name}`;
+        const fileName = `deals/${dealId}/${Date.now()}-${sanitizedName}`;
 
         console.log(`[Upload API] Attempting Supabase upload: ${fileName}`);
         const url = await uploadToSupabase(buffer, fileName, file.type);
