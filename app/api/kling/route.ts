@@ -40,6 +40,9 @@ export async function POST(req: Request) {
 
         const negativePrompt = "morphing, flickering, architectural distortion, extra windows, blurred textures, unrealistic gravity.";
 
+        console.log("Kling Handshake Initiated:", { dealId, imageUrl });
+        console.log("System Prompt Precision Check:", systemPrompt);
+
         const response = await axios.post(`${KLING_API_BASE}/videos/image2video`, {
             model_name: "kling-v1",
             image: imageUrl,
@@ -54,6 +57,9 @@ export async function POST(req: Request) {
                 "Content-Type": "application/json"
             }
         });
+
+        console.log("Kling Response Status:", response.status);
+        console.log("Kling Task ID:", response.data.data?.task_id || response.data.task_id);
 
         return NextResponse.json(response.data);
     } catch (error: any) {

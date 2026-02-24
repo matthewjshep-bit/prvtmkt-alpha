@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, use } from "react";
 import { useData } from "@/context/DataContext";
-import { Briefcase, Building2, MapPin, Eye, Edit3, Trash2, Plus, X, Save, Upload, Search, GripVertical, ListChecks, TrendingUp } from "lucide-react";
+import { Briefcase, Building2, MapPin, Eye, Edit3, Trash2, Plus, X, Save, Upload, Search, GripVertical, ListChecks, TrendingUp, Video } from "lucide-react";
 import { useSearchParams, useParams } from "next/navigation";
 import Link from "next/link";
 
@@ -822,11 +822,23 @@ function TenantDealsContent() {
                                                     <span className="text-xs font-black w-4">{idx + 1}</span>
                                                 </div>
                                                 <div className="h-20 w-32 overflow-hidden rounded-xl bg-brand-dark border border-white/5 relative group/img">
-                                                    {img && <img src={img} className="h-full w-full object-cover" />}
                                                     {activeMediaDeal.generatedVideoURL && idx === 0 ? (
-                                                        <div className="absolute inset-0 bg-brand-gold/20 flex items-center justify-center">
-                                                            <div className="rounded-full bg-brand-gold p-1 animate-pulse">
-                                                                <Eye size={10} className="text-brand-dark" />
+                                                        <video
+                                                            src={activeMediaDeal.generatedVideoURL}
+                                                            autoPlay
+                                                            muted
+                                                            loop
+                                                            playsInline
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        img && <img src={img} className="h-full w-full object-cover" />
+                                                    )}
+
+                                                    {activeMediaDeal.generatedVideoURL && idx === 0 ? (
+                                                        <div className="absolute inset-0 bg-brand-gold/10 flex items-center justify-center pointer-events-none">
+                                                            <div className="rounded-full bg-brand-gold p-1 shadow-lg">
+                                                                <Video size={10} className="text-brand-dark" />
                                                             </div>
                                                         </div>
                                                     ) : aiProcessingIds.has(img) ? (

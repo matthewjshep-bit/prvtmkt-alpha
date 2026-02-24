@@ -11,6 +11,8 @@ export default function IntakeFormPage() {
     const router = useRouter();
     const [step, setStep] = useState(1);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<string>("");
+    const [generatedVideo, setGeneratedVideo] = useState<string | null>(null);
     const [form, setForm] = useState({
         address: "",
         firmId: "",
@@ -21,38 +23,113 @@ export default function IntakeFormPage() {
         images: [] as File[],
     });
 
-    const nextStep = () => setStep((s) => Math.min(s + 1, 2));
+    const nextStep = () => setStep((s) => Math.min(s + 1, 3));
     const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
-    const handleComplete = () => {
+    const handleComplete = async () => {
         setIsGenerating(true);
-        // Simulate AI Video generation progress
-        setTimeout(() => {
-            const newId = `d-${Date.now()}`;
+        setUploadProgress("Initializing Asset Presentation...");
+
+        try {
             const finalFirmId = form.firmId || (firms.length > 0 ? firms[0].id : "");
             const firm = firms.find(f => f.id === finalFirmId);
+            const dealId = `d-${Date.now()}`;
 
-            const newDeal = {
-                id: newId,
-                firmId: finalFirmId,
-                address: form.address,
-                assetType: form.assetType,
-                strategy: form.strategy,
-                purchaseAmount: form.purchaseAmount ? Number(form.purchaseAmount) : null,
-                financedAmount: form.purchaseAmount ? Number(form.purchaseAmount) * 0.7 : null,
-                // Default placeholder if no images
-                stillImageURL: form.images.length > 0 ? URL.createObjectURL(form.images[0]) : "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800&auto=format&fit=crop",
-                images: form.images.map(img => URL.createObjectURL(img)),
-                isPublic: form.isPublic,
-                capRate: 5.0,
-                sqFt: 25000,
-                teamMemberIds: ["cm1"], // Mock team member
-                context: "Generated via System Intake workflow."
+            let firstImageUrl = "";
+            const uploadedUrls: string[] = [];
+
+            // 1. Upload Images to Supabase
+            if (form.images.length > 0) {
+                setUploadProgress(`Uploading ${form.images.length} property assets...`);
+                for (let i = 0; i < form.images.length; i++) {
+                    const file = form.images[i];
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    formData.append("dealId", dealId);
+
+                    const res = await fetch("/api/upload", { method: "POST", body: formData });
+                    const data = await res.json();
+                    if (data.url) {
+                        uploadedUrls.push(data.url);
+                        if (i === 0) firstImageUrl = data.url;
+                    }
+                }
+            } else {
+                // Fallback to placeholder if no images
+                firstImageUrl = "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800&auto=format&fit=crop";
+                uploadedUrls.push(firstImageUrl);
+            }
+
+            // 2. Start Kling Generation (Living Drone View)
+            setUploadProgress("Kling AI: Initiating Cinematic Drone Fly-through...");
+            const klingRes = await fetch("/api/kling", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ imageUrl: firstImageUrl, dealId })
+            });
+            const klingData = await klingRes.json();
+            if (klingData.error) throw new Error(klingData.error);
+            const taskId = klingData.data?.task_id || klingData.task_id;
+
+            // 3. Poll for Kling Video (Step 3 Visualization)
+            setStep(3); // Move to presentation step while polling
+
+            const poll = async () => {
+                const pollRes = await fetch(`/api/kling?taskId=${taskId}`);
+                const pollData = await pollRes.json();
+                const status = (pollData.data?.task_status || pollData.task_status)?.toLowerCase();
+
+                if (status === "succeeded") {
+                    const klingVideoUrl = pollData.data?.video_url || pollData.video_url;
+
+                    // 4. Persist Video to Supabase
+                    setUploadProgress("Finalizing Cinematic Master...");
+                    const persistRes = await fetch("/api/kling/persist", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ videoUrl: klingVideoUrl, dealId })
+                    });
+                    const persistData = await persistRes.json();
+
+                    const finalVideoUrl = persistData.url || klingVideoUrl;
+                    setGeneratedVideo(finalVideoUrl);
+
+                    // 5. Create final Deal in context
+                    const newDeal = {
+                        id: dealId,
+                        firmId: finalFirmId,
+                        address: form.address,
+                        assetType: form.assetType,
+                        strategy: form.strategy,
+                        purchaseAmount: form.purchaseAmount ? Number(form.purchaseAmount) : null,
+                        financedAmount: form.purchaseAmount ? Number(form.purchaseAmount) * 0.7 : null,
+                        stillImageURL: firstImageUrl,
+                        images: uploadedUrls,
+                        generatedVideoURL: finalVideoUrl,
+                        isPublic: form.isPublic,
+                        capRate: 5.0,
+                        sqFt: 25000,
+                        teamMemberIds: ["cm1"],
+                        context: "Generated via System Intake (Living Drone View)."
+                    };
+
+                    addDeal(newDeal);
+                    setIsGenerating(false);
+                } else if (status === "failed") {
+                    throw new Error("Kling AI failed to generate video asset.");
+                } else {
+                    setUploadProgress(`Kling AI: Rendering cinematic frames...`);
+                    setTimeout(poll, 3000);
+                }
             };
-            addDeal(newDeal);
-            // Redirect to the specific firm's deals page for better context
-            router.push(`/admin/${firm?.slug || 'deals'}/deals`);
-        }, 3000);
+
+            poll();
+
+        } catch (err: any) {
+            console.error("Intake Error:", err);
+            alert(`Workflow failed: ${err.message}`);
+            setIsGenerating(false);
+        }
     };
 
     if (!isInitialized) return null;
@@ -62,7 +139,7 @@ export default function IntakeFormPage() {
             <div className="container mx-auto max-w-2xl px-6">
                 {/* Progress bar */}
                 <div className="mb-12 flex items-center justify-between">
-                    {[1, 2].map((s) => (
+                    {[1, 2, 3].map((s) => (
                         <div key={s} className="flex items-center">
                             <div
                                 className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all ${step >= s
@@ -72,7 +149,7 @@ export default function IntakeFormPage() {
                             >
                                 {step > s ? <CheckCircle2 size={20} /> : s}
                             </div>
-                            {s < 2 && (
+                            {s < 3 && (
                                 <div
                                     className={`h-0.5 w-16 md:w-32 transition-all ${step > s ? "bg-brand-gold" : "bg-white/10"
                                         }`}
@@ -226,30 +303,90 @@ export default function IntakeFormPage() {
                             </motion.div>
                         )}
 
-                        {/* Asset Presentation deprecated */}
+                        {step === 3 && (
+                            <motion.div
+                                key="step3"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="space-y-8 text-center"
+                            >
+                                <div className="space-y-2">
+                                    <h2 className="text-3xl font-bold text-foreground">Asset Presentation</h2>
+                                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-gold">Living Drone View: High-Fi Rendering</p>
+                                </div>
+
+                                <div className="relative aspect-video w-full overflow-hidden rounded-[2rem] border-4 border-white/5 bg-brand-gray-900 shadow-2xl">
+                                    {generatedVideo ? (
+                                        <video
+                                            src={generatedVideo}
+                                            autoPlay
+                                            muted
+                                            loop
+                                            playsInline
+                                            className="h-full w-full object-cover animate-in fade-in duration-1000"
+                                        />
+                                    ) : (
+                                        <div className="flex h-full w-full flex-col items-center justify-center space-y-4">
+                                            <div className="h-12 w-12 border-4 border-brand-gold/20 border-t-brand-gold animate-spin rounded-full" />
+                                            <div className="space-y-1">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold animate-pulse">Generating Cinematic Asset...</p>
+                                                <p className="text-[8px] font-bold uppercase tracking-widest text-foreground/20">{uploadProgress}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 p-6">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Property Signature View</p>
+                                    </div>
+                                </div>
+
+                                {generatedVideo && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="flex flex-col items-center space-y-4"
+                                    >
+                                        <div className="glass rounded-2xl px-6 py-4 border border-brand-gold/20">
+                                            <p className="text-xs font-bold text-foreground/70">Kling AI successfully transformed your static image into a <span className="text-brand-gold">Living Drone View</span>.</p>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                const firm = firms.find(f => f.id === (form.firmId || firms[0].id));
+                                                router.push(`/admin/${firm?.slug || 'deals'}/deals`);
+                                            }}
+                                            className="flex items-center gap-2 rounded-xl bg-brand-gold px-10 py-4 text-xs font-black uppercase tracking-widest text-brand-dark shadow-xl shadow-brand-gold/30 hover:scale-105 transition-all"
+                                        >
+                                            Go to Registry Portal
+                                            <ChevronRight size={16} />
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </motion.div>
+                        )}
                     </AnimatePresence>
 
                     {/* Navigation */}
-                    <div className="mt-12 flex items-center justify-between border-t border-white/5 pt-8">
-                        <button
-                            onClick={prevStep}
-                            className={`flex items-center gap-2 text-sm font-bold uppercase tracking-widest transition-all ${step === 1 ? "pointer-events-none opacity-0" : "text-foreground/40 hover:text-foreground"
-                                }`}
-                        >
-                            <ChevronLeft size={20} />
-                            Back
-                        </button>
+                    {step < 3 && (
+                        <div className="mt-12 flex items-center justify-between border-t border-white/5 pt-8">
+                            <button
+                                onClick={prevStep}
+                                className={`flex items-center gap-2 text-sm font-bold uppercase tracking-widest transition-all ${step === 1 ? "pointer-events-none opacity-0" : "text-foreground/40 hover:text-foreground"
+                                    }`}
+                            >
+                                <ChevronLeft size={20} />
+                                Back
+                            </button>
 
-                        <button
-                            onClick={step === 2 ? handleComplete : nextStep}
-                            disabled={isGenerating}
-                            className={`flex items-center gap-2 rounded-xl bg-brand-gold px-8 py-3 text-sm font-bold text-brand-dark shadow-lg shadow-brand-gold/20 transition-all hover:translate-x-1 ${isGenerating ? 'opacity-50 cursor-wait' : ''
-                                }`}
-                        >
-                            {step === 2 ? (isGenerating ? "Finalizing..." : "Complete Intake") : "Next Segment"}
-                            {step !== 2 && <ChevronRight size={20} />}
-                        </button>
-                    </div>
+                            <button
+                                onClick={step === 2 ? handleComplete : nextStep}
+                                disabled={isGenerating}
+                                className={`flex items-center gap-2 rounded-xl bg-brand-gold px-8 py-3 text-sm font-bold text-brand-dark shadow-lg shadow-brand-gold/20 transition-all hover:translate-x-1 ${isGenerating ? 'opacity-50 cursor-wait' : ''
+                                    }`}
+                            >
+                                {step === 2 ? (isGenerating ? "Finalizing..." : "Generate Asset Video") : "Next Segment"}
+                                {step !== 2 && <ChevronRight size={20} />}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
