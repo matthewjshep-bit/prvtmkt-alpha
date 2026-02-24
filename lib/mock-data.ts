@@ -3,7 +3,7 @@ export const MOCK_FIRMS = [
         id: "f1",
         name: "Grand Peaks",
         slug: "grand-peaks",
-        logoUrl: "https://www.grandpeaks.com/wp-content/themes/grandpeaks/assets/images/logo.png",
+        logoUrl: "/grand-peaks-logo.png",
         primaryColor: "#c5a059",
         bio: "Institutional investment firm focused on the acquisition and management of luxury multifamily communities.",
         backgroundColor: "#0a0a0a",

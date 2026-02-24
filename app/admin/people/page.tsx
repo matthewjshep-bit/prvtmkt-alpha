@@ -19,6 +19,7 @@ function AdminPeopleContent() {
     const { firms, teamMembers, updateTeamMember, addTeamMember } = useData();
     const [saveStatus, setSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
     const [isAddingPerson, setIsAddingPerson] = useState(false);
+    const [firmFilter, setFirmFilter] = useState("ALL");
     const [newPerson, setNewPerson] = useState({
         name: "",
         firmIds: [firms[0]?.id || ""],
@@ -78,6 +79,19 @@ function AdminPeopleContent() {
                         <p className="mt-2 text-foreground/50">Manage individual profiles and professional track records.</p>
                     </div>
                     <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3 rounded-xl bg-brand-gray-900 border border-white/5 px-4 py-2">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-foreground/30">Filter by Firm</span>
+                            <select
+                                className="bg-transparent text-sm font-bold text-brand-gold outline-none cursor-pointer"
+                                value={firmFilter}
+                                onChange={(e) => setFirmFilter(e.target.value)}
+                            >
+                                <option value="ALL">All People</option>
+                                {firms.map(f => (
+                                    <option key={f.id} value={f.id}>{f.name}</option>
+                                ))}
+                            </select>
+                        </div>
                         <button
                             onClick={() => setIsAddingPerson(true)}
                             className="flex items-center gap-2 rounded-xl bg-brand-gold px-6 py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/20"
@@ -251,198 +265,200 @@ function AdminPeopleContent() {
                 )}
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {teamMembers.map((member) => {
-                        return (
-                            <div key={member.id} className="glass group overflow-hidden rounded-3xl border border-white/5 bg-brand-gray-900/30 p-6 transition-all hover:border-brand-gold/20">
-                                <div className="flex items-center gap-4 mb-6">
-                                    <div className="group relative h-16 w-16 overflow-hidden rounded-2xl border-2 border-brand-gold/10">
-                                        <img src={member.imageURL || ""} alt={member.name} className="h-full w-full object-cover" />
-                                        <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="absolute inset-0 cursor-pointer opacity-0"
-                                                onChange={(e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) {
-                                                        const reader = new FileReader();
-                                                        reader.onloadend = () => {
-                                                            updateTeamMember(member.id, { imageURL: reader.result as string });
-                                                        };
-                                                        reader.readAsDataURL(file);
-                                                    }
-                                                }}
-                                            />
-                                            <Plus size={16} className="text-white" />
+                    {teamMembers
+                        .filter(member => firmFilter === "ALL" || (member.firmIds || []).includes(firmFilter))
+                        .map((member) => {
+                            return (
+                                <div key={member.id} className="glass group overflow-hidden rounded-3xl border border-white/5 bg-brand-gray-900/30 p-6 transition-all hover:border-brand-gold/20">
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="group relative h-16 w-16 overflow-hidden rounded-2xl border-2 border-brand-gold/10">
+                                            <img src={member.imageURL || ""} alt={member.name} className="h-full w-full object-cover" />
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="absolute inset-0 cursor-pointer opacity-0"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            const reader = new FileReader();
+                                                            reader.onloadend = () => {
+                                                                updateTeamMember(member.id, { imageURL: reader.result as string });
+                                                            };
+                                                            reader.readAsDataURL(file);
+                                                        }
+                                                    }}
+                                                />
+                                                <Plus size={16} className="text-white" />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-brand-gold/40">Full Name</span>
+                                                <input
+                                                    type="text"
+                                                    className="bg-transparent border-b border-white/5 text-lg font-bold text-white focus:border-brand-gold focus:border-b-2 outline-none w-full transition-all"
+                                                    defaultValue={member.name}
+                                                    onBlur={(e) => {
+                                                        if (e.target.value !== member.name) {
+                                                            updateTeamMember(member.id, { name: e.target.value });
+                                                        }
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            (e.target as HTMLInputElement).blur();
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1 mt-2">
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-brand-gold/40">Professional Title</span>
+                                                <input
+                                                    type="text"
+                                                    className="bg-transparent border-b border-white/5 text-xs font-bold text-brand-gold/70 focus:border-brand-gold focus:border-b-2 outline-none w-full transition-all"
+                                                    defaultValue={member.role}
+                                                    onBlur={(e) => {
+                                                        if (e.target.value !== member.role) {
+                                                            updateTeamMember(member.id, { role: e.target.value });
+                                                        }
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            (e.target as HTMLInputElement).blur();
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex-1">
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-brand-gold/40">Full Name</span>
-                                            <input
-                                                type="text"
-                                                className="bg-transparent border-b border-white/5 text-lg font-bold text-white focus:border-brand-gold focus:border-b-2 outline-none w-full transition-all"
-                                                defaultValue={member.name}
-                                                onBlur={(e) => {
-                                                    if (e.target.value !== member.name) {
-                                                        updateTeamMember(member.id, { name: e.target.value });
-                                                    }
-                                                }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        (e.target as HTMLInputElement).blur();
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="flex flex-col gap-1 mt-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-brand-gold/40">Professional Title</span>
-                                            <input
-                                                type="text"
-                                                className="bg-transparent border-b border-white/5 text-xs font-bold text-brand-gold/70 focus:border-brand-gold focus:border-b-2 outline-none w-full transition-all"
-                                                defaultValue={member.role}
-                                                onBlur={(e) => {
-                                                    if (e.target.value !== member.role) {
-                                                        updateTeamMember(member.id, { role: e.target.value });
-                                                    }
-                                                }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        (e.target as HTMLInputElement).blur();
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <div className="space-y-3 mb-8">
-                                    <div className="flex flex-col gap-1.5">
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Associated Firms (Multi-Select)</span>
-                                        <div className="flex flex-wrap gap-2 rounded-xl border border-white/5 bg-brand-dark p-2 min-h-[42px]">
-                                            {(member.firmIds || []).map(fId => {
-                                                const firm = firms.find(f => f.id === fId);
-                                                return (
-                                                    <div key={fId} className="flex items-center gap-1.5 rounded-lg bg-brand-gold/10 px-2 py-1 text-[10px] font-bold text-brand-gold border border-brand-gold/20">
-                                                        {firm?.name}
-                                                        <button
-                                                            onClick={() => updateTeamMember(member.id, { firmIds: (member.firmIds || []).filter(id => id !== fId) })}
-                                                            className="hover:text-white"
-                                                        >
-                                                            <X size={10} />
-                                                        </button>
-                                                    </div>
-                                                );
-                                            })}
-                                            <select
-                                                className="bg-transparent border-none text-[10px] font-bold text-brand-gold outline-none cursor-pointer p-1"
-                                                value=""
-                                                onChange={(e) => {
-                                                    const id = e.target.value;
-                                                    if (id && !(member.firmIds || []).includes(id)) {
-                                                        updateTeamMember(member.id, { firmIds: [...(member.firmIds || []), id] });
-                                                    }
-                                                }}
-                                            >
-                                                <option value="" disabled>+ Link Firm</option>
-                                                {firms.filter(f => !member.firmIds.includes(f.id)).map(firm => (
-                                                    <option key={firm.id} value={firm.id}>{firm.name}</option>
-                                                ))}
-                                            </select>
+                                    <div className="space-y-3 mb-8">
+                                        <div className="flex flex-col gap-1.5">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Associated Firms (Multi-Select)</span>
+                                            <div className="flex flex-wrap gap-2 rounded-xl border border-white/5 bg-brand-dark p-2 min-h-[42px]">
+                                                {(member.firmIds || []).map(fId => {
+                                                    const firm = firms.find(f => f.id === fId);
+                                                    return (
+                                                        <div key={fId} className="flex items-center gap-1.5 rounded-lg bg-brand-gold/10 px-2 py-1 text-[10px] font-bold text-brand-gold border border-brand-gold/20">
+                                                            {firm?.name}
+                                                            <button
+                                                                onClick={() => updateTeamMember(member.id, { firmIds: (member.firmIds || []).filter(id => id !== fId) })}
+                                                                className="hover:text-white"
+                                                            >
+                                                                <X size={10} />
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                                <select
+                                                    className="bg-transparent border-none text-[10px] font-bold text-brand-gold outline-none cursor-pointer p-1"
+                                                    value=""
+                                                    onChange={(e) => {
+                                                        const id = e.target.value;
+                                                        if (id && !(member.firmIds || []).includes(id)) {
+                                                            updateTeamMember(member.id, { firmIds: [...(member.firmIds || []), id] });
+                                                        }
+                                                    }}
+                                                >
+                                                    <option value="" disabled>+ Link Firm</option>
+                                                    {firms.filter(f => !member.firmIds.includes(f.id)).map(firm => (
+                                                        <option key={firm.id} value={firm.id}>{firm.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="flex flex-col gap-1.5 px-3">
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Email Address</span>
-                                        <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-brand-dark px-3 py-2 text-sm text-foreground/60 focus-within:border-brand-gold/50 transition-all">
-                                            <Mail size={16} className="text-brand-gold/50" />
-                                            <input
-                                                type="email"
-                                                className="bg-transparent outline-none w-full text-white"
-                                                defaultValue={member.email}
+                                        <div className="flex flex-col gap-1.5 px-3">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Email Address</span>
+                                            <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-brand-dark px-3 py-2 text-sm text-foreground/60 focus-within:border-brand-gold/50 transition-all">
+                                                <Mail size={16} className="text-brand-gold/50" />
+                                                <input
+                                                    type="email"
+                                                    className="bg-transparent outline-none w-full text-white"
+                                                    defaultValue={member.email}
+                                                    onBlur={(e) => {
+                                                        if (e.target.value !== member.email) {
+                                                            updateTeamMember(member.id, { email: e.target.value });
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-1.5 px-3">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">LinkedIn Profile</span>
+                                            <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-brand-dark px-3 py-2 text-sm text-foreground/60 focus-within:border-brand-gold/50 transition-all">
+                                                <Linkedin size={16} className="text-brand-gold/50" />
+                                                <input
+                                                    type="url"
+                                                    className="bg-transparent outline-none w-full text-white"
+                                                    defaultValue={member.linkedInUrl || ""}
+                                                    placeholder="https://linkedin.com/in/..."
+                                                    onBlur={(e) => {
+                                                        if (e.target.value !== member.linkedInUrl) {
+                                                            updateTeamMember(member.id, { linkedInUrl: e.target.value });
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-1.5 px-3">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Phone Number</span>
+                                            <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-brand-dark px-3 py-2 text-sm text-foreground/60 focus-within:border-brand-gold/50 transition-all">
+                                                <Phone size={16} className="text-brand-gold/50" />
+                                                <input
+                                                    type="tel"
+                                                    className="bg-transparent outline-none w-full text-white"
+                                                    defaultValue={member.phoneNumber || ""}
+                                                    placeholder="(555) 000-0000"
+                                                    onBlur={(e) => {
+                                                        if (e.target.value !== member.phoneNumber) {
+                                                            updateTeamMember(member.id, { phoneNumber: e.target.value });
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-1 px-3">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Biography</span>
+                                            <textarea
+                                                className="w-full h-20 rounded-xl border border-white/5 bg-brand-dark px-3 py-2 text-xs text-foreground/70 outline-none focus:border-brand-gold/50 transition-all resize-none"
+                                                defaultValue={member.bio}
                                                 onBlur={(e) => {
-                                                    if (e.target.value !== member.email) {
-                                                        updateTeamMember(member.id, { email: e.target.value });
+                                                    if (e.target.value !== member.bio) {
+                                                        updateTeamMember(member.id, { bio: e.target.value });
                                                     }
                                                 }}
                                             />
                                         </div>
                                     </div>
-                                    <div className="flex flex-col gap-1.5 px-3">
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">LinkedIn Profile</span>
-                                        <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-brand-dark px-3 py-2 text-sm text-foreground/60 focus-within:border-brand-gold/50 transition-all">
-                                            <Linkedin size={16} className="text-brand-gold/50" />
-                                            <input
-                                                type="url"
-                                                className="bg-transparent outline-none w-full text-white"
-                                                defaultValue={member.linkedInUrl || ""}
-                                                placeholder="https://linkedin.com/in/..."
-                                                onBlur={(e) => {
-                                                    if (e.target.value !== member.linkedInUrl) {
-                                                        updateTeamMember(member.id, { linkedInUrl: e.target.value });
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col gap-1.5 px-3">
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Phone Number</span>
-                                        <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-brand-dark px-3 py-2 text-sm text-foreground/60 focus-within:border-brand-gold/50 transition-all">
-                                            <Phone size={16} className="text-brand-gold/50" />
-                                            <input
-                                                type="tel"
-                                                className="bg-transparent outline-none w-full text-white"
-                                                defaultValue={member.phoneNumber || ""}
-                                                placeholder="(555) 000-0000"
-                                                onBlur={(e) => {
-                                                    if (e.target.value !== member.phoneNumber) {
-                                                        updateTeamMember(member.id, { phoneNumber: e.target.value });
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col gap-1 px-3">
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Biography</span>
-                                        <textarea
-                                            className="w-full h-20 rounded-xl border border-white/5 bg-brand-dark px-3 py-2 text-xs text-foreground/70 outline-none focus:border-brand-gold/50 transition-all resize-none"
-                                            defaultValue={member.bio}
-                                            onBlur={(e) => {
-                                                if (e.target.value !== member.bio) {
-                                                    updateTeamMember(member.id, { bio: e.target.value });
-                                                }
-                                            }}
-                                        />
-                                    </div>
-                                </div>
 
-                                <div className="flex gap-2">
-                                    <Link
-                                        href={`/team/${member.slug}`}
-                                        className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-gray-800 py-3 text-xs font-bold text-white transition-all hover:bg-brand-gray-700"
-                                    >
-                                        <ExternalLink size={14} />
-                                        Public Profile
-                                    </Link>
-                                    <button
-                                        onClick={() => handleSave(member.id)}
-                                        disabled={saveStatus[member.id] === 'saving'}
-                                        className={`rounded-xl px-4 py-3 text-sm font-bold transition-all ${saveStatus[member.id] === 'saved'
-                                            ? 'bg-green-500 text-white'
-                                            : 'bg-brand-gold text-brand-dark hover:shadow-lg hover:shadow-brand-gold/30'
-                                            } ${saveStatus[member.id] === 'saving' ? 'opacity-70 cursor-wait' : ''}`}
-                                    >
-                                        {saveStatus[member.id] === 'saving' ? (
-                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-dark/30 border-t-brand-dark" />
-                                        ) : saveStatus[member.id] === 'saved' ? (
-                                            <Check size={16} />
-                                        ) : (
-                                            <Save size={16} />
-                                        )}
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <Link
+                                            href={`/team/${member.slug}`}
+                                            className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-gray-800 py-3 text-xs font-bold text-white transition-all hover:bg-brand-gray-700"
+                                        >
+                                            <ExternalLink size={14} />
+                                            Public Profile
+                                        </Link>
+                                        <button
+                                            onClick={() => handleSave(member.id)}
+                                            disabled={saveStatus[member.id] === 'saving'}
+                                            className={`rounded-xl px-4 py-3 text-sm font-bold transition-all ${saveStatus[member.id] === 'saved'
+                                                ? 'bg-green-500 text-white'
+                                                : 'bg-brand-gold text-brand-dark hover:shadow-lg hover:shadow-brand-gold/30'
+                                                } ${saveStatus[member.id] === 'saving' ? 'opacity-70 cursor-wait' : ''}`}
+                                        >
+                                            {saveStatus[member.id] === 'saving' ? (
+                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-dark/30 border-t-brand-dark" />
+                                            ) : saveStatus[member.id] === 'saved' ? (
+                                                <Check size={16} />
+                                            ) : (
+                                                <Save size={16} />
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
                 </div>
             </div>
         </div>

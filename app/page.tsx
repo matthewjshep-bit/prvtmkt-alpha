@@ -1,11 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useData } from "@/context/DataContext";
-import { ChevronRight, ShieldCheck, Zap, Globe } from "lucide-react";
+import { ShieldCheck, Zap, Globe, Building2, PlusCircle, Filter } from "lucide-react";
+
+const CATEGORIES = ["ALL", "INDUSTRIAL", "RETAIL", "MULTIFAMILY", "SF"];
 
 export default function PlatformLandingPage() {
-  const { firms } = useData();
+  const { firms, deals } = useData();
+  const [activeFilter, setActiveFilter] = useState("ALL");
+
+  // Filter firms based on whether they have at least one deal matching the selected asset type
+  const filteredFirms = firms.filter(firm => {
+    if (activeFilter === "ALL") return true;
+    return deals.some(deal => deal.firmId === firm.id && deal.assetType === activeFilter);
+  });
 
   return (
     <div className="min-h-screen bg-brand-dark pt-32 pb-20">
@@ -20,50 +30,67 @@ export default function PlatformLandingPage() {
           </p>
         </div>
 
+        {/* High-Contrast Asset Type Filter */}
+        <div className="mb-16 flex flex-wrap items-center justify-center gap-3">
+          <div className="mr-4 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-gold">
+            <Filter size={14} />
+            Filter Deals
+          </div>
+          {CATEGORIES.map((cat) => {
+            const isActive = activeFilter === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setActiveFilter(cat)}
+                className={`rounded-xl px-8 py-3.5 text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${isActive
+                  ? "bg-brand-gold text-brand-dark shadow-[0_10px_30px_-10px_rgba(197,160,89,0.5)] scale-105"
+                  : "border border-white/10 text-white/40 hover:border-brand-gold/50 hover:text-white hover:bg-white/5"
+                  }`}
+              >
+                {cat.replace("_", " ")}
+              </button>
+            );
+          })}
+        </div>
+
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {firms.map((firm) => (
+          {filteredFirms.map((firm) => (
             <Link
               key={firm.id}
               href={`/firms/${firm.slug || firm.id}`}
-              className="group relative overflow-hidden rounded-3xl border border-white/5 bg-brand-gray-900 p-8 transition-all hover:border-brand-gold/30 hover:bg-brand-gray-800"
+              className="group relative flex flex-col items-center justify-center overflow-hidden rounded-[2.5rem] border border-white/5 bg-brand-gray-900 p-12 transition-all hover:border-brand-gold/30 hover:bg-brand-gray-800 hover:shadow-2xl hover:shadow-brand-gold/10"
             >
-              <div className="mb-6 h-12 w-full">
-                {firm.logoUrl && (firm.logoUrl.startsWith('http') || firm.logoUrl.startsWith('/')) ? (
+              <div className="mb-8 flex h-40 w-full items-center justify-center p-4">
+                {firm.logoUrl ? (
                   <img
                     src={firm.logoUrl}
                     alt={firm.name}
-                    className="h-full object-contain object-left grayscale transition-all group-hover:grayscale-0"
+                    className="max-h-full max-w-full object-contain transition-all duration-500 group-hover:scale-110"
                   />
                 ) : (
-                  <div className="h-full w-32 relative text-foreground/20 flex items-center">
-                    <Building2 className="mr-2" size={24} />
-                    <span className="text-xs font-bold uppercase tracking-widest">{firm.name.substring(0, 3)}</span>
+                  <div className="flex flex-col items-center gap-4 text-foreground/20 transition-all duration-500 group-hover:scale-110">
+                    <Building2 size={64} />
                   </div>
                 )}
               </div>
 
-              <h3 className="mb-2 text-2xl font-bold text-white group-hover:text-brand-gold transition-colors">
+              <h3 className="text-center text-3xl font-black tracking-tight text-white transition-all duration-500 group-hover:text-brand-gold">
                 {firm.name}
               </h3>
 
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground/40">
-                <span>View Portfolio</span>
-                <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
-              </div>
-
-              <div className="absolute top-0 right-0 p-6 opacity-0 transition-opacity group-hover:opacity-100">
-                <Globe size={20} className="text-brand-gold/50" />
+              <div className="absolute top-0 right-0 p-8 opacity-0 transition-opacity group-hover:opacity-20">
+                <Globe size={24} className="text-brand-gold" />
               </div>
             </Link>
           ))}
 
           {/* New Firm Placeholder */}
-          <Link href="/admin/firms" className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-white/5 p-8 text-center transition-all hover:border-brand-gold/20 hover:bg-white/5">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-gray-900">
-              <PlusCircle size={24} className="text-brand-gold" />
+          <Link href="/admin/firms" className="flex flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed border-white/5 p-12 text-center transition-all hover:border-brand-gold/20 hover:bg-white/5">
+            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-brand-gray-900">
+              <PlusCircle size={32} className="text-brand-gold" />
             </div>
-            <h3 className="text-lg font-bold text-white">Add Your Firm</h3>
-            <p className="mt-2 text-sm text-foreground/40">Initialize your firm's platform presence instantly.</p>
+            <h3 className="text-xl font-bold text-white">Add Your Firm</h3>
+            <p className="mt-2 text-sm text-foreground/40 leading-relaxed">Initialize your firm's platform presence instantly.</p>
           </Link>
         </div>
 
@@ -89,8 +116,6 @@ export default function PlatformLandingPage() {
     </div>
   );
 }
-
-import { Building2, PlusCircle } from "lucide-react";
 
 function Feature({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
   return (

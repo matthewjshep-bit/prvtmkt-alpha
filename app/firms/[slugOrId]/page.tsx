@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, use } from "react";
+import { useSearchParams } from "next/navigation";
 import { useData } from "@/context/DataContext";
 import DealCard from "@/components/DealCard";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,7 +18,9 @@ export default function FirmProfilePage({
 }) {
     const { firms, deals, teamMembers, isInitialized } = useData();
     const { slugOrId } = use(params);
-    const [activeTab, setActiveTab] = useState("DEALS");
+    const searchParams = useSearchParams();
+    const initialTab = searchParams.get("tab") === "PEOPLE" ? "PEOPLE" : "DEALS";
+    const [activeTab, setActiveTab] = useState(initialTab);
     const [filter, setFilter] = useState("ALL");
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -147,22 +150,26 @@ export default function FirmProfilePage({
                                         <Filter size={14} />
                                         Asset Type
                                     </div>
-                                    {CATEGORIES.map((cat) => (
-                                        <button
-                                            key={cat}
-                                            onClick={() => setFilter(cat)}
-                                            className={`rounded-xl px-6 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all ${filter === cat
-                                                ? "shadow-xl scale-105"
-                                                : "border border-black/5 opacity-50 hover:bg-white/10 hover:opacity-100"
-                                                }`}
-                                            style={{
-                                                backgroundColor: filter === cat ? 'var(--firm-primary)' : 'var(--firm-secondary)',
-                                                color: filter === cat ? 'var(--firm-bg)' : 'var(--firm-text)'
-                                            }}
-                                        >
-                                            {cat.replace("_", " ")}
-                                        </button>
-                                    ))}
+                                    {CATEGORIES.map((cat) => {
+                                        const isActive = filter === cat;
+                                        return (
+                                            <button
+                                                key={cat}
+                                                onClick={() => setFilter(cat)}
+                                                className={`rounded-xl px-8 py-3.5 text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${isActive
+                                                    ? "shadow-[0_10px_30px_-10px_rgba(0,0,0,0.3)] scale-105 border-0"
+                                                    : "border border-black/10 hover:border-black/30 hover:bg-black/5"
+                                                    }`}
+                                                style={{
+                                                    backgroundColor: isActive ? 'var(--firm-primary)' : 'transparent',
+                                                    color: isActive ? 'var(--firm-bg)' : 'rgba(0,0,0,0.6)',
+                                                    boxShadow: isActive ? `0 10px 30px -10px ${firm.primaryColor}50` : 'none'
+                                                }}
+                                            >
+                                                {cat.replace("_", " ")}
+                                            </button>
+                                        );
+                                    })}
 
                                     <div className="ml-auto hidden items-center gap-2 lg:flex opacity-30">
                                         <span className="text-xs font-black uppercase tracking-widest">

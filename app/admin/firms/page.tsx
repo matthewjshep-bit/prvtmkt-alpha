@@ -153,8 +153,11 @@ export default function AdminFirmsPage() {
                                                     onChange={(e) => {
                                                         const file = e.target.files?.[0];
                                                         if (file) {
-                                                            const url = URL.createObjectURL(file);
-                                                            handleUpdateLogo(firm.id, url);
+                                                            const reader = new FileReader();
+                                                            reader.onloadend = () => {
+                                                                handleUpdateLogo(firm.id, reader.result as string);
+                                                            };
+                                                            reader.readAsDataURL(file);
                                                         }
                                                     }}
                                                 />
