@@ -63,6 +63,7 @@ interface Deal {
     rehabAmount?: number;
     arv?: number;
     investmentOverview?: string;
+    generatedVideoURL?: string; // Cinematic AI Video
 }
 
 interface Activity {

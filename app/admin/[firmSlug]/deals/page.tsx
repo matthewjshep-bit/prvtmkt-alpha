@@ -29,6 +29,66 @@ function TenantDealsContent() {
     const [localDeals, setLocalDeals] = useState<any[]>([]);
     const [changedDealIds, setChangedDealIds] = useState<Set<string>>(new Set());
     const [activeMediaDealId, setActiveMediaDealId] = useState<string | null>(null);
+    const [aiProcessingIds, setAiProcessingIds] = useState<Set<string>>(new Set());
+
+    const handleGenerateAIVideo = async (dealId: string, imageUrl: string) => {
+        try {
+            setAiProcessingIds(prev => new Set(prev).add(imageUrl));
+
+            // 1. Start Kling Task
+            const startRes = await fetch("/api/kling", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ imageUrl, dealId })
+            });
+            const startData = await startRes.json();
+
+            if (startData.error) throw new Error(startData.error);
+            const taskId = startData.data?.task_id || startData.task_id;
+
+            // 2. Poll for completion
+            const poll = async () => {
+                const pollRes = await fetch(`/api/kling?taskId=${taskId}`);
+                const pollData = await pollRes.json();
+                const status = (pollData.data?.task_status || pollData.task_status)?.toLowerCase();
+
+                if (status === "succeeded") {
+                    const finalVideoUrl = pollData.data?.video_url || pollData.video_url;
+
+                    // 3. Persist to S3
+                    const persistRes = await fetch("/api/kling/persist", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ videoUrl: finalVideoUrl, dealId })
+                    });
+                    const persistData = await persistRes.json();
+
+                    if (persistData.url) {
+                        handleLocalUpdate(dealId, { generatedVideoURL: persistData.url });
+                        setAiProcessingIds(prev => {
+                            const next = new Set(prev);
+                            next.delete(imageUrl);
+                            return next;
+                        });
+                    }
+                } else if (status === "failed") {
+                    throw new Error("Kling AI generation failed");
+                } else {
+                    setTimeout(poll, 3000); // Poll every 3s
+                }
+            };
+
+            poll();
+        } catch (error) {
+            console.error("AI Generation Error:", error);
+            setAiProcessingIds(prev => {
+                const next = new Set(prev);
+                next.delete(imageUrl);
+                return next;
+            });
+            alert("Failed to generate AI video. Check console for details.");
+        }
+    };
 
     useEffect(() => {
         if (isInitialized && firm) {
@@ -239,19 +299,29 @@ function TenantDealsContent() {
                                             multiple
                                             accept="image/*"
                                             className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
-                                            onChange={(e) => {
+                                            onChange={async (e) => {
                                                 const files = Array.from(e.target.files || []);
-                                                files.forEach(file => {
-                                                    const reader = new FileReader();
-                                                    reader.onloadend = () => {
-                                                        const base64String = reader.result as string;
-                                                        setNewDeal(prev => ({
-                                                            ...prev,
-                                                            images: [...(prev.images || []), base64String]
-                                                        }));
-                                                    };
-                                                    reader.readAsDataURL(file);
-                                                });
+                                                for (const file of files) {
+                                                    const formData = new FormData();
+                                                    formData.append("file", file);
+                                                    formData.append("dealId", "new"); // temporary marker
+
+                                                    const res = await fetch("/api/upload", {
+                                                        method: "POST",
+                                                        body: formData
+                                                    });
+                                                    const { url } = await res.json();
+
+                                                    setNewDeal(prev => ({
+                                                        ...prev,
+                                                        images: [...(prev.images || []), url]
+                                                    }));
+
+                                                    // Auto-trigger Kling for the first image
+                                                    if (newDeal.images.length === 0) {
+                                                        // Note: We'll trigger after the deal is created or if it's an existing deal
+                                                    }
+                                                }
                                             }}
                                         />
                                         <div className="flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-white/10 bg-white/5 py-12 transition-all hover:border-brand-gold/50 hover:bg-white/10">
@@ -581,21 +651,28 @@ function TenantDealsContent() {
                                             className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
                                             onChange={async (e) => {
                                                 const files = Array.from(e.target.files || []);
-                                                // Robust Batch Uploading
-                                                const base64Promises = files.map(file => {
-                                                    return new Promise<string>((resolve) => {
-                                                        const reader = new FileReader();
-                                                        reader.onloadend = () => resolve(reader.result as string);
-                                                        reader.readAsDataURL(file);
-                                                    });
-                                                });
+                                                for (const file of files) {
+                                                    const formData = new FormData();
+                                                    formData.append("file", file);
+                                                    formData.append("dealId", activeMediaDeal.id);
 
-                                                const newMedia = await Promise.all(base64Promises);
-                                                const currentImages = activeMediaDeal.images || [];
-                                                handleLocalUpdate(activeMediaDeal.id, {
-                                                    images: [...currentImages, ...newMedia],
-                                                    stillImageURL: currentImages.length === 0 ? newMedia[0] : activeMediaDeal.stillImageURL
-                                                });
+                                                    const res = await fetch("/api/upload", {
+                                                        method: "POST",
+                                                        body: formData
+                                                    });
+                                                    const { url } = await res.json();
+
+                                                    const currentImages = activeMediaDeal.images || [];
+                                                    handleLocalUpdate(activeMediaDeal.id, {
+                                                        images: [...currentImages, url],
+                                                        stillImageURL: currentImages.length === 0 ? url : activeMediaDeal.stillImageURL
+                                                    });
+
+                                                    // Auto-trigger Kling for the first image in gallery
+                                                    if (currentImages.length === 0) {
+                                                        handleGenerateAIVideo(activeMediaDeal.id, url);
+                                                    }
+                                                }
                                             }}
                                         />
                                         <div className="flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-white/10 bg-white/2 py-16 transition-all group-hover:border-brand-gold/50 group-hover:bg-brand-gold/5">
@@ -618,8 +695,30 @@ function TenantDealsContent() {
                                                     <GripVertical size={20} />
                                                     <span className="text-xs font-black w-4">{idx + 1}</span>
                                                 </div>
-                                                <div className="h-20 w-32 overflow-hidden rounded-xl bg-brand-dark border border-white/5">
+                                                <div className="h-20 w-32 overflow-hidden rounded-xl bg-brand-dark border border-white/5 relative group/img">
                                                     <img src={img} className="h-full w-full object-cover" />
+                                                    {activeMediaDeal.generatedVideoURL && idx === 0 ? (
+                                                        <div className="absolute inset-0 bg-brand-gold/20 flex items-center justify-center">
+                                                            <div className="rounded-full bg-brand-gold p-1 animate-pulse">
+                                                                <Eye size={10} className="text-brand-dark" />
+                                                            </div>
+                                                        </div>
+                                                    ) : aiProcessingIds.has(img) ? (
+                                                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1">
+                                                            <div className="h-4 w-4 border-2 border-brand-gold/30 border-t-brand-gold animate-spin rounded-full" />
+                                                            <span className="text-[6px] font-black uppercase text-brand-gold">AI Processing</span>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleGenerateAIVideo(activeMediaDeal.id, img)}
+                                                            className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-all"
+                                                        >
+                                                            <div className="flex flex-col items-center gap-1">
+                                                                <Upload size={14} className="text-brand-gold" />
+                                                                <span className="text-[6px] font-black uppercase text-white">Gen Drone AI</span>
+                                                            </div>
+                                                        </button>
+                                                    )}
                                                 </div>
                                                 <div className="flex-1">
                                                     <p className="text-[10px] font-black uppercase tracking-widest text-foreground/40">Asset File</p>

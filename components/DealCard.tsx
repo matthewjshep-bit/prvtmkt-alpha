@@ -14,6 +14,7 @@ interface DealCardProps {
         rehabAmount?: number | null;
         arv?: number | null;
         stillImageURL: string | null;
+        generatedVideoURL?: string | null;
         isPublic: boolean;
         capRate?: number | null;
         sqFt?: number | null;
@@ -44,7 +45,16 @@ export default function DealCard({ deal, index, isListView = false }: DealCardPr
         >
             {/* Image Container */}
             <div className={`relative overflow-hidden ${isListView ? 'w-full md:w-[45%] shrink-0' : 'aspect-[16/9]'}`}>
-                {deal.stillImageURL ? (
+                {deal.generatedVideoURL ? (
+                    <video
+                        src={deal.generatedVideoURL}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                ) : deal.stillImageURL ? (
                     <img
                         src={deal.stillImageURL}
                         alt={deal.address}

@@ -31,7 +31,12 @@ export default function DealPage({
 
     const members = (deal.teamMemberIds || []).map(mId => teamMembers.find(m => m.id === mId)).filter(Boolean);
     const firm = firms.find(f => f.id === deal.firmId);
-    const allImages = deal.images && deal.images.length > 0 ? deal.images : [deal.stillImageURL];
+
+    // Prioritize generated video in the gallery
+    const allImages = [
+        ...(deal.generatedVideoURL ? [deal.generatedVideoURL] : []),
+        ...(deal.images && deal.images.length > 0 ? deal.images : [deal.stillImageURL])
+    ].filter(Boolean);
 
     // Dynamic Theming
     const themeStyles = {
@@ -140,11 +145,22 @@ export default function DealPage({
                             {allImages.map((img, idx) => (
                                 <SliderWrapper key={idx} value={`slide-${idx}`}>
                                     <div className="aspect-[21/9] w-full overflow-hidden">
-                                        <img
-                                            src={img}
-                                            alt={`Property view ${idx + 1}`}
-                                            className="h-full w-full object-cover"
-                                        />
+                                        {img.toLowerCase().includes('.mp4') || img.toLowerCase().includes('.mov') ? (
+                                            <video
+                                                src={img}
+                                                autoPlay
+                                                muted
+                                                loop
+                                                playsInline
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <img
+                                                src={img}
+                                                alt={`Property view ${idx + 1}`}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        )}
                                     </div>
                                 </SliderWrapper>
                             ))}
