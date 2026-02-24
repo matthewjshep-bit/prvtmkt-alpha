@@ -29,7 +29,7 @@ export default function DealPage({
         );
     }
 
-    const member = teamMembers.find((m) => m.id === deal.teamMemberId);
+    const members = (deal.teamMemberIds || []).map(mId => teamMembers.find(m => m.id === mId)).filter(Boolean);
     const firm = firms.find(f => f.id === deal.firmId);
     const allImages = deal.images && deal.images.length > 0 ? deal.images : [deal.stillImageURL];
 
@@ -84,37 +84,43 @@ export default function DealPage({
                                 </span>
                             </h1>
 
-                            {/* Enhanced Persona Lead Card in Dynamic Secondary Background (Soft-Rectangular) */}
-                            <div className="inline-flex items-center gap-6 rounded-3xl p-4 pr-12 shadow-xl transition-transform hover:scale-[1.02]" style={{ backgroundColor: 'var(--firm-secondary)' }}>
-                                <div className="h-24 w-24 overflow-hidden rounded-2xl border-4 border-white shadow-md">
-                                    <img
-                                        src={member?.imageURL || ""}
-                                        alt={member?.name}
-                                        className="h-full w-full object-cover"
-                                    />
-                                </div>
-                                <div className="space-y-0.5">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/40">Transaction Lead</p>
-                                    <Link href={`/team/${member?.slug}`} className="text-2xl font-black text-black hover:text-[var(--firm-primary)] transition-colors">
-                                        {member?.name}
-                                    </Link>
-                                    <p className="text-xs font-bold text-black/60 uppercase tracking-wider mb-3">{member?.role}</p>
+                            {/* Multiple Transaction Leads */}
+                            <div className="space-y-6">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/40">Transaction Leads</p>
+                                <div className="grid gap-6">
+                                    {members.map((m: any) => (
+                                        <div key={m.id} className="inline-flex items-center gap-6 rounded-3xl p-4 pr-12 shadow-xl transition-transform hover:scale-[1.02]" style={{ backgroundColor: 'var(--firm-secondary)' }}>
+                                            <div className="h-24 w-24 overflow-hidden rounded-2xl border-4 border-white shadow-md">
+                                                <img
+                                                    src={m.imageURL}
+                                                    alt={m.name}
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            </div>
+                                            <div className="space-y-0.5">
+                                                <Link href={`/firms/${firm?.slug}/?member=${m.slug}`} className="text-2xl font-black text-black hover:text-[var(--firm-primary)] transition-colors">
+                                                    {m.name}
+                                                </Link>
+                                                <p className="text-xs font-bold text-black/60 uppercase tracking-wider mb-3">{m.role}</p>
 
-                                    <div className="flex items-center gap-3">
-                                        <a href={`mailto:${member?.email}`} className="group/icon flex h-8 w-8 items-center justify-center rounded-lg bg-black/5 text-black/40 transition-all hover:bg-[var(--firm-primary)] hover:text-[var(--firm-bg)]">
-                                            <Mail size={16} />
-                                        </a>
-                                        {member?.linkedInUrl && (
-                                            <a href={member.linkedInUrl} target="_blank" rel="noopener noreferrer" className="group/icon flex h-8 w-8 items-center justify-center rounded-lg bg-black/5 text-black/40 transition-all hover:bg-[var(--firm-primary)] hover:text-[var(--firm-bg)]">
-                                                <Linkedin size={16} />
-                                            </a>
-                                        )}
-                                        {member?.phoneNumber && (
-                                            <a href={`tel:${member.phoneNumber}`} className="group/icon flex h-8 w-8 items-center justify-center rounded-lg bg-black/5 text-black/40 transition-all hover:bg-[var(--firm-primary)] hover:text-[var(--firm-bg)]">
-                                                <Phone size={16} />
-                                            </a>
-                                        )}
-                                    </div>
+                                                <div className="flex items-center gap-3">
+                                                    <a href={`mailto:${m.email}`} className="group/icon flex h-8 w-8 items-center justify-center rounded-lg bg-black/5 text-black/40 transition-all hover:bg-[var(--firm-primary)] hover:text-[var(--firm-bg)]">
+                                                        <Mail size={16} />
+                                                    </a>
+                                                    {m.linkedInUrl && (
+                                                        <a href={m.linkedInUrl} target="_blank" rel="noopener noreferrer" className="group/icon flex h-8 w-8 items-center justify-center rounded-lg bg-black/5 text-black/40 transition-all hover:bg-[var(--firm-primary)] hover:text-[var(--firm-bg)]">
+                                                            <Linkedin size={16} />
+                                                        </a>
+                                                    )}
+                                                    {m.phoneNumber && (
+                                                        <a href={`tel:${m.phoneNumber}`} className="group/icon flex h-8 w-8 items-center justify-center rounded-lg bg-black/5 text-black/40 transition-all hover:bg-[var(--firm-primary)] hover:text-[var(--firm-bg)]">
+                                                            <Phone size={16} />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>

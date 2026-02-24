@@ -29,22 +29,26 @@ export default function IntakeFormPage() {
         // Simulate AI Video generation progress
         setTimeout(() => {
             const newId = `d-${Date.now()}`;
+            // FIX: Ensure firmId is correctly mapped and has a fallback
+            const finalFirmId = form.firmId || (firms.length > 0 ? firms[0].id : "");
+
             const newDeal = {
                 id: newId,
-                firmId: form.firmId,
+                firmId: finalFirmId,
                 address: form.address,
                 assetType: form.assetType,
                 strategy: form.strategy,
                 purchaseAmount: form.purchaseAmount ? Number(form.purchaseAmount) : null,
                 financedAmount: form.purchaseAmount ? Number(form.purchaseAmount) * 0.7 : null,
+                // Default placeholder if no images
                 stillImageURL: form.images.length > 0 ? URL.createObjectURL(form.images[0]) : "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800&auto=format&fit=crop",
                 images: form.images.map(img => URL.createObjectURL(img)),
                 isPublic: form.isPublic,
                 capRate: 5.0,
                 sqFt: 25000,
-                teamMemberId: "cm1"
+                teamMemberIds: ["cm1"], // Mock team member
+                context: "Generated via System Intake workflow."
             };
-            // @ts-ignore
             addDeal(newDeal);
             router.push(`/admin/deals`);
         }, 3000);

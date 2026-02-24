@@ -55,6 +55,18 @@ export default function FirmProfilePage({
         '--firm-secondary': firm.secondaryColor || '#f5f5f5',
     } as React.CSSProperties;
 
+    const isVideo = (url: string | undefined) => {
+        if (!url) return false;
+        const lowerUrl = url.toLowerCase();
+        // Permissive check: if it explicitly says video or has a video extension
+        const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.quicktime', '.m4v'];
+        const hasVideoExtension = videoExtensions.some(ext => lowerUrl.split(/[?#]/)[0].endsWith(ext));
+        const isVideoDataUrl = url.startsWith('data:video/') || lowerUrl.includes('video/quicktime') || lowerUrl.includes('video/mp4');
+
+        // Final fallback: if it's a data URL and NOT an image, it's likely our video
+        return hasVideoExtension || isVideoDataUrl || (url.startsWith('data:') && !lowerUrl.includes('image/'));
+    };
+
     return (
         <div
             className="min-h-screen pt-28 pb-20 transition-colors duration-500"
@@ -143,6 +155,33 @@ export default function FirmProfilePage({
                         </div>
                     </div>
                 </div>
+
+                {/* Conditional Hero Media (Banner) */}
+                {firm.heroMediaUrl && (
+                    <div className="mb-16 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+                        <div className="relative aspect-[21/9] w-full overflow-hidden rounded-[3rem] border border-white/10 shadow-3xl bg-black/20 backdrop-blur-sm">
+                            {isVideo(firm.heroMediaUrl) ? (
+                                <video
+                                    key={firm.heroMediaUrl.slice(-32)} // Unique key based on data suffix to force remount
+                                    src={firm.heroMediaUrl}
+                                    className="h-full w-full object-cover"
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    onError={(e) => console.error("Portal Video Error:", e)}
+                                />
+                            ) : (
+                                <img
+                                    src={firm.heroMediaUrl}
+                                    className="h-full w-full object-cover"
+                                    alt={`${firm.name} Portfolio Hero`}
+                                />
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                        </div>
+                    </div>
+                )}
 
                 {/* Distinct Search & Navigation Area (Soft-Rectangular) */}
                 <div className="mb-16 rounded-[2rem] p-4 pr-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden" style={{ backgroundColor: 'var(--firm-secondary)' }}>

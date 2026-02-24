@@ -18,6 +18,7 @@ interface Firm {
     physicalAddress?: string;
     linkedInUrl?: string;
     googleReviewsUrl?: string;
+    heroMediaUrl?: string;
 }
 
 interface TeamMember {
@@ -46,11 +47,20 @@ interface Deal {
     isPublic: boolean;
     capRate?: number | null;
     sqFt?: number | null;
-    teamMemberId: string;
+    teamMemberIds: string[];
     context?: string;
     financingType?: "Debt Financing" | "Equity Ownership";
     rehabAmount?: number;
     arv?: number;
+}
+
+interface Activity {
+    id: string;
+    type: 'DEAL_ADDED' | 'FIRM_ADDED' | 'MEMBER_ADDED';
+    title: string;
+    timestamp: string;
+    firmId?: string;
+    dealId?: string;
 }
 
 interface DataContextType {
@@ -65,6 +75,8 @@ interface DataContextType {
     addDeal: (deal: Deal) => void;
     deleteDeal: (id: string) => void;
     deleteFirm: (id: string) => void;
+    activities: Activity[];
+    addActivity: (activity: Omit<Activity, 'id' | 'timestamp'>) => void;
     isInitialized: boolean;
 }
 
@@ -74,6 +86,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const [firms, setFirms] = useState<Firm[]>(MOCK_FIRMS);
     const [deals, setDeals] = useState<Deal[]>(MOCK_DEALS);
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>(MOCK_TEAM_MEMBERS);
+    const [activities, setActivities] = useState<Activity[]>([]);
     const [isInitialized, setIsInitialized] = useState(false);
 
     // Robust loading from storage (IndexedDB with LocalStorage fallback/migration)
@@ -86,7 +99,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 const savedTeam = await storage.getItem<TeamMember[]>('prvtmkt_team');
 
                 if (savedFirms) setFirms(savedFirms);
-                if (savedDeals) setDeals(savedDeals);
+                if (savedDeals) {
+                    // Normalize legacy data: Ensure teamMemberIds array exists
+                    const normalizedDeals = savedDeals.map((d: any) => ({
+                        ...d,
+                        teamMemberIds: d.teamMemberIds || (d.teamMemberId ? [d.teamMemberId] : [])
+                    }));
+                    setDeals(normalizedDeals);
+                }
                 if (savedTeam) {
                     // Normalize legacy data: Ensure firmIds array exists
                     const normalizedTeam = savedTeam.map((m: any) => ({
@@ -103,7 +123,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                     const legacyTeam = localStorage.getItem('prvtmkt_team');
 
                     if (legacyFirms) setFirms(JSON.parse(legacyFirms));
-                    if (legacyDeals) setDeals(JSON.parse(legacyDeals));
+                    if (legacyDeals) {
+                        const parsedDeals = JSON.parse(legacyDeals);
+                        const normalizedDeals = parsedDeals.map((d: any) => ({
+                            ...d,
+                            teamMemberIds: d.teamMemberIds || (d.teamMemberId ? [d.teamMemberId] : [])
+                        }));
+                        setDeals(normalizedDeals);
+                    }
                     if (legacyTeam) {
                         const parsedTeam = JSON.parse(legacyTeam);
                         const normalizedTeam = parsedTeam.map((m: any) => ({
@@ -136,19 +163,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (isInitialized) {
-            storage.setItem('prvtmkt_deals', deals).catch(e =>
-                console.error("Storage: Failed to save deals (QuotaExceeded fix).", e)
-            );
-        }
-    }, [deals, isInitialized]);
-
-    useEffect(() => {
-        if (isInitialized) {
             storage.setItem('prvtmkt_team', teamMembers).catch(e =>
                 console.error("Storage: Failed to save team.", e)
             );
         }
     }, [teamMembers, isInitialized]);
+
+    useEffect(() => {
+        if (isInitialized) {
+            storage.setItem('prvtmkt_activities', activities).catch(e =>
+                console.error("Storage: Failed to save activities.", e)
+            );
+        }
+    }, [activities, isInitialized]);
 
     const updateFirm = (id: string, updates: Partial<Firm>) => {
         setFirms(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
@@ -160,14 +187,30 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const addFirm = (firm: Firm) => {
         setFirms(prev => [firm, ...prev]);
+        addActivity({
+            type: 'FIRM_ADDED',
+            title: `Added new firm: ${firm.name}`,
+            firmId: firm.id
+        });
     };
 
     const addTeamMember = (member: TeamMember) => {
         setTeamMembers(prev => [member, ...prev]);
+        addActivity({
+            type: 'MEMBER_ADDED',
+            title: `Added new team member: ${member.name}`,
+            firmId: member.firmIds?.[0] || ""
+        });
     };
 
     const addDeal = (deal: Deal) => {
         setDeals(prev => [deal, ...prev]);
+        addActivity({
+            type: 'DEAL_ADDED',
+            title: `New deal uploaded: ${deal.address}`,
+            dealId: deal.id,
+            firmId: deal.firmId
+        });
     };
 
     const updateDeal = (id: string, updates: Partial<Deal>) => {
@@ -185,8 +228,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         // Cascading: Remove firm from team member firmIds
         setTeamMembers(prev => prev.map(m => ({
             ...m,
-            firmIds: m.firmIds.filter(fId => fId !== id)
+            firmIds: (m.firmIds || []).filter(fId => fId !== id)
         })));
+        // Cascading: Remove members from deals teamMemberIds
+        setDeals(prev => prev.map(d => ({
+            ...d,
+            teamMemberIds: (d.teamMemberIds || []).filter(mId => {
+                const member = teamMembers.find(m => m.id === mId);
+                return member && (member.firmIds || []).includes(id) ? false : true;
+            })
+        })));
+    };
+
+    const addActivity = (activity: Omit<Activity, 'id' | 'timestamp'>) => {
+        const newActivity: Activity = {
+            ...activity,
+            id: `act-${Date.now()}`,
+            timestamp: new Date().toISOString()
+        };
+        setActivities(prev => [newActivity, ...prev]);
     };
 
     return (
@@ -202,6 +262,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             addDeal,
             deleteDeal,
             deleteFirm,
+            activities,
+            addActivity,
             isInitialized
         }}>
             {children}

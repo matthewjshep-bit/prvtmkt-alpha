@@ -71,7 +71,7 @@ export const MOCK_DEALS = [
         isPublic: true,
         capRate: 5.2,
         sqFt: 45000,
-        teamMemberId: "cm1",
+        teamMemberIds: ["cm1"],
     },
     {
         id: "d2",
@@ -85,7 +85,7 @@ export const MOCK_DEALS = [
         isPublic: true,
         capRate: 4.8,
         sqFt: 125000,
-        teamMemberId: "cm1",
+        teamMemberIds: ["cm1"],
     },
     {
         id: "d3",
@@ -99,6 +99,6 @@ export const MOCK_DEALS = [
         isPublic: false,
         capRate: 6.1,
         sqFt: 18000,
-        teamMemberId: "cm1",
+        teamMemberIds: ["cm1"],
     },
 ];

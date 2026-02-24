@@ -15,14 +15,15 @@ interface DealCardProps {
         isPublic: boolean;
         capRate?: number | null;
         sqFt?: number | null;
-        teamMemberId: string;
+        teamMemberIds: string[];
     };
     index: number;
 }
 
 export default function DealCard({ deal, index }: DealCardProps) {
     const { teamMembers } = useData();
-    const member = teamMembers.find(m => m.id === deal.teamMemberId);
+    const members = (deal.teamMemberIds || []).map(mId => teamMembers.find(m => m.id === mId)).filter(Boolean);
+    const member = members[0]; // Show the primary (first) lead on the card
 
     return (
         <motion.div
@@ -84,15 +85,34 @@ export default function DealCard({ deal, index }: DealCardProps) {
                     <div className="space-y-1.5">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/30">Transaction lead</p>
                         <div className="flex items-center gap-3">
-                            {member ? (
+                            {members.length > 0 ? (
                                 <>
-                                    <img src={member.imageURL} alt={member.name} className="h-8 w-8 rounded-lg object-cover border-2 border-white shadow-sm" />
-                                    <span className="text-xs font-black text-foreground truncate uppercase tracking-widest">{member.name}</span>
+                                    <div className="flex -space-x-2 overflow-hidden">
+                                        {members.slice(0, 3).map((m: any) => (
+                                            <img
+                                                key={m.id}
+                                                src={m.imageURL}
+                                                alt={m.name}
+                                                className="h-8 w-8 rounded-lg object-cover border-2 border-brand-gray-900 shadow-sm"
+                                                title={m.name}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-xs font-black text-foreground truncate uppercase tracking-widest leading-none mb-1">
+                                            {members[0]?.name}
+                                        </span>
+                                        {members.length > 1 && (
+                                            <span className="text-[9px] font-bold text-foreground/40 uppercase tracking-tighter">
+                                                + {members.length - 1} other{members.length > 2 ? 's' : ''}
+                                            </span>
+                                        )}
+                                    </div>
                                 </>
                             ) : (
                                 <>
                                     <User size={14} className="text-foreground/20" />
-                                    <span className="text-xs font-bold text-foreground/20 italic">Unassigned</span>
+                                    <span className="text-xs font-bold text-foreground/20 italic uppercase tracking-widest">Unassigned</span>
                                 </>
                             )}
                         </div>

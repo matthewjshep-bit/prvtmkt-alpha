@@ -18,7 +18,7 @@ import {
 
 export default function AdminDashboard() {
     const data = useData();
-    const { firms, deals, teamMembers, addFirm } = data;
+    const { firms, deals, teamMembers, addFirm, activities } = data;
 
     // Debug log
     if (typeof window !== 'undefined' && !addFirm) {
@@ -180,14 +180,44 @@ export default function AdminDashboard() {
                         </div>
                     </div>
 
-                    {/* Quick Actions / Activity Placeholder */}
+                    {/* Global Activity Feed */}
                     <div className="glass rounded-3xl p-8 border border-white/5">
                         <h3 className="mb-6 text-xl font-bold text-white">Global Activity</h3>
-                        <div className="flex h-64 flex-col items-center justify-center text-center">
-                            <div className="mb-4 rounded-full bg-brand-gray-900 p-4">
-                                <LayoutDashboard size={32} className="text-brand-gold/30" />
-                            </div>
-                            <p className="text-sm text-foreground/40">System-wide activity logs will appear here.</p>
+                        <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                            {activities.length > 0 ? (
+                                activities.map((activity) => {
+                                    const firm = firms.find(f => f.id === activity.firmId);
+                                    return (
+                                        <div key={activity.id} className="relative flex gap-4 pb-6 before:absolute before:left-[19px] before:top-10 before:bottom-0 before:w-px before:bg-white/5 last:pb-0 last:before:hidden">
+                                            <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-gray-900 border border-white/10">
+                                                {firm?.logoUrl ? (
+                                                    <img src={firm.logoUrl} alt="" className="h-6 w-6 object-contain opacity-50" />
+                                                ) : (
+                                                    <LayoutDashboard size={18} className="text-brand-gold/30" />
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-sm font-bold text-white">{activity.title}</p>
+                                                    <span className="text-[10px] text-foreground/30 font-medium">
+                                                        {new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold/60">
+                                                    {firm?.name || 'Platform System'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="flex h-64 flex-col items-center justify-center text-center">
+                                    <div className="mb-4 rounded-full bg-brand-gray-900 p-4">
+                                        <LayoutDashboard size={32} className="text-brand-gold/30" />
+                                    </div>
+                                    <p className="text-sm text-foreground/50">System-wide activity logs will appear here.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

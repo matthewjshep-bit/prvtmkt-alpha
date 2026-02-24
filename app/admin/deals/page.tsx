@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useData } from "@/context/DataContext";
-import { Briefcase, Building2, MapPin, Eye, Edit3, Trash2, Plus, X, Save, Upload } from "lucide-react";
+import { Briefcase, Building2, MapPin, Eye, Edit3, Trash2, Plus, X, Save, Upload, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -18,6 +18,8 @@ function AdminDealsContent() {
     const { firms, deals, teamMembers, addDeal, updateDeal, deleteDeal } = useData();
     const [editingDeal, setEditingDeal] = useState<any | null>(null);
     const [isAddingDeal, setIsAddingDeal] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [selectedFirmId, setSelectedFirmId] = useState("all");
 
     const DEFAULT_TOMBSTONE: {
         address: string;
@@ -29,7 +31,7 @@ function AdminDealsContent() {
         arv?: number | null;
         financingType: string;
         isPublic: boolean;
-        teamMemberId: string;
+        teamMemberIds: string[];
         stillImageURL: string;
         context: string;
         images: string[];
@@ -43,7 +45,7 @@ function AdminDealsContent() {
         arv: null,
         financingType: "Debt Financing",
         isPublic: true,
-        teamMemberId: teamMembers[0]?.id || "",
+        teamMemberIds: [],
         stillImageURL: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800&auto=format&fit=crop",
         context: "",
         images: []
@@ -107,6 +109,32 @@ function AdminDealsContent() {
                         <Link href="/admin" className="text-sm font-bold text-foreground/40 hover:text-white">
                             Return to Dashboard
                         </Link>
+                    </div>
+                </div>
+
+                {/* Advanced Filtering Tools */}
+                <div className="mb-8 flex flex-col md:flex-row gap-4">
+                    <div className="relative flex-1 group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40 group-focus-within:text-brand-gold transition-colors" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Search deals by address or asset type..."
+                            className="w-full rounded-xl border border-white/5 bg-brand-gray-900/50 pl-12 pr-4 py-3 text-white outline-none focus:border-brand-gold/50 transition-all font-medium placeholder:text-white/20"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <div className="w-full md:w-64">
+                        <select
+                            className="w-full rounded-xl border border-white/5 bg-brand-gray-900/50 px-4 py-3 text-white outline-none focus:border-brand-gold/50 transition-all appearance-none font-medium"
+                            value={selectedFirmId}
+                            onChange={(e) => setSelectedFirmId(e.target.value)}
+                        >
+                            <option value="all">All Firms</option>
+                            {firms.map(firm => (
+                                <option key={firm.id} value={firm.id}>{firm.name}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 
@@ -299,18 +327,41 @@ function AdminDealsContent() {
 
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">
-                                        Responsible Party <span className="text-brand-gold ml-1 text-[8px] italic">REQUIRED FIELD</span>
+                                        Responsible Parties <span className="text-brand-gold ml-1 text-[8px] italic">MULTI-SELECT ACTIVE</span>
                                     </label>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {newDeal.teamMemberIds.map(mId => {
+                                            const member = teamMembers.find(m => m.id === mId);
+                                            return (
+                                                <div key={mId} className="flex items-center gap-2 rounded-lg bg-brand-gold/10 border border-brand-gold/20 px-3 py-1.5 text-[10px] font-bold text-brand-gold">
+                                                    {member?.name}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setNewDeal({ ...newDeal, teamMemberIds: newDeal.teamMemberIds.filter(id => id !== mId) })}
+                                                        className="hover:text-white"
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                     <select
-                                        required
                                         className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none appearance-none"
-                                        value={newDeal.teamMemberId}
-                                        onChange={(e) => setNewDeal({ ...newDeal, teamMemberId: e.target.value })}
+                                        value=""
+                                        onChange={(e) => {
+                                            if (e.target.value && !newDeal.teamMemberIds.includes(e.target.value)) {
+                                                setNewDeal({ ...newDeal, teamMemberIds: [...newDeal.teamMemberIds, e.target.value] });
+                                            }
+                                        }}
                                     >
-                                        <option value="">Select a team member...</option>
-                                        {teamMembers.map(member => (
-                                            <option key={member.id} value={member.id}>{member.name} ({firms.filter(f => (member.firmIds || []).includes(f.id)).map(f => f.name).join(', ')})</option>
-                                        ))}
+                                        <option value="">+ Add Transaction Lead...</option>
+                                        {teamMembers
+                                            .filter(m => !newDeal.teamMemberIds.includes(m.id))
+                                            .map(member => (
+                                                <option key={member.id} value={member.id}>{member.name} ({firms.filter(f => (member.firmIds || []).includes(f.id)).map(f => f.name).join(', ')})</option>
+                                            ))
+                                        }
                                     </select>
                                 </div>
 
@@ -499,16 +550,40 @@ function AdminDealsContent() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Responsible Party</label>
+                                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Responsible Parties</label>
+                                        <div className="flex flex-wrap gap-2 mb-2">
+                                            {(editingDeal.teamMemberIds || []).map((mId: string) => {
+                                                const member = teamMembers.find(m => m.id === mId);
+                                                return (
+                                                    <div key={mId} className="flex items-center gap-2 rounded-lg bg-brand-gold/10 border border-brand-gold/20 px-3 py-1.5 text-[10px] font-bold text-brand-gold">
+                                                        {member?.name}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setEditingDeal({ ...editingDeal, teamMemberIds: editingDeal.teamMemberIds.filter((id: string) => id !== mId) })}
+                                                            className="hover:text-white"
+                                                        >
+                                                            <X size={12} />
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                         <select
                                             className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none appearance-none"
-                                            value={editingDeal.teamMemberId}
-                                            onChange={(e) => setEditingDeal({ ...editingDeal, teamMemberId: e.target.value })}
+                                            value=""
+                                            onChange={(e) => {
+                                                if (e.target.value && !(editingDeal.teamMemberIds || []).includes(e.target.value)) {
+                                                    setEditingDeal({ ...editingDeal, teamMemberIds: [...(editingDeal.teamMemberIds || []), e.target.value] });
+                                                }
+                                            }}
                                         >
-                                            <option value="">Select a team member...</option>
-                                            {teamMembers.map(member => (
-                                                <option key={member.id} value={member.id}>{member.name} ({firms.filter(f => (member.firmIds || []).includes(f.id)).map(f => f.name).join(', ')})</option>
-                                            ))}
+                                            <option value="">+ Add Transaction Lead...</option>
+                                            {teamMembers
+                                                .filter(m => !(editingDeal.teamMemberIds || []).includes(m.id))
+                                                .map(member => (
+                                                    <option key={member.id} value={member.id}>{member.name} ({firms.filter(f => (member.firmIds || []).includes(f.id)).map(f => f.name).join(', ')})</option>
+                                                ))
+                                            }
                                         </select>
                                     </div>
 
@@ -565,66 +640,73 @@ function AdminDealsContent() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {deals.map((deal) => {
-                                const firm = firms.find(f => f.id === deal.firmId);
-                                return (
-                                    <tr key={deal.id} className="group transition-colors hover:bg-white/5 animate-in fade-in duration-500">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 overflow-hidden rounded-lg bg-white/5">
-                                                    <img src={deal.stillImageURL || ""} className="h-full w-full object-cover" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-bold text-white">{deal.address.split(',')[0]}</p>
-                                                    <div className="flex items-center gap-1 text-[10px] text-foreground/40">
-                                                        <MapPin size={10} />
-                                                        {deal.address.split(',').slice(1).join(',')}
+                            {deals
+                                .filter(deal => {
+                                    const matchesFirm = selectedFirmId === "all" || deal.firmId === selectedFirmId;
+                                    const matchesSearch = deal.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                        deal.assetType.toLowerCase().includes(searchQuery.toLowerCase());
+                                    return matchesFirm && matchesSearch;
+                                })
+                                .map((deal) => {
+                                    const firm = firms.find(f => f.id === deal.firmId);
+                                    return (
+                                        <tr key={deal.id} className="group transition-colors hover:bg-white/5 animate-in fade-in duration-500">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-10 w-10 overflow-hidden rounded-lg bg-white/5">
+                                                        <img src={deal.stillImageURL || ""} className="h-full w-full object-cover" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-white">{deal.address.split(',')[0]}</p>
+                                                        <div className="flex items-center gap-1 text-[10px] text-foreground/40">
+                                                            <MapPin size={10} />
+                                                            {deal.address.split(',').slice(1).join(',')}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-6 w-6 overflow-hidden rounded-md bg-white/5 border border-white/10">
-                                                    {firm?.logoUrl ? (
-                                                        <img src={firm.logoUrl} className="h-full w-full object-contain" />
-                                                    ) : (
-                                                        <Building2 size={12} className="m-auto h-full text-brand-gold" />
-                                                    )}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-6 w-6 overflow-hidden rounded-md bg-white/5 border border-white/10">
+                                                        {firm?.logoUrl ? (
+                                                            <img src={firm.logoUrl} className="h-full w-full object-contain" />
+                                                        ) : (
+                                                            <Building2 size={12} className="m-auto h-full text-brand-gold" />
+                                                        )}
+                                                    </div>
+                                                    <span className="text-sm font-medium text-white">{firm?.name || 'Unassigned'}</span>
                                                 </div>
-                                                <span className="text-sm font-medium text-white">{firm?.name || 'Unassigned'}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${deal.isPublic ? 'bg-green-500/10 text-green-500' : 'bg-brand-gold/10 text-brand-gold'}`}>
-                                                {deal.isPublic ? 'Public' : 'Private'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <p className="text-sm font-bold text-white">${(deal.purchaseAmount || 0).toLocaleString()}</p>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Link href={`/deals/${deal.id}`} className="p-2 text-foreground/40 hover:text-brand-gold">
-                                                    <Eye size={18} />
-                                                </Link>
-                                                <button
-                                                    onClick={() => setEditingDeal(deal)}
-                                                    className="p-2 text-foreground/40 hover:text-white"
-                                                >
-                                                    <Edit3 size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => deleteDeal(deal.id)}
-                                                    className="p-2 text-foreground/40 hover:text-red-500"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${deal.isPublic ? 'bg-green-500/10 text-green-500' : 'bg-brand-gold/10 text-brand-gold'}`}>
+                                                    {deal.isPublic ? 'Public' : 'Private'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="text-sm font-bold text-white">${(deal.purchaseAmount || 0).toLocaleString()}</p>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <Link href={`/deals/${deal.id}`} className="p-2 text-foreground/40 hover:text-brand-gold">
+                                                        <Eye size={18} />
+                                                    </Link>
+                                                    <button
+                                                        onClick={() => setEditingDeal(deal)}
+                                                        className="p-2 text-foreground/40 hover:text-white"
+                                                    >
+                                                        <Edit3 size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => deleteDeal(deal.id)}
+                                                        className="p-2 text-foreground/40 hover:text-red-500"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                         </tbody>
                     </table>
                 </div>

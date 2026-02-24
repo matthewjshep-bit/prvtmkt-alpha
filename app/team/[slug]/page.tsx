@@ -49,7 +49,7 @@ export default function TeamMemberPage({
         );
     }
 
-    const memberDeals = deals.filter((d) => d.teamMemberId === member.id);
+    const memberDeals = deals.filter((d) => (d.teamMemberIds || []).includes(member.id));
     const firm = firms.find(f => (member.firmIds || []).includes(f.id)); // Use first associated firm for branding
 
     // Dynamic Theming Inheritance
