@@ -24,6 +24,7 @@ interface Firm {
 interface TeamMember {
     id: string;
     firmIds: string[];
+    userId?: string; // Link to a System User for self-editing
     name: string;
     slug: string;
     role: string;

@@ -171,30 +171,36 @@ export default function DealPage({
 
                 {/* 4. Transaction Metrics Bar */}
                 <div className="rounded-[3rem] p-10 md:p-16 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 overflow-hidden" style={{ backgroundColor: 'var(--firm-secondary)' }}>
-                    <div className="grid grid-cols-2 gap-y-12 md:grid-cols-3 lg:grid-cols-6 divide-x divide-black/5">
-                        <div className="px-6 space-y-1">
-                            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
-                                <TrendingUp size={12} className="text-[var(--firm-primary)]" />
-                                Acquisition
-                            </p>
-                            <p className="text-3xl font-black text-black">{deal.isPublic ? formatCurrency(deal.purchaseAmount || 0) : "Confid."}</p>
-                        </div>
+                    <div className="flex flex-wrap justify-center md:flex-nowrap md:justify-start gap-y-12 divide-x divide-black/5">
+                        {deal.purchaseAmount && deal.purchaseAmount > 0 && (
+                            <div className="px-6 space-y-1">
+                                <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
+                                    <TrendingUp size={12} className="text-[var(--firm-primary)]" />
+                                    Acquisition
+                                </p>
+                                <p className="text-3xl font-black text-black">{deal.isPublic ? formatCurrency(deal.purchaseAmount || 0) : "Confid."}</p>
+                            </div>
+                        )}
 
-                        <div className="px-6 space-y-1 border-l border-black/5">
-                            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
-                                <Layers size={12} className="text-[var(--firm-primary)]" />
-                                Capital Ex.
-                            </p>
-                            <p className="text-3xl font-black text-black">{formatCurrency(deal.rehabAmount || 0)}</p>
-                        </div>
+                        {deal.rehabAmount && deal.rehabAmount > 0 && (
+                            <div className="px-6 space-y-1 border-l border-black/5">
+                                <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
+                                    <Layers size={12} className="text-[var(--firm-primary)]" />
+                                    Capital Ex.
+                                </p>
+                                <p className="text-3xl font-black text-black">{formatCurrency(deal.rehabAmount || 0)}</p>
+                            </div>
+                        )}
 
-                        <div className="px-6 space-y-1 border-l border-black/5">
-                            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
-                                <Award size={12} className="text-[var(--firm-primary)]" />
-                                Exit (ARV)
-                            </p>
-                            <p className="text-3xl font-black text-black">{formatCurrency(deal.arv || 0)}</p>
-                        </div>
+                        {deal.arv && deal.arv > 0 && (
+                            <div className="px-6 space-y-1 border-l border-black/5">
+                                <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
+                                    <Award size={12} className="text-[var(--firm-primary)]" />
+                                    Exit (ARV)
+                                </p>
+                                <p className="text-3xl font-black text-black">{formatCurrency(deal.arv || 0)}</p>
+                            </div>
+                        )}
 
                         <div className="px-6 space-y-1 border-l border-black/5">
                             <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">

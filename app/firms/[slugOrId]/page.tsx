@@ -21,6 +21,7 @@ export default function FirmProfilePage({
     const searchParams = useSearchParams();
     const initialTab = searchParams.get("tab") === "PEOPLE" ? "PEOPLE" : "DEALS";
     const [activeTab, setActiveTab] = useState(initialTab);
+    const [viewMode, setViewMode] = useState<"GRID" | "LIST">("GRID");
     const [filter, setFilter] = useState("ALL");
     const [searchQuery, setSearchQuery] = useState("");
     const [isMuted, setIsMuted] = useState(true);
@@ -259,21 +260,43 @@ export default function FirmProfilePage({
                         </div>
                     </div>
 
-                    <div className="flex h-16 items-center rounded-2xl bg-white/50 p-2 border border-black/5">
-                        <button
-                            onClick={() => setActiveTab("DEALS")}
-                            className={`flex h-full items-center gap-3 rounded-xl px-12 text-xs font-black uppercase tracking-widest transition-all ${activeTab === "DEALS" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
-                        >
-                            <LayoutGrid size={20} />
-                            Portfolio
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("PEOPLE")}
-                            className={`flex h-full items-center gap-3 rounded-xl px-12 text-xs font-black uppercase tracking-widest transition-all ${activeTab === "PEOPLE" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
-                        >
-                            <Globe size={20} />
-                            Team
-                        </button>
+                    <div className="flex items-center gap-4">
+                        {/* View Toggle - Only for DEALS */}
+                        {activeTab === "DEALS" && (
+                            <div className="flex h-16 items-center rounded-2xl bg-white/50 p-2 border border-black/5">
+                                <button
+                                    onClick={() => setViewMode("GRID")}
+                                    className={`flex h-12 w-12 items-center justify-center rounded-xl transition-all ${viewMode === "GRID" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                    title="Grid View"
+                                >
+                                    <LayoutGrid size={20} />
+                                </button>
+                                <button
+                                    onClick={() => setViewMode("LIST")}
+                                    className={`flex h-12 w-12 items-center justify-center rounded-xl transition-all ${viewMode === "LIST" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                    title="List View"
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="flex h-16 items-center rounded-2xl bg-white/50 p-2 border border-black/5">
+                            <button
+                                onClick={() => setActiveTab("DEALS")}
+                                className={`flex h-full items-center gap-3 rounded-xl px-12 text-xs font-black uppercase tracking-widest transition-all ${activeTab === "DEALS" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
+                            >
+                                <LayoutGrid size={20} />
+                                Portfolio
+                            </button>
+                            <button
+                                onClick={() => setActiveTab("PEOPLE")}
+                                className={`flex h-full items-center gap-3 rounded-xl px-12 text-xs font-black uppercase tracking-widest transition-all ${activeTab === "PEOPLE" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
+                            >
+                                <Globe size={20} />
+                                Team
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -315,14 +338,16 @@ export default function FirmProfilePage({
                                     </div>
                                 </div>
 
-                                {/* Portfolio Grid (Scaled by 25% via column reduction for prominence) */}
+                                {/* Portfolio Content */}
                                 <motion.div
                                     layout
-                                    className="grid gap-12 sm:grid-cols-2 lg:grid-cols-2"
+                                    className={viewMode === "GRID" ? "grid gap-12 sm:grid-cols-2 lg:grid-cols-2" : "flex flex-col gap-10"}
                                 >
                                     <AnimatePresence mode="popLayout">
                                         {filteredDeals.map((deal, index) => (
-                                            <DealCard key={deal.id} deal={deal} index={index} />
+                                            <div key={deal.id} className={viewMode === "LIST" ? "w-full" : ""}>
+                                                <DealCard deal={deal} index={index} isListView={viewMode === "LIST"} />
+                                            </div>
                                         ))}
                                     </AnimatePresence>
                                 </motion.div>
