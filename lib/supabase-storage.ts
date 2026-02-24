@@ -19,16 +19,20 @@ export async function uploadToSupabase(
         throw new Error("Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY) are not configured.");
     }
 
-    const { data, error } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
         .from(bucketName)
         .upload(fileName, fileBuffer, {
             contentType,
             upsert: true,
         });
 
-    if (error) {
-        console.error('Supabase Upload Error:', error);
-        throw error;
+    if (uploadError) {
+        console.error(`[Supabase Storage] Error uploading to bucket "${bucketName}":`, uploadError);
+        // Specifically catch the "Bucket not found" case to provide an even clearer message
+        if (uploadError.message === 'Bucket not found' || (uploadError as any).status === 404) {
+            throw new Error(`Bucket "${bucketName}" not found. Please ensure it exists and is public in Supabase.`);
+        }
+        throw new Error(uploadError.message || `Upload failed for bucket "${bucketName}"`);
     }
 
     // Get public URL

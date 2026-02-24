@@ -19,27 +19,47 @@ export async function GET() {
     }
 
     try {
-        // Try to list buckets to verify connectivity and key
-        const { data, error } = await supabase.storage.listBuckets();
+        // 1. Connectivity Check
+        const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
 
-        if (error) {
+        if (bucketsError) {
             report.connection = "Failed";
-            report.errors.push(error.message);
+            report.errors.push(`Connectivity error: ${bucketsError.message}`);
         } else {
             report.connection = "Success";
-            report.buckets = data.map(b => b.name);
+            report.availableBuckets = buckets.map(b => b.name);
 
-            const targetBucket = process.env.SUPABASE_BUCKET || "deal-media";
-            const bucketExists = data.some(b => b.name === targetBucket);
+            const target = process.env.SUPABASE_BUCKET || "deal-media";
+            const bucket = buckets.find(b => b.name === target);
 
-            report.targetBucketStatus = bucketExists ? "Found" : "Not Found";
-            if (!bucketExists) {
-                report.errors.push(`Bucket '${targetBucket}' was not found in this Supabase project.`);
+            report.targetBucket = target;
+            report.targetBucketStatus = bucket ? "Found" : "Not Found";
+
+            if (!bucket) {
+                report.errors.push(`CRITICAL: Bucket '${target}' not found. Please create it in Supabase.`);
+            } else {
+                report.bucketConfig = {
+                    public: bucket.public ? "Yes" : "No (Restricted)",
+                    sizeLimit: bucket.file_size_limit,
+                    allowedMimeTypes: bucket.allowed_mime_types
+                };
+
+                // 2. Permission Check (Try to list files)
+                const { data: files, error: filesError } = await supabase.storage
+                    .from(target)
+                    .list('', { limit: 1 });
+
+                if (filesError) {
+                    report.permissionCheck = "Failed";
+                    report.errors.push(`Permission error on bucket '${target}': ${filesError.message}`);
+                } else {
+                    report.permissionCheck = "Success";
+                }
             }
         }
     } catch (err: any) {
         report.connection = "Error";
-        report.errors.push(err.message);
+        report.errors.push(`Panic error: ${err.message}`);
     }
 
     return NextResponse.json(report);
