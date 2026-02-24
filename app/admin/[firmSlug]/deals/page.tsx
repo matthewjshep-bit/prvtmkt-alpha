@@ -861,11 +861,15 @@ function TenantDealsContent() {
                                                 <div className="flex-1">
                                                     <p className="text-[10px] font-black uppercase tracking-widest text-foreground/40">Asset File</p>
                                                     <p className="text-xs font-bold text-white mt-1 truncate max-w-[200px]">
-                                                        {img ? (
+                                                        {activeMediaDeal.generatedVideoURL && idx === 0 ? (
+                                                            <span className="text-brand-gold flex items-center gap-1">
+                                                                <Video size={10} />
+                                                                Cinematic Video (.mp4)
+                                                            </span>
+                                                        ) : img ? (
                                                             (() => {
                                                                 const parts = img.split('/');
                                                                 const filename = parts[parts.length - 1];
-                                                                // Remove timestamp prefix if exists (common in our upload route)
                                                                 const cleanName = filename.replace(/^\d+-/, '');
                                                                 return decodeURIComponent(cleanName || "Unnamed Asset");
                                                             })()
