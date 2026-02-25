@@ -34,7 +34,7 @@ export default function FirmSettingsPage() {
         name: firm?.name || "",
         slug: firm?.slug || "",
         bio: firm?.bio || "",
-        primaryColor: firm?.primaryColor || "#c5a059",
+        primaryColor: firm?.primaryColor || "#ffffff",
         backgroundColor: firm?.backgroundColor || "#0a0a0a",
         fontColor: firm?.fontColor || "#ffffff",
         secondaryColor: firm?.secondaryColor || "#151515",

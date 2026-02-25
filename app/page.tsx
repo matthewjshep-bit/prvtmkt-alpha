@@ -20,19 +20,22 @@ export default function PlatformLandingPage() {
   return (
     <div className="min-h-screen bg-brand-dark pt-32 pb-20">
       <div className="container mx-auto px-6">
-        <div className="mb-20 text-center">
-          <h1 className="mb-6 text-6xl font-bold tracking-tight text-white md:text-7xl">
-            PRVT <span className="text-brand-gold">MKT</span>
-          </h1>
-          <p className="mx-auto max-w-2xl text-xl text-foreground/50">
-            The institutional-grade platform for Commercial Real Estate firms to manage,
-            showcase, and share digital deal tombstones.
+        <div className="mb-20 text-center flex flex-col items-center">
+          <div className="mb-8 relative h-64 w-full max-w-4xl overflow-hidden flex items-center justify-center">
+            <img
+              src="/logo.svg"
+              alt="PRVT MKT Logo"
+              className="h-full w-full object-contain scale-[1.1] brightness-200"
+            />
+          </div>
+          <p className="mx-auto max-w-3xl text-2xl font-medium text-foreground/50 leading-relaxed px-4">
+            The platform for Private Market firms to manage, showcase, and share teams and digital deal tombstones.
           </p>
         </div>
 
         {/* High-Contrast Asset Type Filter */}
         <div className="mb-16 flex flex-wrap items-center justify-center gap-3">
-          <div className="mr-4 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-gold">
+          <div className="mr-4 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-white">
             <Filter size={14} />
             Filter Deals
           </div>
@@ -43,8 +46,8 @@ export default function PlatformLandingPage() {
                 key={cat}
                 onClick={() => setActiveFilter(cat)}
                 className={`rounded-xl px-8 py-3.5 text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${isActive
-                  ? "bg-brand-gold text-brand-dark shadow-[0_10px_30px_-10px_rgba(197,160,89,0.5)] scale-105"
-                  : "border border-white/10 text-white/40 hover:border-brand-gold/50 hover:text-white hover:bg-white/5"
+                  ? "bg-white text-brand-dark shadow-[0_10px_30px_-10px_rgba(255,255,255,0.3)] scale-105"
+                  : "border border-white/10 text-white/40 hover:border-white/50 hover:text-white hover:bg-white/5"
                   }`}
               >
                 {cat.replace("_", " ")}
@@ -74,7 +77,7 @@ export default function PlatformLandingPage() {
                 )}
               </div>
 
-              <h3 className="text-center text-3xl font-black tracking-tight text-white transition-all duration-500 group-hover:text-brand-gold">
+              <h3 className="text-center text-3xl font-black tracking-tight text-white transition-all duration-500 group-hover:text-white">
                 {firm.name}
               </h3>
 

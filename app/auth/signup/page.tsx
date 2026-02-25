@@ -28,7 +28,7 @@ export default function SignupPage() {
         password: "",
         firmName: "",
         firmSlug: "",
-        primaryColor: "#c5a059"
+        primaryColor: "#ffffff"
     });
 
     const updateFormData = (fields: Partial<typeof formData>) => {

@@ -101,7 +101,7 @@ export default function TeamMemberPage({
     const themeStyles = {
         '--firm-bg': firm?.backgroundColor || '#0a0a0a',
         '--firm-text': firm?.fontColor || '#ffffff',
-        '--firm-primary': firm?.primaryColor || '#c5a059',
+        '--firm-primary': firm?.primaryColor || '#ffffff',
         '--firm-secondary': firm?.secondaryColor || '#f5f5f5',
     } as React.CSSProperties;
 

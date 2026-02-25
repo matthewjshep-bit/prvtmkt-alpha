@@ -28,14 +28,14 @@ const MenuBar = ({ editor }: { editor: any }) => {
             <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleBold().run()}
-                className={`p-2 rounded-lg transition-all ${editor.isActive('bold') ? 'bg-brand-gold text-brand-dark' : 'text-foreground/40 hover:bg-white/5'}`}
+                className={`p-2 rounded-lg transition-all ${editor.isActive('bold') ? 'bg-white text-brand-dark' : 'text-foreground/40 hover:bg-white/5'}`}
             >
                 <Bold size={18} />
             </button>
             <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleItalic().run()}
-                className={`p-2 rounded-lg transition-all ${editor.isActive('italic') ? 'bg-brand-gold text-brand-dark' : 'text-foreground/40 hover:bg-white/5'}`}
+                className={`p-2 rounded-lg transition-all ${editor.isActive('italic') ? 'bg-white text-brand-dark' : 'text-foreground/40 hover:bg-white/5'}`}
             >
                 <Italic size={18} />
             </button>
@@ -43,7 +43,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
             <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                className={`p-2 rounded-lg transition-all ${editor.isActive('heading', { level: 1 }) ? 'bg-brand-gold text-brand-dark' : 'text-foreground/40 hover:bg-white/5'}`}
+                className={`p-2 rounded-lg transition-all ${editor.isActive('heading', { level: 1 }) ? 'bg-white text-brand-dark' : 'text-foreground/40 hover:bg-white/5'}`}
             >
                 <Heading1 size={18} />
             </button>
@@ -106,7 +106,7 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
     });
 
     return (
-        <div className="w-full rounded-2xl border border-white/5 bg-brand-dark overflow-hidden focus-within:border-brand-gold/50 transition-all">
+        <div className="w-full rounded-2xl border border-white/5 bg-brand-dark overflow-hidden focus-within:border-white/50 transition-all">
             <MenuBar editor={editor} />
             <EditorContent editor={editor} />
         </div>

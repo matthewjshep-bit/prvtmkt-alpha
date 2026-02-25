@@ -95,8 +95,8 @@ export default function TenantDashboard() {
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-foreground/30 mb-1">Primary Brand Color</p>
                                 <div className="flex items-center gap-2">
-                                    <div className="h-4 w-4 rounded-full" style={{ backgroundColor: firm.primaryColor || '#c5a059' }} />
-                                    <span className="text-sm font-bold text-white uppercase">{firm.primaryColor || '#c5a059'}</span>
+                                    <div className="h-4 w-4 rounded-full" style={{ backgroundColor: firm.primaryColor || '#ffffff' }} />
+                                    <span className="text-sm font-bold text-white uppercase">{firm.primaryColor || '#ffffff'}</span>
                                 </div>
                             </div>
                             <div>

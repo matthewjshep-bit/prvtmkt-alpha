@@ -24,7 +24,7 @@ export default function AdminFirmsPage() {
         name: "",
         slug: "",
         logoUrl: "",
-        primaryColor: "#c5a059",
+        primaryColor: "#ffffff",
         bio: "",
         backgroundColor: "#0a0a0a",
         fontColor: "#ffffff",
@@ -59,7 +59,7 @@ export default function AdminFirmsPage() {
             name: "",
             slug: "",
             logoUrl: "",
-            primaryColor: "#c5a059",
+            primaryColor: "#ffffff",
             bio: "",
             backgroundColor: "#0a0a0a",
             fontColor: "#ffffff",
@@ -361,7 +361,7 @@ export default function AdminFirmsPage() {
                                                 <div className="space-y-3 rounded-2xl border border-white/5 bg-brand-dark p-4">
                                                     <label className="text-[10px] font-bold uppercase tracking-wider text-white/30 block">Primary</label>
                                                     <div className="flex items-center gap-3">
-                                                        <input type="color" className="h-7 w-7 rounded border-none bg-transparent cursor-pointer" value={firm.primaryColor || "#c5a059"} onChange={(e) => updateFirm(firm.id, { primaryColor: e.target.value })} />
+                                                        <input type="color" className="h-7 w-7 rounded border-none bg-transparent cursor-pointer" value={firm.primaryColor || "#ffffff"} onChange={(e) => updateFirm(firm.id, { primaryColor: e.target.value })} />
                                                         <span className="text-[10px] font-mono text-white/60">{firm.primaryColor}</span>
                                                     </div>
                                                 </div>

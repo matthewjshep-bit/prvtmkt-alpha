@@ -147,8 +147,8 @@ export default function AdminDashboard() {
                                     <div className="flex gap-3">
                                         <input
                                             type="text"
-                                            className="flex-1 rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white outline-none focus:border-brand-gold/50"
-                                            placeholder="#c5a059"
+                                            className="flex-1 rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white outline-none focus:border-white/50"
+                                            placeholder="#ffffff"
                                             value={newFirm.primaryColor}
                                             onChange={(e) => setNewFirm({ ...newFirm, primaryColor: e.target.value })}
                                         />

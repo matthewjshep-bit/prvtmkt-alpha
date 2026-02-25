@@ -41,7 +41,7 @@ export default function DealCard({ deal, index, isListView = false }: DealCardPr
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
-            className={`group relative overflow-hidden rounded-[2.5rem] border border-white/5 bg-brand-gray-900 transition-all hover:border-brand-gold/30 hover:shadow-2xl flex ${isListView ? 'w-full flex-row items-center p-8 gap-10' : 'flex-col'}`}
+            className={`group relative overflow-hidden rounded-[2.5rem] border border-white/5 bg-brand-gray-900 transition-all hover:border-white/30 hover:shadow-2xl flex ${isListView ? 'w-full flex-row items-center p-8 gap-10' : 'flex-col'}`}
         >
             {/* Image Container */}
             <div className={`relative overflow-hidden rounded-2xl ${isListView ? 'h-48 w-72 shrink-0' : 'aspect-[16/9]'}`}>
@@ -69,7 +69,7 @@ export default function DealCard({ deal, index, isListView = false }: DealCardPr
 
                 {/* Badges */}
                 <div className={`absolute left-6 ${isListView ? 'bottom-4' : 'top-6'} flex gap-2`}>
-                    <span className="glass rounded-xl px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-brand-gold border border-brand-gold/20 backdrop-blur-md">
+                    <span className="glass rounded-xl px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-white border border-white/20 backdrop-blur-md">
                         {deal.assetType.replace("_", " ")}
                     </span>
                     {!isListView && (
@@ -86,7 +86,7 @@ export default function DealCard({ deal, index, isListView = false }: DealCardPr
                 {/* 1. Address & Strategy (Left/Top) */}
                 <div className={`${isListView ? 'w-1/4' : 'mb-8'}`}>
                     <div className="flex items-start gap-3">
-                        <MapPin size={isListView ? 18 : 20} className="text-brand-gold shrink-0 mt-1" />
+                        <MapPin size={isListView ? 18 : 20} className="text-white shrink-0 mt-1" />
                         <div>
                             <h3 className={`${isListView ? 'text-lg' : 'text-xl'} font-black tracking-tight text-white leading-tight`}>{deal.address}</h3>
                             {isListView && <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mt-1">{deal.strategy.replace("_", " ")}</p>}
@@ -157,7 +157,7 @@ export default function DealCard({ deal, index, isListView = false }: DealCardPr
                     {/* CTA Button */}
                     <Link
                         href={`/deals/${deal.id}`}
-                        className={`inline-flex items-center justify-center rounded-2xl border-2 border-brand-gold/30 text-[9px] font-black uppercase tracking-[0.3em] text-brand-gold transition-all hover:bg-brand-gold hover:text-brand-dark ${isListView ? 'px-8 py-5' : 'w-full py-4'}`}
+                        className={`inline-flex items-center justify-center rounded-2xl border-2 border-white/30 text-[9px] font-black uppercase tracking-[0.3em] text-white transition-all hover:bg-white hover:text-brand-dark ${isListView ? 'px-8 py-5' : 'w-full py-4'}`}
                     >
                         Tombstone
                     </Link>

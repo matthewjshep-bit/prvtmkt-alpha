@@ -42,7 +42,7 @@ export default function Navbar() {
                         href="/"
                         className="flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-widest transition-all hover:scale-105"
                         style={{
-                            backgroundColor: currentFirm.primaryColor || '#c5a059',
+                            backgroundColor: currentFirm.primaryColor || '#ffffff',
                             color: currentFirm.backgroundColor || '#0a0a0a'
                         }}
                     >
@@ -58,12 +58,12 @@ export default function Navbar() {
     return (
         <nav className="fixed top-0 z-50 w-full border-b border-white/5 bg-brand-dark/80 backdrop-blur-md">
             <div className="container mx-auto flex h-20 items-center justify-between px-6">
-                <Link href="/" className="flex items-center">
-                    <div className="relative h-12 w-48 transition-transform hover:scale-105">
+                <Link href="/" className="flex items-center group">
+                    <div className="relative h-20 w-80 overflow-hidden transition-transform duration-500 group-hover:scale-105 flex items-center justify-center">
                         <img
-                            src="/master-logo.png"
+                            src="/logo.svg"
                             alt="PRVT MKT Logo"
-                            className="h-full w-full object-contain object-left"
+                            className="h-full w-full object-contain scale-[1.3] brightness-200"
                         />
                     </div>
                 </Link>
@@ -99,7 +99,7 @@ export default function Navbar() {
                         <div className="flex items-center gap-3">
                             <Link
                                 href="/auth/login"
-                                className="flex items-center gap-2 rounded-full border border-brand-gold/30 bg-brand-gold/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-brand-gold transition-all hover:bg-brand-gold hover:text-brand-dark"
+                                className="flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-white hover:text-brand-dark"
                             >
                                 <Users size={16} />
                                 Login
@@ -122,9 +122,9 @@ function NavLink({ href, icon, label }: { href: string; icon: React.ReactNode; l
     return (
         <Link
             href={href}
-            className="flex items-center gap-2.5 text-sm font-medium text-foreground/60 transition-colors hover:text-brand-gold"
+            className="flex items-center gap-2.5 text-sm font-medium text-foreground/60 transition-colors hover:text-white"
         >
-            <span className="text-brand-gold/70">{icon}</span>
+            <span className="text-white/70">{icon}</span>
             {label}
         </Link>
     );

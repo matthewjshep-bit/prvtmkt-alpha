@@ -4,8 +4,8 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  --color-brand-gold: #c5a059;
-  --color-brand-bronze: #8c6d3e;
+  --color-brand-gold: #ffffff;
+  --color-brand-bronze: #e2e8f0;
   --color-brand-dark: #0f1115;
   --color-brand-gray-900: #1a1d23;
   --color-brand-gray-800: #2a2e37;
@@ -40,11 +40,11 @@ body {
   background: rgba(15, 17, 21, 0.8);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(197, 160, 89, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .text-gradient-gold {
-  background: linear-gradient(135deg, #c5a059 0%, #8c6d3e 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;

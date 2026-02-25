@@ -23,7 +23,7 @@ export default function DealPage({
             <div className="flex min-h-screen items-center justify-center bg-brand-dark text-white">
                 <div className="text-center">
                     <h2 className="text-2xl font-bold mb-4">Deal Not Found</h2>
-                    <Link href="/" className="text-brand-gold hover:underline">Return to Portfolio</Link>
+                    <Link href="/" className="text-white hover:underline">Return to Portfolio</Link>
                 </div>
             </div>
         );
@@ -42,7 +42,7 @@ export default function DealPage({
     const themeStyles = {
         '--firm-bg': firm?.backgroundColor || '#0a0a0a',
         '--firm-text': firm?.fontColor || '#ffffff',
-        '--firm-primary': firm?.primaryColor || '#c5a059',
+        '--firm-primary': firm?.primaryColor || '#ffffff',
         '--firm-secondary': firm?.secondaryColor || '#f5f5f5',
     } as React.CSSProperties;
 

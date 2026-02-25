@@ -19,7 +19,7 @@ model Firm {
   name         String
   slug         String       @unique
   logoUrl      String?
-  primaryColor String?      @default("#c5a059")
+  primaryColor String?      @default("#ffffff")
   physicalAddress    String?
   linkedInUrl        String?
   googleReviewsUrl   String?
