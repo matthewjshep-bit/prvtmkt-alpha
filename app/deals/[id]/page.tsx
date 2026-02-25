@@ -83,9 +83,10 @@ export default function DealPage({
                         </div>
                         <div className="flex-1 text-center md:text-left space-y-4">
                             <h1 className="text-4xl font-black text-black tracking-tight uppercase leading-none">{firm?.name}</h1>
-                            <p className="text-lg font-medium text-black/60 leading-relaxed max-w-2xl italic">
-                                "{firm?.bio || "An institutional leader in private market real estate acquisitions and strategic asset management."}"
-                            </p>
+                            <div
+                                className="text-lg font-medium text-black/60 leading-relaxed max-w-2xl italic prose prose-sm prose-black"
+                                dangerouslySetInnerHTML={{ __html: firm?.bio || "An institutional leader in private market real estate acquisitions and strategic asset management." }}
+                            />
                             <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-4">
                                 {firm?.linkedInUrl && (
                                     <a href={firm.linkedInUrl} target="_blank" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-black/5 text-[10px] font-black uppercase tracking-widest text-black/60 hover:bg-[var(--firm-primary)] hover:text-white transition-all">

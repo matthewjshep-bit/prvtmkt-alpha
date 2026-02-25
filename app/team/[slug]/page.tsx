@@ -3,8 +3,8 @@
 import { use } from "react";
 import { useData } from "@/context/DataContext";
 import DealCard from "@/components/DealCard";
-import { Mail, Briefcase, Award, Building2, ChevronLeft, Linkedin, Phone, LayoutGrid, List, Search, Globe, Tag, MapPin } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
+import { Mail, Briefcase, Award, Building2, ChevronLeft, Linkedin, Phone, LayoutGrid, List, Search, Globe, Tag, MapPin, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -19,6 +19,31 @@ export default function TeamMemberPage({
     const [viewMode, setViewMode] = useState<"GRID" | "LIST">("GRID");
     const [activeFilter, setActiveFilter] = useState("ALL");
     const [searchQuery, setSearchQuery] = useState("");
+    const [isMuted, setIsMuted] = useState(true);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    const toggleAudio = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const nextMuted = !isMuted;
+        setIsMuted(nextMuted);
+        if (videoRef.current) {
+            videoRef.current.muted = nextMuted;
+            if (!nextMuted) {
+                videoRef.current.volume = 1.0;
+                videoRef.current.play().catch(err => console.error("Unmute play error:", err));
+            }
+        }
+    };
+
+    const isVideo = (url: string | undefined) => {
+        if (!url) return false;
+        const lowerUrl = url.toLowerCase();
+        const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.quicktime', '.m4v'];
+        const hasVideoExtension = videoExtensions.some(ext => lowerUrl.split(/[?#]/)[0].endsWith(ext));
+        const isVideoDataUrl = url.startsWith('data:video/') || lowerUrl.includes('video/quicktime') || lowerUrl.includes('video/mp4');
+        return hasVideoExtension || isVideoDataUrl || (url.startsWith('data:') && !lowerUrl.includes('image/'));
+    };
 
     if (!isInitialized) {
         return (
@@ -144,17 +169,54 @@ export default function TeamMemberPage({
                         </p>
 
                         {member.heroMediaUrl && (
-                            <div className="mb-10 overflow-hidden rounded-[2.5rem] bg-black/5 border border-black/5 shadow-2xl">
+                            <div className="mb-10 overflow-hidden rounded-[2.5rem] bg-black/5 border border-black/5 shadow-2xl relative">
                                 <div className="aspect-[21/9] md:aspect-[3/1] w-full">
-                                    {member.heroMediaUrl.includes('video') || member.heroMediaUrl.includes('.mp4') || member.heroMediaUrl.includes('.mov') || member.heroMediaUrl.startsWith('data:video/') ? (
-                                        <video
-                                            src={member.heroMediaUrl}
-                                            autoPlay
-                                            muted
-                                            loop
-                                            playsInline
-                                            className="h-full w-full object-cover"
-                                        />
+                                    {isVideo(member.heroMediaUrl) ? (
+                                        <div
+                                            className="group/video relative h-full w-full cursor-pointer"
+                                            onClick={toggleAudio}
+                                        >
+                                            <video
+                                                ref={videoRef}
+                                                src={member.heroMediaUrl}
+                                                autoPlay
+                                                muted={isMuted}
+                                                loop
+                                                playsInline
+                                                className="h-full w-full object-cover"
+                                            />
+
+                                            {/* Audio Controller Overlay */}
+                                            <button
+                                                type="button"
+                                                onClick={toggleAudio}
+                                                className="absolute bottom-6 right-6 z-10 flex items-center gap-3 rounded-2xl bg-black/40 backdrop-blur-md px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white border border-white/10 hover:bg-black/60 transition-all opacity-0 group-hover/video:opacity-100 shadow-2xl"
+                                            >
+                                                {isMuted ? (
+                                                    <>
+                                                        <VolumeX size={16} className="text-red-500" />
+                                                        Sound Off
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Volume2 size={16} className="text-brand-gold" />
+                                                        Sound On
+                                                    </>
+                                                )}
+                                            </button>
+
+                                            {/* Center Overlay for Muted State */}
+                                            {isMuted && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/video:bg-black/40 transition-all z-20">
+                                                    <div className="flex flex-col items-center gap-4">
+                                                        <div className="h-16 w-16 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl transition-transform group-hover/video:scale-110">
+                                                            <VolumeX size={32} className="text-white animate-pulse" />
+                                                        </div>
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/80 drop-shadow-lg">Click to Unmute</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     ) : (
                                         <img
                                             src={member.heroMediaUrl}
