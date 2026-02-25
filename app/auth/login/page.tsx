@@ -96,7 +96,10 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    <div className="mt-8 pt-8 border-t border-white/5 text-center">
+                    <div className="mt-8 pt-8 border-t border-white/5 text-center flex flex-col gap-4">
+                        <Link href="/auth/forgot-password" className="text-sm text-brand-gold/60 hover:text-brand-gold transition-colors font-bold">
+                            Forgot Password?
+                        </Link>
                         <p className="text-sm text-foreground/40 font-bold">
                             Don't have a firm account?{" "}
                             <Link href="/auth/signup" className="text-brand-gold hover:underline">Register Firm</Link>

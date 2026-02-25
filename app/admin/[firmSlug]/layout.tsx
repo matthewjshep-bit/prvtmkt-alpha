@@ -39,6 +39,8 @@ export default function TenantAdminLayout({
         // Basic Tenant Guard - Skip if God Mode (SYSTEM_ADMIN)
         if (isInitialized && currentUser && currentUser.role !== "SYSTEM_ADMIN") {
             const userFirm = firms.find(f => f.id === currentUser.firmId);
+            // If admin belongs to a firm, they can only see their own firm's admin page
+            // UNLESS they are a system admin (handled by the role check above)
             if (userFirm && userFirm.slug !== firmSlug) {
                 router.push(`/admin/${userFirm.slug}`);
             }

@@ -3,7 +3,8 @@
 import { use } from "react";
 import { useData } from "@/context/DataContext";
 import DealCard from "@/components/DealCard";
-import { Mail, Briefcase, Award, Building2, ChevronLeft, Linkedin, Phone } from "lucide-react";
+import { Mail, Briefcase, Award, Building2, ChevronLeft, Linkedin, Phone, LayoutGrid, List, Search, Globe, Tag, MapPin } from "lucide-react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -14,6 +15,10 @@ export default function TeamMemberPage({
 }) {
     const { teamMembers, deals, firms, isInitialized } = useData();
     const { slug } = use(params);
+
+    const [viewMode, setViewMode] = useState<"GRID" | "LIST">("GRID");
+    const [activeFilter, setActiveFilter] = useState("ALL");
+    const [searchQuery, setSearchQuery] = useState("");
 
     if (!isInitialized) {
         return (
@@ -51,6 +56,21 @@ export default function TeamMemberPage({
 
     const memberDeals = deals.filter((d) => (d.teamMemberIds || []).includes(member.id));
     const firm = firms.find(f => (member.firmIds || []).includes(f.id)); // Use first associated firm for branding
+
+    // Smart Filtering Logic
+    const availableAssetTypes = useMemo(() => {
+        const types = new Set(memberDeals.map(d => d.assetType));
+        return Array.from(types).sort();
+    }, [memberDeals]);
+
+    const filteredDeals = useMemo(() => {
+        return memberDeals.filter(deal => {
+            const matchesFilter = activeFilter === "ALL" || deal.assetType === activeFilter;
+            const matchesSearch = deal.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                deal.assetType.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesFilter && matchesSearch;
+        });
+    }, [memberDeals, activeFilter, searchQuery]);
 
     // Dynamic Theming Inheritance
     const themeStyles = {
@@ -123,6 +143,29 @@ export default function TeamMemberPage({
                             {member.bio || `Principal professional with a specialization in high-value commercial real estate transactions and asset management.`}
                         </p>
 
+                        {member.heroMediaUrl && (
+                            <div className="mb-10 overflow-hidden rounded-[2.5rem] bg-black/5 border border-black/5 shadow-2xl">
+                                <div className="aspect-[21/9] md:aspect-[3/1] w-full">
+                                    {member.heroMediaUrl.includes('video') || member.heroMediaUrl.includes('.mp4') || member.heroMediaUrl.includes('.mov') || member.heroMediaUrl.startsWith('data:video/') ? (
+                                        <video
+                                            src={member.heroMediaUrl}
+                                            autoPlay
+                                            muted
+                                            loop
+                                            playsInline
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <img
+                                            src={member.heroMediaUrl}
+                                            className="h-full w-full object-cover"
+                                            alt="Professional Hero"
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="flex flex-wrap justify-center gap-4 md:justify-start">
                             <a
                                 href={`mailto:${member.email || "#"}`}
@@ -161,36 +204,108 @@ export default function TeamMemberPage({
                 </div>
 
                 {/* Divider */}
-                <div className="mb-12 h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                <div className="mb-20 h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-                {/* Track Record Grid */}
-                <div>
-                    <div className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                        <div>
-                            <h2 className="text-3xl font-bold text-white">Track <span className="text-brand-gold">Record</span></h2>
-                            <p className="text-foreground/50">Exclusive digital tombstones for this professional</p>
+                {/* --- Track Record Section --- */}
+                <div className="space-y-12">
+                    {/* 1. Dashboard Header */}
+                    <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+                        <div className="space-y-4">
+                            <h2 className="text-4xl font-black tracking-tight text-white uppercase">
+                                Track <span className="text-brand-gold">Record</span>
+                            </h2>
+                            <p className="max-w-md text-sm font-medium leading-relaxed text-white/40">
+                                Exclusive digital tombstones representing verified execution and high-performance asset management by this professional.
+                            </p>
                         </div>
 
-                        <div className="flex gap-2">
-                            <span className="rounded-full bg-brand-gold/10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-brand-gold border border-brand-gold/20">
-                                Verified Execution
-                            </span>
+                        {/* Search & Toggle Group */}
+                        <div className="flex flex-wrap items-center gap-4">
+                            <div className="relative group">
+                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 transition-colors group-focus-within:text-brand-gold" size={18} />
+                                <input
+                                    type="text"
+                                    placeholder="Search track record..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="h-14 w-full rounded-2xl border border-white/5 bg-white/5 pl-14 pr-6 text-sm font-bold text-white outline-none transition-all focus:border-brand-gold/50 focus:bg-white/10 md:w-80"
+                                />
+                            </div>
+
+                            {/* View Toggle */}
+                            <div className="flex h-14 items-center gap-1 rounded-2xl border border-white/5 bg-white/5 p-1.5 backdrop-blur-xl">
+                                <button
+                                    onClick={() => setViewMode("GRID")}
+                                    className={`flex h-full items-center gap-2 rounded-xl px-5 transition-all ${viewMode === "GRID" ? "bg-brand-gold text-black shadow-lg" : "text-white/40 hover:bg-white/5"}`}
+                                >
+                                    <LayoutGrid size={16} />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Grid</span>
+                                </button>
+                                <button
+                                    onClick={() => setViewMode("LIST")}
+                                    className={`flex h-full items-center gap-2 rounded-xl px-5 transition-all ${viewMode === "LIST" ? "bg-brand-gold text-black shadow-lg" : "text-white/40 hover:bg-white/5"}`}
+                                >
+                                    <List size={16} />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">List</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    {memberDeals.length > 0 ? (
-                        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                            {memberDeals.map((deal, index) => (
-                                <DealCard key={deal.id} deal={deal} index={index} />
-                            ))}
+                    {/* 2. Asset Type Filter Bar (Smart Pruning) */}
+                    <div className="flex flex-wrap items-center gap-3 border-y border-white/5 py-8">
+                        <div className="flex items-center gap-2 pr-6 border-r border-white/5 mr-3">
+                            <Tag size={14} className="text-brand-gold" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Filter</span>
                         </div>
-                    ) : (
-                        <div className="rounded-3xl border border-dashed border-white/10 p-20 text-center">
-                            <Briefcase size={48} className="mx-auto mb-4 text-foreground/10" />
-                            <h3 className="text-xl font-bold text-white mb-2">Portfolio Pending</h3>
-                            <p className="text-foreground/40">This member hasn't published any digital tombstones yet.</p>
-                        </div>
-                    )}
+
+                        <button
+                            onClick={() => setActiveFilter("ALL")}
+                            className={`rounded-xl px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${activeFilter === "ALL" ? "border-brand-gold bg-brand-gold text-black shadow-lg shadow-brand-gold/20" : "border-white/5 bg-white/5 text-white/40 hover:border-white/20 hover:bg-white/10"}`}
+                        >
+                            All Assets
+                        </button>
+
+                        {availableAssetTypes.map((type) => (
+                            <button
+                                key={type}
+                                onClick={() => setActiveFilter(type)}
+                                className={`rounded-xl px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${activeFilter === type ? "border-brand-gold bg-brand-gold text-black shadow-lg shadow-brand-gold/20" : "border-white/5 bg-white/5 text-white/40 hover:border-white/20 hover:bg-white/10"}`}
+                            >
+                                {type.replace("_", " ")}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* 3. Results Area */}
+                    <div className="min-h-[400px]">
+                        {filteredDeals.length > 0 ? (
+                            <div className={viewMode === "GRID" ? "grid gap-8 sm:grid-cols-2 lg:grid-cols-3" : "flex flex-col gap-6"}>
+                                {filteredDeals.map((deal, index) => (
+                                    <DealCard
+                                        key={deal.id}
+                                        deal={deal}
+                                        index={index}
+                                        isListView={viewMode === "LIST"}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center rounded-[3rem] border border-dashed border-white/10 bg-white/[0.02] p-24 text-center">
+                                <div className="mb-6 rounded-full bg-white/5 p-8">
+                                    <Briefcase size={40} className="text-white/10" />
+                                </div>
+                                <h3 className="text-2xl font-black text-white/80 uppercase tracking-tight">No deals found</h3>
+                                <p className="mt-2 text-sm font-medium text-white/30">Adjust your filters or search to view track record.</p>
+                                <button
+                                    onClick={() => { setActiveFilter("ALL"); setSearchQuery(""); }}
+                                    className="mt-8 text-[10px] font-black uppercase tracking-[0.2em] text-brand-gold hover:underline"
+                                >
+                                    Reset all filters
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

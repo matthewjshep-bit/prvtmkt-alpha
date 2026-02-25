@@ -21,6 +21,7 @@ import {
     Volume2,
     VolumeX
 } from "lucide-react";
+import RichTextEditor from "@/components/RichTextEditor";
 
 export default function FirmSettingsPage() {
     const { firms, updateFirm } = useData();
@@ -198,15 +199,13 @@ export default function FirmSettingsPage() {
                         </h3>
                     </div>
                     <div className="p-10 space-y-8">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40 ml-1">Firm Biography</label>
-                            <textarea
-                                rows={4}
-                                className="w-full rounded-2xl border border-white/5 bg-brand-gray-900 p-6 text-white outline-none focus:border-brand-gold/50 transition-all font-bold resize-none"
-                                value={formData.bio}
-                                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                                placeholder="Describe your firm's market focus and track record..."
+                        <div className="space-y-4">
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40 ml-1">Firm Biography (Rich-Text)</label>
+                            <RichTextEditor
+                                content={formData.bio}
+                                onChange={(content) => setFormData({ ...formData, bio: content })}
                             />
+                            <p className="text-[10px] text-foreground/20 italic ml-1 leading-relaxed">Format support for Bold, Heading hierarchy, and standardized Bullet Lists.</p>
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40 ml-1">Hero Media (Video or High-Res Image)</label>

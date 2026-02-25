@@ -41,10 +41,10 @@ export default function DealCard({ deal, index, isListView = false }: DealCardPr
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
-            className={`group relative overflow-hidden rounded-[2.5rem] border border-white/5 bg-brand-gray-900 transition-all hover:border-brand-gold/30 hover:shadow-2xl ${isListView ? 'flex flex-col md:flex-row min-h-[400px]' : ''}`}
+            className={`group relative overflow-hidden rounded-[2.5rem] border border-white/5 bg-brand-gray-900 transition-all hover:border-brand-gold/30 hover:shadow-2xl flex ${isListView ? 'w-full flex-row items-center p-8 gap-10' : 'flex-col'}`}
         >
             {/* Image Container */}
-            <div className={`relative overflow-hidden ${isListView ? 'w-full md:w-[45%] shrink-0' : 'aspect-[16/9]'}`}>
+            <div className={`relative overflow-hidden rounded-2xl ${isListView ? 'h-48 w-72 shrink-0' : 'aspect-[16/9]'}`}>
                 {deal.generatedVideoURL ? (
                     <video
                         src={deal.generatedVideoURL}
@@ -68,97 +68,98 @@ export default function DealCard({ deal, index, isListView = false }: DealCardPr
                 <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/20 to-transparent" />
 
                 {/* Badges */}
-                <div className="absolute top-6 left-6 flex gap-2">
-                    <span className="glass rounded-xl px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-brand-gold border border-brand-gold/20">
+                <div className={`absolute left-6 ${isListView ? 'bottom-4' : 'top-6'} flex gap-2`}>
+                    <span className="glass rounded-xl px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-brand-gold border border-brand-gold/20 backdrop-blur-md">
                         {deal.assetType.replace("_", " ")}
                     </span>
-                    <span className="glass rounded-xl px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white/70 border border-white/10">
-                        {deal.strategy.replace("_", " ")}
-                    </span>
+                    {!isListView && (
+                        <span className="glass rounded-xl px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-white/70 border border-white/10 backdrop-blur-md">
+                            {deal.strategy.replace("_", " ")}
+                        </span>
+                    )}
                 </div>
             </div>
 
             {/* Content */}
-            <div className={`flex flex-col flex-1 ${isListView ? 'p-12 md:p-14 justify-center' : 'p-10'}`}>
-                <div className="mb-8 flex items-start justify-between">
-                    <div className="flex items-center gap-4 text-2xl text-foreground/80">
-                        <MapPin size={24} className="text-brand-gold" />
-                        <span className="truncate font-black tracking-tight">{deal.address}</span>
+            {/* Content Area */}
+            <div className={`flex flex-1 ${isListView ? 'flex-row items-center gap-10' : 'flex-col p-10 pt-8'}`}>
+                {/* 1. Address & Strategy (Left/Top) */}
+                <div className={`${isListView ? 'w-1/4' : 'mb-8'}`}>
+                    <div className="flex items-start gap-3">
+                        <MapPin size={isListView ? 18 : 20} className="text-brand-gold shrink-0 mt-1" />
+                        <div>
+                            <h3 className={`${isListView ? 'text-lg' : 'text-xl'} font-black tracking-tight text-white leading-tight`}>{deal.address}</h3>
+                            {isListView && <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mt-1">{deal.strategy.replace("_", " ")}</p>}
+                        </div>
                     </div>
                 </div>
 
-                <div className={`grid gap-10 ${isListView ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2'}`}>
+                {/* 2. Metrics (Center) */}
+                <div className={`flex-1 ${isListView ? 'flex gap-8 justify-around px-8 border-x border-white/5' : 'grid grid-cols-2 gap-6'}`}>
                     {hasPurchase && (
-                        <div className="space-y-2">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/30">Purchase Price</p>
-                            <p className="flex items-center gap-2 text-xl font-black">
-                                {!deal.isPublic ? (
-                                    <>
-                                        <Lock size={14} className="text-brand-gold" />
-                                        <span className="text-foreground/20 italic tracking-wider">Confidential</span>
-                                    </>
-                                ) : (
-                                    formatCurrency(deal.purchaseAmount || 0)
-                                )}
+                        <div className="space-y-1">
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-foreground/30">Purchase</p>
+                            <p className={`${isListView ? 'text-lg' : 'text-xl'} font-black text-white`}>
+                                {!deal.isPublic ? <Lock size={12} className="text-brand-gold inline mr-2" /> : formatCurrency(deal.purchaseAmount || 0)}
                             </p>
                         </div>
                     )}
-
                     {hasRehab && (
-                        <div className="space-y-2">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/30">Rehab Budget</p>
-                            <p className="text-xl font-black">{formatCurrency(deal.rehabAmount || 0)}</p>
+                        <div className="space-y-1">
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-foreground/30">Rehab</p>
+                            <p className={`${isListView ? 'text-lg' : 'text-xl'} font-black text-white`}>{formatCurrency(deal.rehabAmount || 0)}</p>
                         </div>
                     )}
-
                     {hasARV && (
-                        <div className="space-y-2">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/30">Exit (ARV)</p>
-                            <p className="text-xl font-black">{formatCurrency(deal.arv || 0)}</p>
+                        <div className="space-y-1">
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-foreground/30">Exit (ARV)</p>
+                            <p className={`${isListView ? 'text-lg' : 'text-xl'} font-black text-white`}>{formatCurrency(deal.arv || 0)}</p>
                         </div>
                     )}
+                </div>
 
-                    <div className="space-y-2">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/30">Transaction lead</p>
-                        <div className="flex items-center gap-4">
+                {/* 3. Transaction Lead & Button (Right/Bottom) */}
+                <div className={`${isListView ? 'flex items-center gap-10 w-1/3 justify-end' : 'mt-8 pt-8 border-t border-white/5 space-y-8'}`}>
+                    {/* Lead */}
+                    <div className="space-y-1 min-w-[160px]">
+                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-foreground/30">Transaction lead</p>
+                        <div className="flex items-center gap-3">
                             {members.length > 0 ? (
-                                <>
-                                    <div className="flex -space-x-3 overflow-hidden">
-                                        {members.slice(0, 3).map((m: any) => (
+                                <Link
+                                    href={`/team/${members[0]?.slug || members[0]?.id}`}
+                                    className="flex items-center gap-3 transition-all hover:opacity-70"
+                                >
+                                    <div className="flex -space-x-2 overflow-hidden">
+                                        {members.slice(0, 2).map((m: any) => (
                                             <img
                                                 key={m.id}
                                                 src={m.imageURL}
                                                 alt={m.name}
-                                                className="h-10 w-10 rounded-xl object-cover border-2 border-brand-gray-900 shadow-xl"
-                                                title={m.name}
+                                                className="h-8 w-8 rounded-lg object-cover border-2 border-brand-gray-900 shadow-xl"
                                             />
                                         ))}
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-black text-foreground truncate uppercase tracking-widest leading-none mb-1">
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="text-[10px] font-black text-white truncate uppercase tracking-widest leading-none">
                                             {members[0]?.name}
                                         </span>
-                                        {members.length > 1 && (
-                                            <span className="text-[10px] font-bold text-foreground/40 uppercase tracking-tighter">
-                                                + {members.length - 1} other{members.length > 2 ? 's' : ''}
-                                            </span>
-                                        )}
+                                        <span className="text-[8px] font-bold text-brand-gold uppercase tracking-tighter mt-0.5">
+                                            {members.length > 1 ? `+ ${members.length - 1} other` : 'Lead Partner'}
+                                        </span>
                                     </div>
-                                </>
+                                </Link>
                             ) : (
-                                <>
-                                    <User size={16} className="text-foreground/20" />
-                                    <span className="text-sm font-bold text-foreground/20 italic uppercase tracking-widest">Unassigned</span>
-                                </>
+                                <span className="text-xs italic text-white/20">Unassigned</span>
                             )}
                         </div>
                     </div>
-                </div>
 
-                {/* View Details Button */}
-                <div className={`mt-auto ${isListView ? 'max-w-xs' : 'pt-12'}`}>
-                    <Link href={`/deals/${deal.id}`} className="flex items-center justify-center rounded-2xl border-2 border-brand-gold/30 py-5 text-[10px] font-black uppercase tracking-[0.3em] text-brand-gold transition-all hover:bg-brand-gold hover:text-brand-dark hover:shadow-2xl group/btn">
-                        View Digital Tombstone
+                    {/* CTA Button */}
+                    <Link
+                        href={`/deals/${deal.id}`}
+                        className={`inline-flex items-center justify-center rounded-2xl border-2 border-brand-gold/30 text-[9px] font-black uppercase tracking-[0.3em] text-brand-gold transition-all hover:bg-brand-gold hover:text-brand-dark ${isListView ? 'px-8 py-5' : 'w-full py-4'}`}
+                    >
+                        Tombstone
                     </Link>
                 </div>
             </div>

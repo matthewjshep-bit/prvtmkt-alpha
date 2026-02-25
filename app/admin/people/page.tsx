@@ -28,7 +28,8 @@ function AdminPeopleContent() {
         phoneNumber: "",
         linkedInUrl: "",
         imageURL: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
-        bio: ""
+        bio: "",
+        heroMediaUrl: ""
     });
 
     const searchParams = useSearchParams();
@@ -56,7 +57,8 @@ function AdminPeopleContent() {
             phoneNumber: "",
             linkedInUrl: "",
             imageURL: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
-            bio: ""
+            bio: "",
+            heroMediaUrl: ""
         });
     };
 
@@ -220,6 +222,58 @@ function AdminPeopleContent() {
                                         value={newPerson.bio}
                                         onChange={(e) => setNewPerson({ ...newPerson, bio: e.target.value })}
                                     />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Portfolio Hero (Video/Banner)</label>
+                                    <div className="group relative flex aspect-video w-full cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-white/5 bg-brand-dark transition-all hover:border-brand-gold/50">
+                                        {newPerson.heroMediaUrl ? (
+                                            <>
+                                                {newPerson.heroMediaUrl.startsWith('data:video/') || newPerson.heroMediaUrl.includes('video/mp4') || newPerson.heroMediaUrl.includes('video/quicktime') ? (
+                                                    <video
+                                                        src={newPerson.heroMediaUrl}
+                                                        className="h-full w-full object-cover opacity-50"
+                                                        muted
+                                                        loop
+                                                        autoPlay
+                                                        playsInline
+                                                    />
+                                                ) : (
+                                                    <img src={newPerson.heroMediaUrl} className="h-full w-full object-cover opacity-50" />
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setNewPerson({ ...newPerson, heroMediaUrl: "" });
+                                                    }}
+                                                    className="absolute top-2 right-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-white shadow-xl"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <div className="text-center">
+                                                <Users className="mx-auto mb-2 text-foreground/20" size={24} />
+                                                <p className="text-[10px] font-bold uppercase tracking-widest text-foreground/40">Upload Personal Hero</p>
+                                            </div>
+                                        )}
+                                        <input
+                                            type="file"
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                            accept="image/*,video/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        setNewPerson({ ...newPerson, heroMediaUrl: reader.result as string });
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="space-y-1.5">
@@ -428,6 +482,57 @@ function AdminPeopleContent() {
                                                     }
                                                 }}
                                             />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5 px-3">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Portfolio Hero (Video/Banner)</span>
+                                            <div className="group relative aspect-video w-full overflow-hidden rounded-2xl border border-white/5 bg-brand-dark">
+                                                {member.heroMediaUrl ? (
+                                                    <div className="h-full w-full">
+                                                        {(member.heroMediaUrl.startsWith('data:video/') || member.heroMediaUrl.includes('video/mp4') || member.heroMediaUrl.includes('video/quicktime')) ? (
+                                                            <video
+                                                                key={member.heroMediaUrl.slice(-32)}
+                                                                src={member.heroMediaUrl}
+                                                                className="h-full w-full object-cover opacity-60 transition-transform group-hover:scale-105"
+                                                                muted
+                                                                loop
+                                                                autoPlay
+                                                                playsInline
+                                                            />
+                                                        ) : (
+                                                            <img src={member.heroMediaUrl} className="h-full w-full object-cover opacity-60 transition-transform group-hover:scale-105" />
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex h-full flex-col items-center justify-center text-foreground/20 italic text-[9px]">
+                                                        <Users size={18} className="mb-1" />
+                                                        No Hero Media
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-0 flex items-center justify-center gap-3 bg-brand-dark/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <label className="cursor-pointer font-bold text-[9px] text-white bg-brand-gold/20 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 hover:bg-brand-gold/40 transition-colors">
+                                                        <Save size={12} />
+                                                        {member.heroMediaUrl ? 'Replace' : 'Upload'}
+                                                        <input type="file" className="hidden" accept="image/*,video/*" onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                const reader = new FileReader();
+                                                                reader.onloadend = () => updateTeamMember(member.id, { heroMediaUrl: reader.result as string });
+                                                                reader.readAsDataURL(file);
+                                                                setSaveStatus({ ...saveStatus, [member.id]: 'idle' });
+                                                            }
+                                                        }} />
+                                                    </label>
+                                                    {member.heroMediaUrl && (
+                                                        <button
+                                                            onClick={() => updateTeamMember(member.id, { heroMediaUrl: "" })}
+                                                            className="font-bold text-[9px] text-white bg-red-500/20 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 hover:bg-red-500/40 transition-colors"
+                                                        >
+                                                            <X size={12} />
+                                                            Remove
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 

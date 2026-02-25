@@ -22,6 +22,7 @@ export default function FirmProfilePage({
     const initialTab = searchParams.get("tab") === "PEOPLE" ? "PEOPLE" : "DEALS";
     const [activeTab, setActiveTab] = useState(initialTab);
     const [viewMode, setViewMode] = useState<"GRID" | "LIST">("GRID");
+    const [teamViewMode, setTeamViewMode] = useState<"GRID" | "LIST">("GRID");
     const [filter, setFilter] = useState("ALL");
     const [searchQuery, setSearchQuery] = useState("");
     const [isMuted, setIsMuted] = useState(true);
@@ -129,9 +130,11 @@ export default function FirmProfilePage({
                             <h1 className="mb-4 text-7xl font-black tracking-tight text-black">
                                 {firm.name}
                             </h1>
-                            <p className="text-2xl font-bold text-black/40 leading-relaxed max-w-2xl">
-                                {firm.bio || "Professional institutional track record and specialized team directory."}
-                            </p>
+                            <div
+                                className="text-2xl font-bold opacity-40 leading-relaxed max-w-2xl prose prose-invert prose-p:leading-relaxed"
+                                style={{ color: 'inherit' }}
+                                dangerouslySetInnerHTML={{ __html: firm.bio || "Professional institutional track record and specialized team directory." }}
+                            />
 
                             {(firm.linkedInUrl || firm.googleReviewsUrl || firm.physicalAddress) && (
                                 <div className="mt-8 flex flex-wrap items-center gap-6">
@@ -261,26 +264,6 @@ export default function FirmProfilePage({
                     </div>
 
                     <div className="flex items-center gap-4">
-                        {/* View Toggle - Only for DEALS */}
-                        {activeTab === "DEALS" && (
-                            <div className="flex h-16 items-center rounded-2xl bg-white/50 p-2 border border-black/5">
-                                <button
-                                    onClick={() => setViewMode("GRID")}
-                                    className={`flex h-12 w-12 items-center justify-center rounded-xl transition-all ${viewMode === "GRID" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
-                                    title="Grid View"
-                                >
-                                    <LayoutGrid size={20} />
-                                </button>
-                                <button
-                                    onClick={() => setViewMode("LIST")}
-                                    className={`flex h-12 w-12 items-center justify-center rounded-xl transition-all ${viewMode === "LIST" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
-                                    title="List View"
-                                >
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
-                                </button>
-                            </div>
-                        )}
-
                         <div className="flex h-16 items-center rounded-2xl bg-white/50 p-2 border border-black/5">
                             <button
                                 onClick={() => setActiveTab("DEALS")}
@@ -304,37 +287,63 @@ export default function FirmProfilePage({
                     <>
                         {deals.filter(d => d.firmId === firm.id).length > 0 ? (
                             <>
-                                {/* Standardized Filter Bar */}
+                                {/* Standardized Filter Bar with Integrated Toggles */}
                                 <div className="mb-12 flex flex-wrap items-center gap-3">
                                     <div className="mr-6 flex items-center gap-2 text-xs font-black uppercase tracking-widest opacity-30">
                                         <Filter size={14} />
                                         Asset Type
                                     </div>
-                                    {CATEGORIES.map((cat) => {
-                                        const isActive = filter === cat;
-                                        return (
-                                            <button
-                                                key={cat}
-                                                onClick={() => setFilter(cat)}
-                                                className={`rounded-xl px-8 py-3.5 text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${isActive
-                                                    ? "shadow-[0_10px_30px_-10px_rgba(0,0,0,0.3)] scale-105 border-0"
-                                                    : "border border-black/10 hover:border-black/30 hover:bg-black/5"
-                                                    }`}
-                                                style={{
-                                                    backgroundColor: isActive ? 'var(--firm-primary)' : 'transparent',
-                                                    color: isActive ? 'var(--firm-bg)' : 'rgba(0,0,0,0.6)',
-                                                    boxShadow: isActive ? `0 10px 30px -10px ${firm.primaryColor}50` : 'none'
-                                                }}
-                                            >
-                                                {cat.replace("_", " ")}
-                                            </button>
-                                        );
-                                    })}
 
-                                    <div className="ml-auto hidden items-center gap-2 lg:flex opacity-30">
-                                        <span className="text-xs font-black uppercase tracking-widest">
-                                            {filteredDeals.length} assets identified
-                                        </span>
+                                    {(() => {
+                                        const availableTypes = Array.from(new Set(deals.filter(d => d.firmId === firm.id).map(d => d.assetType)));
+                                        const dynamicCategories = CATEGORIES.filter(cat => cat === "ALL" || availableTypes.includes(cat));
+
+                                        return dynamicCategories.map((cat) => {
+                                            const isActive = filter === cat;
+                                            return (
+                                                <button
+                                                    key={cat}
+                                                    onClick={() => setFilter(cat)}
+                                                    className={`rounded-xl px-8 py-3.5 text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${isActive
+                                                        ? "shadow-[0_10px_30px_-10px_rgba(0,0,0,0.3)] scale-105 border-0"
+                                                        : "border border-black/10 hover:border-black/30 hover:bg-black/5"
+                                                        }`}
+                                                    style={{
+                                                        backgroundColor: isActive ? 'var(--firm-primary)' : 'transparent',
+                                                        color: isActive ? 'var(--firm-bg)' : 'rgba(0,0,0,0.6)',
+                                                        boxShadow: isActive ? `0 10px 30px -10px ${firm.primaryColor}50` : 'none'
+                                                    }}
+                                                >
+                                                    {cat.replace("_", " ")}
+                                                </button>
+                                            );
+                                        });
+                                    })()}
+
+                                    <div className="ml-auto flex items-center gap-4">
+                                        <div className="hidden lg:flex items-center gap-2 mr-4 opacity-30">
+                                            <span className="text-xs font-black uppercase tracking-widest">
+                                                {filteredDeals.length} assets identified
+                                            </span>
+                                        </div>
+
+                                        {/* Relocated View Toggle */}
+                                        <div className="flex h-12 items-center rounded-xl bg-black/5 p-1.5 border border-black/5">
+                                            <button
+                                                onClick={() => setViewMode("GRID")}
+                                                className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all ${viewMode === "GRID" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                                title="Grid View"
+                                            >
+                                                <LayoutGrid size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => setViewMode("LIST")}
+                                                className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all ${viewMode === "LIST" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                                title="List View"
+                                            >
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -391,29 +400,66 @@ export default function FirmProfilePage({
                 ) : (
                     /* Enhanced People Grid with Persona Scaling */
                     <>
+                        <div className="mb-12 flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest opacity-30">
+                                <Globe size={14} />
+                                Leadership Registry
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                                <div className="hidden lg:flex items-center gap-2 mr-4 opacity-30">
+                                    <span className="text-xs font-black uppercase tracking-widest">
+                                        {firmTeamMembers.length} Partners identified
+                                    </span>
+                                </div>
+
+                                {/* Team View Toggle */}
+                                <div className="flex h-12 items-center rounded-xl bg-black/5 p-1.5 border border-black/5">
+                                    <button
+                                        onClick={() => setTeamViewMode("GRID")}
+                                        className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all ${teamViewMode === "GRID" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                        title="Grid View"
+                                    >
+                                        <LayoutGrid size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => setTeamViewMode("LIST")}
+                                        className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all ${teamViewMode === "LIST" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                        title="List View"
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         {firmTeamMembers.length > 0 ? (
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4"
+                                className={teamViewMode === "GRID" ? "grid gap-10 sm:grid-cols-2 lg:grid-cols-3" : "flex flex-col gap-8"}
                             >
                                 {firmTeamMembers.map((member) => (
                                     <Link
                                         key={member.id}
                                         href={`/team/${member.slug || member.id}`}
-                                        className="group overflow-hidden rounded-[3rem] bg-[#f5f5f5] p-6 transition-all hover:scale-[1.03] hover:shadow-2xl"
+                                        className={`group overflow-hidden rounded-[2.5rem] border border-black/5 bg-white/50 p-6 transition-all hover:scale-[1.02] hover:shadow-2xl flex ${teamViewMode === "GRID" ? "flex-col aspect-[4/5] w-full" : "flex-row items-center gap-10"}`}
                                     >
-                                        <div className="aspect-square w-full overflow-hidden rounded-[2.5rem] mb-6 shadow-md border-4 border-white">
+                                        <div className={`${teamViewMode === "GRID" ? "aspect-[4/5] w-full" : "h-40 w-40 shrink-0"} overflow-hidden rounded-[2rem] shadow-md border-4 border-white`}>
                                             <img
                                                 src={member.imageURL}
                                                 alt={member.name}
                                                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                                             />
                                         </div>
-                                        <div className="space-y-1 px-2">
-                                            <h3 className="text-2xl font-black text-black">{member.name}</h3>
-                                            <p className="text-xs font-black uppercase tracking-[0.2em] text-black/40">{member.role}</p>
-                                            <p className="mt-4 text-sm font-bold leading-relaxed text-black/60 line-clamp-3">{member.bio}</p>
+                                        <div className="space-y-3 px-2 flex-1">
+                                            <div className="space-y-1">
+                                                <h3 className="text-3xl font-black text-black leading-none">{member.name}</h3>
+                                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--firm-primary)]">{member.role}</p>
+                                            </div>
+                                            <p className={`text-sm font-bold leading-relaxed text-black/60 ${teamViewMode === "GRID" ? "line-clamp-3" : "line-clamp-4 max-w-2xl"}`}>
+                                                {member.bio}
+                                            </p>
                                         </div>
                                     </Link>
                                 ))}
@@ -453,6 +499,6 @@ export default function FirmProfilePage({
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

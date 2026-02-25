@@ -33,6 +33,7 @@ interface TeamMember {
     linkedInUrl?: string;
     imageURL: string;
     bio: string;
+    heroMediaUrl?: string;
 }
 
 // Enhanced User interface for multi‑tenant authentication

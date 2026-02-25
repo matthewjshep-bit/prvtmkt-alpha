@@ -3,10 +3,9 @@
 import { use, useState, useEffect } from "react";
 import { useData } from "@/context/DataContext";
 import { formatCurrency } from "@/lib/utils";
-import { MapPin, TrendingUp, Maximize2, Layers, Calendar, ChevronLeft, ShieldCheck, Briefcase, Building2, Mail, Award, Info, Linkedin, Phone } from "lucide-react";
+import { MapPin, TrendingUp, Maximize2, Layers, Calendar, ChevronLeft, ChevronRight, ShieldCheck, Briefcase, Building2, Mail, Award, Info, Linkedin, Phone } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ProgressSlider, SliderContent, SliderWrapper, SliderBtnGroup, SliderBtn } from "@/components/ui/progressive-carousel";
 
 export default function DealPage({
     params,
@@ -15,6 +14,7 @@ export default function DealPage({
 }) {
     const { id } = use(params);
     const { deals, teamMembers, firms } = useData();
+    const [currentIndex, setCurrentIndex] = useState(0);
 
     const deal = deals.find((d) => d.id === id);
 
@@ -122,67 +122,89 @@ export default function DealPage({
 
                         <div className="space-y-6">
                             <p className="text-[10px] font-black uppercase tracking-[0.4em] text-black/20 text-center lg:text-right">Transaction Leads</p>
-                            <div className="flex justify-center lg:justify-end -space-x-4">
-                                {members.map((m: any, i: number) => (
-                                    <div key={m.id} className="relative group" style={{ zIndex: 10 - i }}>
-                                        <div className="h-24 w-24 overflow-hidden rounded-full border-4 border-white shadow-2xl transition-transform group-hover:scale-110 group-hover:z-50">
-                                            <img src={m.imageURL} alt={m.name} title={m.name} className="h-full w-full object-cover" />
+                            <div className="flex flex-col gap-4 items-center lg:items-end">
+                                {members.map((m: any) => (
+                                    <Link
+                                        key={m.id}
+                                        href={`/team/${m.slug || m.id}`}
+                                        className="flex items-center gap-4 group transition-all hover:scale-[1.02]"
+                                    >
+                                        <span className="text-right">
+                                            <p className="text-[11px] font-black uppercase tracking-widest text-black leading-none">{m.name}</p>
+                                            <p className="text-[9px] font-bold uppercase tracking-tighter text-black/40 mt-1">{m.role}</p>
+                                        </span>
+                                        <div className="h-16 w-16 overflow-hidden rounded-2xl border-4 border-white shadow-xl transition-transform group-hover:shadow-2xl">
+                                            <img src={m.imageURL} alt={m.name} className="h-full w-full object-cover" />
                                         </div>
-                                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black text-white text-[8px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap font-black uppercase">
-                                            {m.name}
-                                        </div>
-                                    </div>
+                                    </Link>
                                 ))}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* 3. Full-Width Hero Media Carousel */}
-                <div className="rounded-[3rem] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-1000 delay-200 border-8 border-white/5" style={{ backgroundColor: 'var(--firm-secondary)' }}>
-                    <ProgressSlider activeSlider="slide-0" className="w-full">
-                        <SliderContent>
-                            {allImages.map((img, idx) => (
-                                <SliderWrapper key={idx} value={`slide-${idx}`}>
-                                    <div className="aspect-[21/9] w-full overflow-hidden">
-                                        {img.toLowerCase().includes('.mp4') || img.toLowerCase().includes('.mov') ? (
-                                            <video
-                                                src={img}
-                                                autoPlay
-                                                muted
-                                                loop
-                                                playsInline
-                                                className="h-full w-full object-cover"
-                                            />
-                                        ) : (
-                                            <img
-                                                src={img}
-                                                alt={`Property view ${idx + 1}`}
-                                                className="h-full w-full object-cover"
-                                            />
-                                        )}
-                                    </div>
-                                </SliderWrapper>
-                            ))}
-                        </SliderContent>
+                {/* 3. Instagram-Style Media Carousel (Portrait) */}
+                <div className="w-full">
+                    <div className="relative group rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white/5 bg-black/20 aspect-[4/5] md:aspect-[16/10] lg:aspect-[4/5]">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={currentIndex}
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ duration: 0.3 }}
+                                className="h-full w-full"
+                            >
+                                {allImages[currentIndex].toLowerCase().includes('.mp4') || allImages[currentIndex].toLowerCase().includes('.mov') ? (
+                                    <video
+                                        src={allImages[currentIndex]}
+                                        autoPlay
+                                        muted
+                                        loop
+                                        playsInline
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    <img
+                                        src={allImages[currentIndex]}
+                                        alt={`Property view ${currentIndex + 1}`}
+                                        className="h-full w-full object-cover"
+                                    />
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
 
-                        <SliderBtnGroup className="grid grid-cols-2 divide-x divide-black/5 bg-white/50 backdrop-blur-xl">
-                            <SliderBtn
-                                value="slide-0"
-                                className="py-6 text-center transition-all hover:bg-white/40"
-                                progressBarClass="bg-[var(--firm-primary)] h-1.5 bottom-0 absolute"
-                            >
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40">Cinematic Tour</span>
-                            </SliderBtn>
-                            <SliderBtn
-                                value={`slide-${Math.min(1, allImages.length - 1)}`}
-                                className="py-6 text-center transition-all hover:bg-white/40"
-                                progressBarClass="bg-[var(--firm-primary)] h-1.5 bottom-0 absolute"
-                            >
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40">Site Perspectives</span>
-                            </SliderBtn>
-                        </SliderBtnGroup>
-                    </ProgressSlider>
+                        {/* Manual Controls */}
+                        {allImages.length > 1 && (
+                            <>
+                                <button
+                                    onClick={() => setCurrentIndex((prev) => (prev - 1 + allImages.length) % allImages.length)}
+                                    className="absolute left-6 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-black/20 backdrop-blur-md border border-white/10 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/40"
+                                >
+                                    <ChevronLeft size={24} />
+                                </button>
+                                <button
+                                    onClick={() => setCurrentIndex((prev) => (prev + 1) % allImages.length)}
+                                    className="absolute right-6 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-black/20 backdrop-blur-md border border-white/10 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/40"
+                                >
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-right"><path d="M9 18l6-6-6-6" /></svg>
+                                </button>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Pagination Dots */}
+                    {allImages.length > 1 && (
+                        <div className="mt-8 flex justify-center gap-3">
+                            {allImages.map((_, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setCurrentIndex(idx)}
+                                    className={`h-2 transition-all duration-300 rounded-full ${currentIndex === idx ? "w-8 bg-[var(--firm-primary)]" : "w-2 bg-black/10"}`}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* 4. Transaction Metrics Bar */}

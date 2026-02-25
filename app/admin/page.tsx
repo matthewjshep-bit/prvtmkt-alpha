@@ -30,6 +30,8 @@ export default function AdminDashboard() {
 
     const [isAddingFirm, setIsAddingFirm] = useState(false);
     const [isAddingUser, setIsAddingUser] = useState(false);
+    const [isEditingUser, setIsEditingUser] = useState(false);
+    const [editingUser, setEditingUser] = useState<any>(null);
     const [newUserEmail, setNewUserEmail] = useState("");
     const [newUserFirmId, setNewUserFirmId] = useState("");
     const [newUserRole, setNewUserRole] = useState<"ADMIN" | "USER" | "SYSTEM_ADMIN">("ADMIN");
@@ -39,6 +41,16 @@ export default function AdminDashboard() {
         logoUrl: "",
         primaryColor: "#c5a059"
     });
+
+    const handleEditUser = (e: React.FormEvent) => {
+        e.preventDefault();
+        updateUser(editingUser.id, {
+            email: editingUser.email,
+            password: editingUser.password
+        });
+        setIsEditingUser(false);
+        setEditingUser(null);
+    };
 
     const handleAddUser = (e: React.FormEvent) => {
         e.preventDefault();
@@ -303,6 +315,16 @@ export default function AdminDashboard() {
                                                 <div className="flex justify-end gap-2">
                                                     <button
                                                         onClick={() => {
+                                                            setEditingUser({ ...user });
+                                                            setIsEditingUser(true);
+                                                        }}
+                                                        className="p-2 text-foreground/20 hover:text-brand-gold transition-colors"
+                                                        title="Edit User Credentials"
+                                                    >
+                                                        <Settings size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
                                                             const newRole = user.role === 'ADMIN' ? 'SYSTEM_ADMIN' : 'ADMIN';
                                                             updateUser(user.id, { role: newRole as any });
                                                         }}
@@ -398,6 +420,51 @@ export default function AdminDashboard() {
                                 >
                                     <Fingerprint size={18} />
                                     Confirm Provisioning
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Edit User Modal */}
+                {isEditingUser && editingUser && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-dark/90 backdrop-blur-sm p-4">
+                        <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-brand-gray-900 p-8 shadow-2xl animate-in zoom-in duration-300">
+                            <div className="mb-6 flex items-center justify-between">
+                                <h3 className="text-2xl font-bold text-white">Edit <span className="text-brand-gold">User Identity</span></h3>
+                                <button onClick={() => setIsEditingUser(false)} className="rounded-full p-2 text-foreground/40 hover:bg-white/5 hover:text-white">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleEditUser} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Email Address</label>
+                                    <input
+                                        required
+                                        type="email"
+                                        className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white outline-none focus:border-brand-gold/50"
+                                        value={editingUser.email}
+                                        onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-brand-gold">Reset Password</label>
+                                    <input
+                                        type="password"
+                                        className="w-full rounded-xl border border-brand-gold/20 bg-brand-dark px-4 py-3 text-white outline-none focus:border-brand-gold/50"
+                                        placeholder="Enter new password..."
+                                        onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-gold py-4 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/30"
+                                >
+                                    <Save size={18} />
+                                    Update User Registry
                                 </button>
                             </form>
                         </div>

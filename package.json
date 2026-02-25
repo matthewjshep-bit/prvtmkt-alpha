@@ -13,6 +13,8 @@
     "@aws-sdk/s3-request-presigner": "^3.997.0",
     "@prisma/client": "^7.4.1",
     "@supabase/supabase-js": "^2.97.0",
+    "@tiptap/react": "^3.20.0",
+    "@tiptap/starter-kit": "^3.20.0",
     "axios": "^1.13.5",
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.3",
