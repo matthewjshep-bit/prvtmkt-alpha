@@ -26,8 +26,30 @@ async function generateKlingToken() {
     return token;
 }
 
+function getBaseUrl(req: Request) {
+    // 1. Explicit Env Var (Best)
+    if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
+
+    // 2. Vercel System Env Var
+    if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+
+    // 3. Request-based detection (Good for tunnels/ngrok)
+    const url = new URL(req.url);
+    return `${url.protocol}//${url.host}`;
+}
+
 export async function POST(req: Request) {
     try {
+        const accessKey = process.env.KLING_ACCESS_KEY;
+        const secretKey = process.env.KLING_SECRET_KEY;
+
+        if (!accessKey || !secretKey) {
+            console.error("Kling Handshake Blocked: Missing KLING_ACCESS_KEY or KLING_SECRET_KEY in environment.");
+            return NextResponse.json({
+                error: "Kling AI Credentials Missing. Please check your system environment variables."
+            }, { status: 500 });
+        }
+
         const { imageUrl, dealId } = await req.json();
 
         if (!imageUrl || !dealId) {
@@ -43,15 +65,19 @@ export async function POST(req: Request) {
         console.log("Kling Handshake Initiated:", { dealId, imageUrl });
         console.log("System Prompt Precision Check:", systemPrompt);
 
-        const response = await axios.post(`${KLING_API_BASE}/videos/image2video`, {
+        const payload = {
             model_name: "kling-v1",
             image: imageUrl,
             prompt: systemPrompt,
             negative_prompt: negativePrompt,
             duration: 5,
             mode: "high_quality",
-            callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/kling/webhook?dealId=${dealId}`
-        }, {
+            callback_url: `${getBaseUrl(req)}/api/kling/webhook?dealId=${dealId}`
+        };
+
+        console.log("Kling Payload Audit:", JSON.stringify({ ...payload, image: imageUrl.substring(0, 30) + "..." }, null, 2));
+
+        const response = await axios.post(`${KLING_API_BASE}/videos/image2video`, payload, {
             headers: {
                 "Authorization": `Bearer ${token}`,
                 "Content-Type": "application/json"

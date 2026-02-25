@@ -45,13 +45,18 @@ function TenantDealsContent() {
             });
             const startData = await startRes.json();
 
-            if (startData.error) throw new Error(startData.error);
+            if (startData.error) {
+                throw new Error(startData.error);
+            }
             const taskId = startData.data?.task_id || startData.task_id;
 
             // 2. Poll for completion
             const poll = async () => {
                 const pollRes = await fetch(`/api/kling?taskId=${taskId}`);
                 const pollData = await pollRes.json();
+
+                if (pollData.error) throw new Error(pollData.error);
+
                 const status = (pollData.data?.task_status || pollData.task_status)?.toLowerCase();
 
                 if (status === "succeeded") {
@@ -74,21 +79,21 @@ function TenantDealsContent() {
                         });
                     }
                 } else if (status === "failed") {
-                    throw new Error("Kling AI generation failed");
+                    throw new Error(pollData.data?.task_status_msg || "Kling AI generation failed");
                 } else {
                     setTimeout(poll, 3000); // Poll every 3s
                 }
             };
 
             poll();
-        } catch (error) {
+        } catch (error: any) {
             console.error("AI Generation Error:", error);
             setAiProcessingIds(prev => {
                 const next = new Set(prev);
                 next.delete(imageUrl);
                 return next;
             });
-            alert("Failed to generate AI video. Check console for details.");
+            alert(`AI Drone Cinematic Engine Error: ${error.message}`);
         }
     };
 

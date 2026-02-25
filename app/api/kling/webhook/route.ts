@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
+import { uploadToSupabase } from "@/lib/supabase-storage";
 
 export async function POST(req: Request) {
     try {
@@ -17,18 +18,17 @@ export async function POST(req: Request) {
         const videoUrl = body.data?.video_url || body.video_url;
 
         if (taskStatus === "succeeded" && videoUrl) {
-            console.log("Kling Webhook: Generation Success. Triggering Persistence...");
+            console.log("Kling Webhook: Generation Success. Triggering Persistence Directly...");
 
-            // Call our internal persistence route to save to Supabase
-            // Note: In a production app, we'd use a server-to-server call or shared utility
-            const persistRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/kling/persist`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ videoUrl, dealId })
-            });
+            // 1. Download video from Kling
+            const response = await axios.get(videoUrl, { responseType: 'arraybuffer' });
+            const buffer = Buffer.from(response.data);
 
-            const persistData = await persistRes.json();
-            console.log("Kling Webhook: Persistence Completed:", persistData.url);
+            // 2. Upload to Supabase
+            const fileName = `deals/${dealId}/cinematic-${Date.now()}.mp4`;
+            const supabaseUrl = await uploadToSupabase(buffer, fileName, "video/mp4");
+
+            console.log("Kling Webhook: Persistence Completed Directly:", supabaseUrl);
         } else {
             console.log("Kling Webhook: Task not yet succeeded or missing URL", { status: taskStatus });
         }
