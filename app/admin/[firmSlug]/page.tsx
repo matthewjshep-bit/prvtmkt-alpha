@@ -22,9 +22,10 @@ export default function TenantDashboard() {
     const router = useRouter();
     const firmSlug = params.firmSlug as string;
 
-    useEffect(() => {
-        router.push(`/admin/${firmSlug}/mysite`);
-    }, [firmSlug, router]);
+    // Removed redirect to My Site to allow dashboard access
+    // useEffect(() => {
+    //     router.push(`/admin/${firmSlug}/mysite`);
+    // }, [firmSlug, router]);
 
     const firm = firms.find(f => f.slug === firmSlug);
 

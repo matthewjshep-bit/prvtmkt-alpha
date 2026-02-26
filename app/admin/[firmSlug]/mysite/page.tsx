@@ -222,24 +222,6 @@ export default function MySiteOverhaul() {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
-                                <label className="text-[9px] font-black uppercase tracking-wider text-white/30 block">Accent Color</label>
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="color"
-                                        className="h-8 w-8 rounded-lg border-none bg-transparent cursor-pointer ring-2 ring-white/10 ring-offset-2 ring-offset-brand-dark"
-                                        value={formData.accentColor || '#151515'}
-                                        onChange={(e) => {
-                                            const newColor = e.target.value;
-                                            updateField('accentColor', newColor);
-                                            if (formData.isColorLinked) {
-                                                updateField('backgroundColor', newColor);
-                                            }
-                                        }}
-                                    />
-                                    <span className="text-[10px] font-mono text-white/40">{formData.accentColor || '#151515'}</span>
-                                </div>
-                            </div>
-                            <div className="space-y-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                                 <div className="flex items-center justify-between">
                                     <label className="text-[9px] font-black uppercase tracking-wider text-white/30 block">Background</label>
                                     <button
@@ -269,6 +251,24 @@ export default function MySiteOverhaul() {
                                         }}
                                     />
                                     <span className="text-[10px] font-mono text-white/40">{formData.backgroundColor || '#0a0a0a'}</span>
+                                </div>
+                            </div>
+                            <div className="space-y-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                                <label className="text-[9px] font-black uppercase tracking-wider text-white/30 block">Accent Color</label>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="color"
+                                        className="h-8 w-8 rounded-lg border-none bg-transparent cursor-pointer ring-2 ring-white/10 ring-offset-2 ring-offset-brand-dark"
+                                        value={formData.accentColor || '#151515'}
+                                        onChange={(e) => {
+                                            const newColor = e.target.value;
+                                            updateField('accentColor', newColor);
+                                            if (formData.isColorLinked) {
+                                                updateField('backgroundColor', newColor);
+                                            }
+                                        }}
+                                    />
+                                    <span className="text-[10px] font-mono text-white/40">{formData.accentColor || '#151515'}</span>
                                 </div>
                             </div>
                             <div className="col-span-2 space-y-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5">

@@ -86,24 +86,33 @@ export default function TenantAdminLayout({
 
                     <div className="flex-1 px-6 pb-6 overflow-y-auto">
                         <div className="flex flex-col gap-8">
-                            {/* Individual Firm Branding - Shifted Downward */}
-                            <Link href={`/firms/${firm.slug}`} className="flex items-center gap-4 group/brand p-2">
-                                <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-brand-dark/50 border border-white/10 p-2 shadow-inner group-hover/brand:border-brand-gold/30 transition-all">
-                                    {firm.logoUrl ? (
-                                        <img src={firm.logoUrl} alt={firm.name} className="h-full w-full object-contain" />
-                                    ) : (
-                                        <Building2 size={24} className="text-brand-gold" />
-                                    )}
-                                </div>
-                                <div className="flex flex-col overflow-hidden">
-                                    <span className="text-xs font-black text-brand-gold tracking-[0.2em] uppercase leading-tight group-hover/brand:text-white transition-colors truncate">
-                                        {firm.name}
-                                    </span>
-                                    <span className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest mt-0.5">
-                                        Firm Admin
-                                    </span>
-                                </div>
-                            </Link>
+                            {/* Individual Firm Branding - Increased Scale & Visibility */}
+                            <div className="flex flex-col gap-2 group/brand p-2">
+                                <Link href={`/firms/${firm.slug}`} className="flex items-center gap-4">
+                                    <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-brand-dark/50 border border-white/10 p-2 shadow-inner group-hover/brand:border-brand-gold/30 transition-all">
+                                        {firm.logoUrl ? (
+                                            <img src={firm.logoUrl} alt={firm.name} className="h-full w-full object-contain" />
+                                        ) : (
+                                            <Building2 size={28} className="text-brand-gold" />
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-black text-brand-gold tracking-[0.1em] uppercase leading-tight group-hover/brand:text-white transition-colors">
+                                            {firm.name}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest mt-0.5">
+                                            Firm Admin
+                                        </span>
+                                    </div>
+                                </Link>
+                                <Link
+                                    href={`/firms/${firm.slug}`}
+                                    className="flex items-center gap-1.5 ml-20 text-[10px] font-black uppercase tracking-widest text-brand-gold/60 hover:text-brand-gold transition-colors"
+                                >
+                                    <ExternalLink size={10} />
+                                    View Site
+                                </Link>
+                            </div>
 
                             <nav className="space-y-1">
                                 {navItems.map((item) => {
