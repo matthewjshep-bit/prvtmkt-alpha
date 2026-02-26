@@ -18,21 +18,25 @@ export async function GET() {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const deal = await prisma.deal.create({
-            data: {
-                address: body.address,
-                assetType: body.assetType,
-                strategy: body.strategy,
-                purchaseAmount: body.purchaseAmount,
-                financedAmount: body.financedAmount,
-                stillImageURL: body.stillImageURL,
-                isPublic: body.isPublic ?? false,
-                capRate: body.capRate,
-                sqFt: body.sqFt,
-                firmId: body.firmId,
-                teamMemberId: body.teamMemberId,
-            },
-        });
+        const data: any = {
+            address: body.address,
+            assetType: body.assetType,
+            strategy: body.strategy,
+            purchaseAmount: body.purchaseAmount,
+            financedAmount: body.financedAmount,
+            stillImageURL: body.stillImageURL,
+            isPublic: body.isPublic ?? false,
+            capRate: body.capRate,
+            sqFt: body.sqFt,
+            firm: { connect: { id: body.firmId } },
+        };
+
+        const teamMemberId = body.teamMemberId || (Array.isArray(body.teamMemberIds) && body.teamMemberIds[0]);
+        if (teamMemberId) {
+            data.teamMember = { connect: { id: teamMemberId } };
+        }
+
+        const deal = await prisma.deal.create({ data });
         return NextResponse.json(deal);
     } catch (error: any) {
         console.error('[Deals API] POST Error:', error);

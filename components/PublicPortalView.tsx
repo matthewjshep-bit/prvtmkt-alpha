@@ -59,9 +59,18 @@ export default function PublicPortalView({
     const themeStyles = {
         '--firm-bg': firm.backgroundColor || '#0a0a0a',
         '--firm-text': firm.fontColor || '#ffffff',
-        '--firm-primary': firm.primaryColor || '#ffffff',
+        '--firm-primary': firm.accentColor || '#ffffff',
         '--firm-secondary': firm.accentColor || '#151515',
+        '--firm-name-font': firm.firmNameFontFamily || 'Inter',
+        '--firm-name-weight': firm.firmNameFontWeight || '900',
+        '--firm-name-size': `${firm.firmNameFontSize || 72}px`,
+        '--firm-bio-font': firm.bioFontFamily || 'Inter',
+        '--firm-bio-size': `${firm.bioFontSize || 18}px`,
     } as React.CSSProperties;
+
+    const radiusClass = firm.borderRadius === 'square' ? 'rounded-none' : 'rounded-[2.5rem]';
+    const cardRadiusClass = firm.borderRadius === 'square' ? 'rounded-none' : 'rounded-[2rem]';
+    const subRadiusClass = firm.borderRadius === 'square' ? 'rounded-none' : 'rounded-2xl';
 
     const isVideo = (url: string | undefined) => {
         if (!url) return false;
@@ -105,15 +114,18 @@ export default function PublicPortalView({
                 )}
 
                 {/* Distinct Firm Header (Soft-Rectangular) */}
-                <div className={`mb-8 rounded-[2.5rem] p-10 md:p-14 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-10 ${(!isPreview && firm.showAgencyBranding !== false) ? 'mt-8' : ''}`} style={{ backgroundColor: 'var(--firm-secondary)' }}>
+                <div className={`mb-8 p-10 md:p-14 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-10 ${radiusClass} ${(!isPreview && firm.showAgencyBranding !== false) ? 'mt-8' : ''}`} style={{ backgroundColor: 'var(--firm-secondary)' }}>
                     <div className="flex flex-col lg:flex-row items-center gap-12">
-                        <div className="h-32 w-80 flex-shrink-0">
+                        <div className="h-32 w-80 flex-shrink-0 flex items-center justify-center relative overflow-hidden">
                             {firm.logoUrl ? (
-                                <img
-                                    src={firm.logoUrl}
-                                    alt={firm.name}
-                                    className="h-full w-full object-contain object-left"
-                                />
+                                <div className="absolute inset-0 flex items-center justify-center p-4">
+                                    <img
+                                        src={firm.logoUrl}
+                                        alt={firm.name}
+                                        className="max-h-full max-w-full object-contain transition-transform duration-300"
+                                        style={{ transform: `scale(${(firm.logoScale || 100) / 100})` }}
+                                    />
+                                </div>
                             ) : (
                                 <div className="flex items-center gap-4 h-full" style={{ color: 'var(--firm-primary)' }}>
                                     <Building2 size={64} />
@@ -122,12 +134,12 @@ export default function PublicPortalView({
                             )}
                         </div>
                         <div className="text-center lg:text-left">
-                            <h1 className="mb-4 text-7xl font-black tracking-tight text-black">
+                            <h1 className="mb-4 tracking-tight text-black" style={{ fontFamily: 'var(--firm-name-font)', fontWeight: 'var(--firm-name-weight)', fontSize: 'var(--firm-name-size)' }}>
                                 {firm.name}
                             </h1>
                             <div
-                                className="text-2xl font-bold opacity-40 leading-relaxed max-w-2xl prose prose-invert prose-p:leading-relaxed"
-                                style={{ color: 'inherit' }}
+                                className="font-bold opacity-40 leading-relaxed max-w-2xl prose prose-invert prose-p:leading-relaxed"
+                                style={{ color: 'inherit', fontFamily: 'var(--firm-bio-font)', fontSize: 'var(--firm-bio-size)' }}
                                 dangerouslySetInnerHTML={{ __html: firm.bio || "Professional institutional track record and specialized team directory." }}
                             />
 
@@ -138,7 +150,7 @@ export default function PublicPortalView({
                                             href={firm.linkedInUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="flex items-center gap-2 rounded-full bg-black/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-black/10 transition-all"
+                                            className={`flex items-center gap-2 bg-black/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-black/10 transition-all ${subRadiusClass}`}
                                         >
                                             <Globe size={14} className="text-black/40" />
                                             LinkedIn
@@ -174,7 +186,7 @@ export default function PublicPortalView({
                 {/* Conditional Hero Media (Banner) */}
                 {firm.heroMediaUrl && (
                     <div className="mb-16 animate-in fade-in slide-in-from-bottom-6 duration-1000">
-                        <div className="relative aspect-[21/9] w-full overflow-hidden rounded-[3rem] border border-white/10 shadow-3xl bg-black/20 backdrop-blur-sm">
+                        <div className={`relative aspect-[21/9] w-full overflow-hidden border border-white/10 shadow-3xl bg-black/20 backdrop-blur-sm ${firm.borderRadius === 'square' ? 'rounded-none' : 'rounded-[3rem]'}`}>
                             {isVideo(firm.heroMediaUrl) ? (
                                 <div
                                     className="group/video relative h-full w-full cursor-pointer"
@@ -241,7 +253,7 @@ export default function PublicPortalView({
                 )}
 
                 {/* Distinct Search & Navigation Area (Soft-Rectangular) */}
-                <div className="mb-16 rounded-[2rem] p-4 pr-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden" style={{ backgroundColor: 'var(--firm-secondary)' }}>
+                <div className={`mb-16 p-4 pr-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden ${radiusClass}`} style={{ backgroundColor: 'var(--firm-secondary)' }}>
                     <div className="flex flex-1 items-center gap-4 w-full">
                         <div className="relative flex-1 group">
                             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-black/30 group-focus-within:text-black transition-colors" size={20} />
@@ -256,17 +268,17 @@ export default function PublicPortalView({
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <div className="flex h-16 items-center rounded-2xl bg-white/50 p-2 border border-black/5">
+                        <div className={`flex h-16 items-center bg-white/50 p-2 border border-black/5 ${subRadiusClass}`}>
                             <button
                                 onClick={() => setActiveTab("DEALS")}
-                                className={`flex h-full items-center gap-3 rounded-xl px-12 text-xs font-black uppercase tracking-widest transition-all ${activeTab === "DEALS" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
+                                className={`flex h-full items-center gap-3 px-12 text-xs font-black uppercase tracking-widest transition-all ${subRadiusClass} ${activeTab === "DEALS" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
                             >
                                 <LayoutGrid size={20} />
                                 Portfolio
                             </button>
                             <button
                                 onClick={() => setActiveTab("PEOPLE")}
-                                className={`flex h-full items-center gap-3 rounded-xl px-12 text-xs font-black uppercase tracking-widest transition-all ${activeTab === "PEOPLE" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
+                                className={`flex h-full items-center gap-3 px-12 text-xs font-black uppercase tracking-widest transition-all ${subRadiusClass} ${activeTab === "PEOPLE" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
                             >
                                 <Globe size={20} />
                                 Team
@@ -296,8 +308,8 @@ export default function PublicPortalView({
                                                 <button
                                                     key={cat}
                                                     onClick={() => setFilter(cat)}
-                                                    className={`rounded-xl px-8 py-3.5 text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${isActive
-                                                        ? "shadow-[0_10px_30px_-10px_rgba(0,0,0,0.3)] scale-105 border-0"
+                                                    className={`px-8 py-3.5 text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${subRadiusClass} ${isActive
+                                                        ? "shadow-[0_10px_30px_-10px_rgba(0,0,0,0.3)] scale-105 border-0 bg-white"
                                                         : "border border-black/10 hover:border-black/30 hover:bg-black/5"
                                                         }`}
                                                     style={{
@@ -319,17 +331,17 @@ export default function PublicPortalView({
                                             </span>
                                         </div>
 
-                                        <div className="flex h-12 items-center rounded-xl bg-black/5 p-1.5 border border-black/5">
+                                        <div className={`flex h-12 items-center bg-black/5 p-1.5 border border-black/5 ${subRadiusClass}`}>
                                             <button
                                                 onClick={() => setViewMode("GRID")}
-                                                className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all ${viewMode === "GRID" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                                className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${viewMode === "GRID" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
                                                 title="Grid View"
                                             >
                                                 <LayoutGrid size={16} />
                                             </button>
                                             <button
                                                 onClick={() => setViewMode("LIST")}
-                                                className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all ${viewMode === "LIST" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                                className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${viewMode === "LIST" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
                                                 title="List View"
                                             >
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
@@ -391,17 +403,17 @@ export default function PublicPortalView({
                                     </span>
                                 </div>
 
-                                <div className="flex h-12 items-center rounded-xl bg-black/5 p-1.5 border border-black/5">
+                                <div className={`flex h-12 items-center bg-black/5 p-1.5 border border-black/5 ${subRadiusClass}`}>
                                     <button
                                         onClick={() => setTeamViewMode("GRID")}
-                                        className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all ${teamViewMode === "GRID" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                        className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${teamViewMode === "GRID" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
                                         title="Grid View"
                                     >
                                         <LayoutGrid size={16} />
                                     </button>
                                     <button
                                         onClick={() => setTeamViewMode("LIST")}
-                                        className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all ${teamViewMode === "LIST" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                        className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${teamViewMode === "LIST" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
                                         title="List View"
                                     >
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
@@ -419,9 +431,9 @@ export default function PublicPortalView({
                                 {firmTeamMembers.map((member) => (
                                     <div
                                         key={member.id}
-                                        className={`group overflow-hidden rounded-[2.5rem] border border-black/5 bg-white/50 p-6 transition-all hover:scale-[1.02] hover:shadow-2xl flex ${teamViewMode === "GRID" ? "flex-col aspect-[4/5] w-full" : "flex-row items-center gap-10"}`}
+                                        className={`group overflow-hidden border border-black/5 bg-white/50 p-6 transition-all hover:scale-[1.02] hover:shadow-2xl flex ${radiusClass} ${teamViewMode === "GRID" ? "flex-col aspect-[4/5] w-full" : "flex-row items-center gap-10"}`}
                                     >
-                                        <div className={`${teamViewMode === "GRID" ? "aspect-[4/5] w-full" : "h-40 w-40 shrink-0"} overflow-hidden rounded-[2rem] shadow-md border-4 border-white`}>
+                                        <div className={`${teamViewMode === "GRID" ? "aspect-[4/5] w-full" : "h-40 w-40 shrink-0"} overflow-hidden shadow-md border-4 border-white ${cardRadiusClass}`}>
                                             <img
                                                 src={member.imageURL}
                                                 alt={member.name}

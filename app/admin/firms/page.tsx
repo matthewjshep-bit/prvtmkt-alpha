@@ -529,7 +529,7 @@ export default function AdminFirmsPage() {
                                             className="w-full flex items-center justify-center gap-2 rounded-2xl bg-red-500/10 px-4 py-4 text-xs font-bold text-red-500 transition-all hover:bg-red-500 hover:text-white"
                                         >
                                             <Trash2 size={16} />
-                                            Purge
+                                            Delete Account
                                         </button>
                                     </div>
                                 </div>
@@ -553,17 +553,17 @@ export default function AdminFirmsPage() {
                         <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10 text-red-500 mx-auto">
                             <AlertTriangle size={40} />
                         </div>
-                        <h2 className="text-3xl font-bold text-white mb-3">Permanent Deletion</h2>
+                        <h2 className="text-3xl font-bold text-white mb-3">Confirm Deletion</h2>
                         <p className="text-foreground/50 mb-10 leading-relaxed text-sm">
-                            You are about to purge <span className="text-white font-bold">{firms.find(f => f.id === confirmDeleteId)?.name}</span>. All associations, records, and branding data will be removed.
+                            You are about to delete <span className="text-white font-bold">{firms.find(f => f.id === confirmDeleteId)?.name}</span>. All associations, records, and branding data will be removed permanently.
                         </p>
                         <div className="flex gap-4">
-                            <button onClick={() => setConfirmDeleteId(null)} className="flex-1 rounded-2xl bg-white/5 py-4 text-sm font-bold text-white hover:bg-white/10 transition-all">Abort</button>
+                            <button onClick={() => setConfirmDeleteId(null)} className="flex-1 rounded-2xl bg-white/5 py-4 text-sm font-bold text-white hover:bg-white/10 transition-all">Cancel</button>
                             <button
                                 onClick={() => { deleteFirm(confirmDeleteId); setConfirmDeleteId(null); }}
                                 className="flex-1 rounded-2xl bg-red-500 py-4 text-sm font-bold text-white hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
                             >
-                                Confirm Purge
+                                Delete Account
                             </button>
                         </div>
                     </div>

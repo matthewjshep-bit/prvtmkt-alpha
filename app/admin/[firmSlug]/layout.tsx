@@ -15,7 +15,8 @@ import {
     X,
     UserCircle,
     Shield,
-    ExternalLink
+    ExternalLink,
+    Globe
 } from "lucide-react";
 
 export default function TenantAdminLayout({
@@ -57,12 +58,11 @@ export default function TenantAdminLayout({
     }
 
     const navItems = [
-        { label: "My Site", icon: <ExternalLink size={20} />, href: `/admin/${firmSlug}/mysite` },
-        { label: "Dashboard", icon: <LayoutDashboard size={20} />, href: `/admin/${firmSlug}` },
-        { label: "Firm Deals", icon: <Briefcase size={20} />, href: `/admin/${firmSlug}/deals` },
-        { label: "Firm People", icon: <Users size={20} />, href: `/admin/${firmSlug}/people` },
-        { label: "Manage Users", icon: <Shield size={20} />, href: `/admin/${firmSlug}/users` },
-        { label: "Firm Settings", icon: <Settings size={20} />, href: `/admin/${firmSlug}/settings` },
+        { label: "My Site", href: `/admin/${firmSlug}/mysite`, icon: <Globe size={18} /> },
+        { label: "Dashboard", href: `/admin/${firmSlug}`, icon: <LayoutDashboard size={18} /> },
+        { label: "Firm Deals", href: `/admin/${firmSlug}/deals`, icon: <Briefcase size={18} /> },
+        { label: "Team Members", href: `/admin/${firmSlug}/people`, icon: <Users size={18} /> },
+        { label: "Settings", href: `/admin/${firmSlug}/settings`, icon: <Settings size={18} /> },
     ];
 
     return (

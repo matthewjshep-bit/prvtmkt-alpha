@@ -12,7 +12,14 @@ import {
     Upload,
     Trash2,
     ChevronRight,
+    Check,
+    Volume2,
+    VolumeX,
     ChevronLeft,
+    Link as LinkIcon,
+    Unlink,
+    Type,
+    Settings2,
     Monitor,
     Smartphone,
     Globe
@@ -122,10 +129,15 @@ export default function MySiteOverhaul() {
             {/* Right Editor Column */}
             <div className={`transition-all duration-500 bg-brand-dark border-l border-white/5 flex flex-col overflow-hidden shadow-2xl z-30 ${isEditorOpen ? "w-[450px]" : "w-0"}`}>
                 <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-                    <h2 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-3">
-                        <Palette size={18} className="text-brand-gold" />
-                        Live Site Editor
-                    </h2>
+                    <div className="flex items-center gap-3">
+                        <div className="h-8 w-16 flex items-center justify-center rounded-lg bg-white/5 p-1 border border-white/5">
+                            <img src={formData.logoUrl || "/master-logo.png"} alt="" className="h-full object-contain" />
+                        </div>
+                        <h2 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-3">
+                            <Palette size={18} className="text-brand-gold" />
+                            Live Site Editor
+                        </h2>
+                    </div>
                     {message && <span className="text-[10px] font-bold text-brand-gold animate-pulse">{message}</span>}
                 </div>
 
@@ -137,35 +149,129 @@ export default function MySiteOverhaul() {
                             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Visual Identity</h3>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
-                                <label className="text-[9px] font-black uppercase tracking-wider text-white/30 block">Primary</label>
-                                <div className="flex items-center gap-3">
-                                    <div className="relative group/picker">
-                                        <input
-                                            type="color"
-                                            className="h-8 w-8 rounded-lg border-none bg-transparent cursor-pointer ring-2 ring-white/10 ring-offset-2 ring-offset-brand-dark"
-                                            value={formData.primaryColor || '#ffffff'}
-                                            onChange={(e) => updateField('primaryColor', e.target.value)}
+                        <div className="space-y-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                            <label className="text-[9px] font-black uppercase tracking-wider text-white/30 block ml-1">Firm Logo Assets</label>
+
+                            <div className="flex items-center gap-6">
+                                <div className="h-20 w-40 rounded-xl border border-white/5 bg-brand-gray-900 p-4 flex items-center justify-center relative group/logo overflow-hidden">
+                                    <div className="absolute inset-0 flex items-center justify-center p-4">
+                                        <img
+                                            src={formData.logoUrl || "/master-logo.png"}
+                                            alt="Current Logo"
+                                            className="max-h-full max-w-full object-contain transition-all duration-300"
+                                            style={{ transform: `scale(${(formData.logoScale || 100) / 100})` }}
                                         />
                                     </div>
-                                    <span className="text-[10px] font-mono text-white/50">{formData.primaryColor || '#ffffff'}</span>
+                                    <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/logo:opacity-100 transition-all flex items-center justify-center cursor-pointer rounded-xl backdrop-blur-sm z-10">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <Upload size={18} className="text-white" />
+                                            <span className="text-[8px] font-black uppercase tracking-widest text-white">Replace</span>
+                                        </div>
+                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => updateField('logoUrl', reader.result as string);
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }} />
+                                    </label>
+                                </div>
+
+                                <div className="flex-1 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[8px] font-black uppercase tracking-[0.2em] text-white/30">Logo Scale</label>
+                                        <span className="text-[8px] font-mono text-brand-gold">{formData.logoScale || 100}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="50"
+                                        max="150"
+                                        value={formData.logoScale || 100}
+                                        onChange={(e) => updateField('logoScale', parseInt(e.target.value))}
+                                        className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-gold"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Geometric Override */}
+                        <div className="space-y-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black uppercase tracking-wider text-white/30 block ml-1">Geometric Override</label>
+                                    <p className="text-[8px] text-white/20 font-bold uppercase tracking-widest">Global Border Logic</p>
+                                </div>
+                                <div className="flex bg-brand-dark rounded-xl p-1 border border-white/5">
+                                    <button
+                                        onClick={() => updateField('borderRadius', 'rounded')}
+                                        className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${formData.borderRadius !== 'square' ? "bg-white text-brand-dark" : "text-white/30 hover:text-white"}`}
+                                    >
+                                        Rounded
+                                    </button>
+                                    <button
+                                        onClick={() => updateField('borderRadius', 'square')}
+                                        className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${formData.borderRadius === 'square' ? "bg-white text-brand-dark" : "text-white/30 hover:text-white"}`}
+                                    >
+                                        Square
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                                <label className="text-[9px] font-black uppercase tracking-wider text-white/30 block">Accent Color</label>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="color"
+                                        className="h-8 w-8 rounded-lg border-none bg-transparent cursor-pointer ring-2 ring-white/10 ring-offset-2 ring-offset-brand-dark"
+                                        value={formData.accentColor || '#151515'}
+                                        onChange={(e) => {
+                                            const newColor = e.target.value;
+                                            updateField('accentColor', newColor);
+                                            if (formData.isColorLinked) {
+                                                updateField('backgroundColor', newColor);
+                                            }
+                                        }}
+                                    />
+                                    <span className="text-[10px] font-mono text-white/40">{formData.accentColor || '#151515'}</span>
                                 </div>
                             </div>
                             <div className="space-y-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
-                                <label className="text-[9px] font-black uppercase tracking-wider text-white/30 block">Background</label>
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[9px] font-black uppercase tracking-wider text-white/30 block">Background</label>
+                                    <button
+                                        onClick={() => {
+                                            const nextLinked = !formData.isColorLinked;
+                                            updateField('isColorLinked', nextLinked);
+                                            if (nextLinked) {
+                                                updateField('backgroundColor', formData.accentColor);
+                                            }
+                                        }}
+                                        className={`transition-all ${formData.isColorLinked ? 'text-brand-gold' : 'text-white/20'}`}
+                                    >
+                                        {formData.isColorLinked ? <LinkIcon size={12} /> : <Unlink size={12} />}
+                                    </button>
+                                </div>
                                 <div className="flex items-center gap-3">
                                     <input
                                         type="color"
                                         className="h-8 w-8 rounded-lg border-none bg-transparent cursor-pointer ring-2 ring-white/10 ring-offset-2 ring-offset-brand-dark"
                                         value={formData.backgroundColor || '#0a0a0a'}
-                                        onChange={(e) => updateField('backgroundColor', e.target.value)}
+                                        onChange={(e) => {
+                                            const newColor = e.target.value;
+                                            updateField('backgroundColor', newColor);
+                                            if (formData.isColorLinked) {
+                                                updateField('accentColor', newColor);
+                                            }
+                                        }}
                                     />
                                     <span className="text-[10px] font-mono text-white/40">{formData.backgroundColor || '#0a0a0a'}</span>
                                 </div>
                             </div>
-                            <div className="space-y-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
-                                <label className="text-[9px] font-black uppercase tracking-wider text-white/30 block">Font</label>
+                            <div className="col-span-2 space-y-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                                <label className="text-[9px] font-black uppercase tracking-wider text-white/30 block">Font Color</label>
                                 <div className="flex items-center gap-3">
                                     <input
                                         type="color"
@@ -176,16 +282,82 @@ export default function MySiteOverhaul() {
                                     <span className="text-[10px] font-mono text-white/50">{formData.fontColor || '#ffffff'}</span>
                                 </div>
                             </div>
-                            <div className="space-y-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
-                                <label className="text-[9px] font-black uppercase tracking-wider text-white/30 block">Accent</label>
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="color"
-                                        className="h-8 w-8 rounded-lg border-none bg-transparent cursor-pointer ring-2 ring-white/10 ring-offset-2 ring-offset-brand-dark"
-                                        value={formData.accentColor || '#151515'}
-                                        onChange={(e) => updateField('accentColor', e.target.value)}
-                                    />
-                                    <span className="text-[10px] font-mono text-white/40">{formData.accentColor || '#151515'}</span>
+                        </div>
+
+                        {/* Typography Engine */}
+                        <div className="space-y-6 p-6 rounded-2xl bg-white/[0.02] border border-white/5">
+                            <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-brand-gold flex items-center gap-2">
+                                <Type size={14} />
+                                Typography
+                            </h4>
+
+                            <div className="space-y-6">
+                                {/* Firm Name */}
+                                <div className="space-y-4">
+                                    <label className="text-[8px] font-black uppercase tracking-widest text-white/30">Firm Name Header</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <select
+                                            className="h-9 rounded-lg bg-brand-dark border border-white/5 px-2 text-[9px] font-bold text-white outline-none"
+                                            value={formData.firmNameFontFamily}
+                                            onChange={(e) => updateField('firmNameFontFamily', e.target.value)}
+                                        >
+                                            <option value="Inter">Inter</option>
+                                            <option value="Roboto">Roboto</option>
+                                            <option value="Outfit">Outfit</option>
+                                            <option value="Playfair Display">Playfair</option>
+                                            <option value="Space Grotesk">Space Grotesk</option>
+                                        </select>
+                                        <select
+                                            className="h-9 rounded-lg bg-brand-dark border border-white/5 px-2 text-[9px] font-bold text-white outline-none"
+                                            value={formData.firmNameFontWeight}
+                                            onChange={(e) => updateField('firmNameFontWeight', e.target.value)}
+                                        >
+                                            <option value="300">Light</option>
+                                            <option value="400">Regular</option>
+                                            <option value="600">Semibold</option>
+                                            <option value="700">Bold</option>
+                                            <option value="900">Black</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[8px] text-white/20 uppercase">Size</span>
+                                            <span className="text-[9px] font-mono text-brand-gold">{formData.firmNameFontSize}px</span>
+                                        </div>
+                                        <input
+                                            type="range" min="32" max="120" step="2"
+                                            className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-gold"
+                                            value={formData.firmNameFontSize}
+                                            onChange={(e) => updateField('firmNameFontSize', parseInt(e.target.value))}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Bio */}
+                                <div className="space-y-4">
+                                    <label className="text-[8px] font-black uppercase tracking-widest text-white/30">Biography Body</label>
+                                    <select
+                                        className="w-full h-9 rounded-lg bg-brand-dark border border-white/5 px-2 text-[9px] font-bold text-white outline-none"
+                                        value={formData.bioFontFamily}
+                                        onChange={(e) => updateField('bioFontFamily', e.target.value)}
+                                    >
+                                        <option value="Inter">Inter</option>
+                                        <option value="Roboto">Roboto</option>
+                                        <option value="Georgia">Georgia</option>
+                                        <option value="Merriweather">Merriweather</option>
+                                    </select>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[8px] text-white/20 uppercase">Size</span>
+                                            <span className="text-[9px] font-mono text-brand-gold">{formData.bioFontSize}px</span>
+                                        </div>
+                                        <input
+                                            type="range" min="12" max="24" step="1"
+                                            className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-gold"
+                                            value={formData.bioFontSize}
+                                            onChange={(e) => updateField('bioFontSize', parseInt(e.target.value))}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>

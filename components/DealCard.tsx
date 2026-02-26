@@ -34,9 +34,12 @@ export default function DealCard({ deal, index, isListView = false }: DealCardPr
     const themeStyles = {
         '--firm-bg': firm?.backgroundColor || '#0a0a0a',
         '--firm-text': firm?.fontColor || '#ffffff',
-        '--firm-primary': firm?.primaryColor || '#ffffff',
+        '--firm-primary': firm?.accentColor || '#ffffff', // remap primary to accent
         '--firm-secondary': firm?.accentColor || '#151515',
     } as React.CSSProperties;
+
+    const radiusClass = firm?.borderRadius === 'square' ? 'rounded-none' : 'rounded-[2.5rem]';
+    const subRadiusClass = firm?.borderRadius === 'square' ? 'rounded-none' : 'rounded-2xl';
 
     // Suppression Logic
     const hasPurchase = deal.purchaseAmount && deal.purchaseAmount > 0;
@@ -51,10 +54,10 @@ export default function DealCard({ deal, index, isListView = false }: DealCardPr
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
             style={themeStyles}
-            className={`group relative overflow-hidden rounded-[2.5rem] border border-white/5 bg-[var(--firm-bg)] transition-all hover:border-[var(--firm-primary)]/30 hover:shadow-2xl flex ${isListView ? 'w-full flex-row items-center p-8 gap-10' : 'flex-col'}`}
+            className={`group relative overflow-hidden border border-white/5 bg-[var(--firm-bg)] transition-all hover:border-[var(--firm-primary)]/30 hover:shadow-2xl flex ${radiusClass} ${isListView ? 'w-full flex-row items-center p-8 gap-10' : 'flex-col'}`}
         >
             {/* Image Container */}
-            <div className={`relative overflow-hidden rounded-2xl ${isListView ? 'h-48 w-72 shrink-0' : 'aspect-[16/9]'}`}>
+            <div className={`relative overflow-hidden ${subRadiusClass} ${isListView ? 'h-48 w-72 shrink-0' : 'aspect-[16/9]'}`}>
                 {deal.generatedVideoURL ? (
                     <video
                         src={deal.generatedVideoURL}

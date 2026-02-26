@@ -19,6 +19,14 @@ export interface Firm {
     physicalAddress?: string;
     linkedInUrl?: string;
     googleReviewsUrl?: string;
+    logoScale?: number;
+    borderRadius?: 'rounded' | 'square';
+    isColorLinked?: boolean;
+    firmNameFontFamily?: string;
+    firmNameFontWeight?: string;
+    firmNameFontSize?: number;
+    bioFontFamily?: string;
+    bioFontSize?: number;
 }
 
 export interface TeamMember {

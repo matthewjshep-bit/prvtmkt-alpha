@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { useData } from "@/context/DataContext";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
     Briefcase,
@@ -18,7 +19,12 @@ import {
 export default function TenantDashboard() {
     const { firms, deals, teamMembers, activities } = useData();
     const params = useParams();
+    const router = useRouter();
     const firmSlug = params.firmSlug as string;
+
+    useEffect(() => {
+        router.push(`/admin/${firmSlug}/mysite`);
+    }, [firmSlug, router]);
 
     const firm = firms.find(f => f.slug === firmSlug);
 
