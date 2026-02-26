@@ -52,6 +52,7 @@ function TenantPeopleContent() {
         const personToAdd = {
             ...newPerson,
             id: `p-${Date.now()}`,
+            firmId: firm.id,
             firmIds: [firm.id],
             slug: newPerson.name.toLowerCase().replace(/\s+/g, '-'),
         };
@@ -81,7 +82,7 @@ function TenantPeopleContent() {
 
     const canEdit = (member: any) => {
         if (!currentUser) return false;
-        if (currentUser.role === "SYSTEM_ADMIN" || currentUser.role === "ADMIN") return true;
+        if (currentUser.role === "SYSTEM_ADMIN" || currentUser.role === "FIRM_ADMIN") return true;
         return member.userId === currentUser.id;
     };
 
@@ -92,7 +93,7 @@ function TenantPeopleContent() {
                     <h1 className="text-4xl font-bold text-white">Firm <span className="text-brand-gold">People</span></h1>
                     <p className="mt-2 text-foreground/40 font-medium">Coordinate your specialized transaction leadership.</p>
                 </div>
-                {(currentUser?.role === "ADMIN" || currentUser?.role === "SYSTEM_ADMIN") && (
+                {(currentUser?.role === "FIRM_ADMIN" || currentUser?.role === "SYSTEM_ADMIN") && (
                     <button
                         onClick={() => setIsAddingPerson(true)}
                         className="flex items-center gap-2 rounded-xl bg-brand-gold px-6 py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/20"
@@ -364,7 +365,7 @@ function TenantPeopleContent() {
                                         >
                                             {saveStatus[member.id] === 'saving' ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-dark/30 border-t-brand-dark" /> : saveStatus[member.id] === 'saved' ? <Check size={18} /> : <Save size={18} />}
                                         </button>
-                                        {(currentUser?.role === "ADMIN" || currentUser?.role === "SYSTEM_ADMIN") && (
+                                        {(currentUser?.role === "FIRM_ADMIN" || currentUser?.role === "SYSTEM_ADMIN") && (
                                             <button className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/5 text-red-500/40 hover:bg-red-500/10 hover:text-red-500 transition-all border border-red-500/10">
                                                 <Trash2 size={18} />
                                             </button>

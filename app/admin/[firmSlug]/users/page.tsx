@@ -22,7 +22,7 @@ export default function TenantUsersPage() {
     const [isEditing, setIsEditing] = useState(false);
     const [editingUser, setEditingUser] = useState<any>(null);
     const [inviteEmail, setInviteEmail] = useState("");
-    const [inviteRole, setInviteRole] = useState<"ADMIN" | "USER">("USER");
+    const [inviteRole, setInviteRole] = useState<"FIRM_ADMIN" | "USER">("USER");
 
     const firm = firms.find(f => f.slug === firmSlug);
     if (!firm) return null;
@@ -90,7 +90,7 @@ export default function TenantUsersPage() {
                                     onChange={(e) => setInviteRole(e.target.value as any)}
                                 >
                                     <option value="USER">Standard User</option>
-                                    <option value="ADMIN">Firm Admin</option>
+                                    <option value="FIRM_ADMIN">Firm Admin</option>
                                 </select>
                             </div>
 
@@ -156,7 +156,7 @@ export default function TenantUsersPage() {
                                     onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value as any })}
                                 >
                                     <option value="USER">Standard User</option>
-                                    <option value="ADMIN">Firm Admin</option>
+                                    <option value="FIRM_ADMIN">Firm Admin</option>
                                     <option value="SYSTEM_ADMIN">System Admin (Global)</option>
                                 </select>
                             </div>

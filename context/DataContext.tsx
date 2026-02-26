@@ -24,6 +24,7 @@ interface Firm {
 interface TeamMember {
     id: string;
     firmId: string;
+    firmIds: string[];
     userId?: string; // Link to a System User for self-editing
     name: string;
     slug: string;
@@ -48,7 +49,7 @@ interface User {
 interface Deal {
     id: string;
     firmId: string;
-    teamMemberId: string;
+    teamMemberId?: string;
     address: string;
     assetType: string;
     strategy: string;
@@ -67,6 +68,7 @@ interface Deal {
     arv?: number;
     investmentOverview?: string;
     generatedVideoURL?: string; // Cinematic AI Video
+    teamMemberIds: string[];
 }
 
 interface Activity {
@@ -132,8 +134,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 ]);
 
                 if (firmsRes.ok) setFirms(await firmsRes.json());
-                if (dealsRes.ok) setDeals(await dealsRes.json());
-                if (membersRes.ok) setTeamMembers(await membersRes.json());
+                if (dealsRes.ok) {
+                    const data = await dealsRes.json();
+                    setDeals(data.map((d: any) => ({
+                        ...d,
+                        teamMemberIds: d.teamMemberIds || (d.teamMemberId ? [d.teamMemberId] : [])
+                    })));
+                }
+                if (membersRes.ok) {
+                    const data = await membersRes.json();
+                    // Normalize firmIds to support both legacy singular and modern plural patterns
+                    setTeamMembers(data.map((m: any) => ({
+                        ...m,
+                        firmIds: m.firmIds || (m.firmId ? [m.firmId] : [])
+                    })));
+                }
 
                 // Load session if exists
                 const savedSession = await storage.getItem<User>('prvtmkt_session');

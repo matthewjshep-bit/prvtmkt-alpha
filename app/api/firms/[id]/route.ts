@@ -3,11 +3,12 @@ import prisma from '@/lib/prisma';
 
 export async function GET(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const firm = await prisma.firm.findUnique({
-            where: { id: params.id },
+            where: { id },
             include: {
                 teamMembers: true,
                 deals: true,
@@ -25,12 +26,13 @@ export async function GET(
 
 export async function PUT(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const body = await req.json();
         const firm = await prisma.firm.update({
-            where: { id: params.id },
+            where: { id },
             data: {
                 name: body.name,
                 slug: body.slug,
@@ -51,11 +53,12 @@ export async function PUT(
 
 export async function DELETE(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         await prisma.firm.delete({
-            where: { id: params.id },
+            where: { id },
         });
         return NextResponse.json({ success: true });
     } catch (error: any) {

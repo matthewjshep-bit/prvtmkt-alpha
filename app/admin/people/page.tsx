@@ -46,6 +46,7 @@ function AdminPeopleContent() {
             ...newPerson,
             id: `p-${Date.now()}`,
             slug: newPerson.name.toLowerCase().replace(/\s+/g, '-'),
+            firmId: newPerson.firmIds[0] || "",
         };
         addTeamMember(personToAdd);
         setIsAddingPerson(false);

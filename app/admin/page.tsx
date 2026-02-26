@@ -34,7 +34,7 @@ export default function AdminDashboard() {
     const [editingUser, setEditingUser] = useState<any>(null);
     const [newUserEmail, setNewUserEmail] = useState("");
     const [newUserFirmId, setNewUserFirmId] = useState("");
-    const [newUserRole, setNewUserRole] = useState<"ADMIN" | "USER" | "SYSTEM_ADMIN">("ADMIN");
+    const [newUserRole, setNewUserRole] = useState<"FIRM_ADMIN" | "USER" | "SYSTEM_ADMIN">("FIRM_ADMIN");
 
     const [newFirm, setNewFirm] = useState({
         name: "",
@@ -325,7 +325,7 @@ export default function AdminDashboard() {
                                                     </button>
                                                     <button
                                                         onClick={() => {
-                                                            const newRole = user.role === 'ADMIN' ? 'SYSTEM_ADMIN' : 'ADMIN';
+                                                            const newRole = user.role === 'FIRM_ADMIN' ? 'SYSTEM_ADMIN' : 'FIRM_ADMIN';
                                                             updateUser(user.id, { role: newRole as any });
                                                         }}
                                                         className="p-2 text-foreground/20 hover:text-brand-gold transition-colors"
@@ -409,7 +409,7 @@ export default function AdminDashboard() {
                                         onChange={(e) => setNewUserRole(e.target.value as any)}
                                     >
                                         <option value="USER">Standard Account</option>
-                                        <option value="ADMIN">Firm Administrator</option>
+                                        <option value="FIRM_ADMIN">Firm Administrator</option>
                                         <option value="SYSTEM_ADMIN">Global System Admin</option>
                                     </select>
                                 </div>

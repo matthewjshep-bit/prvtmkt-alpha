@@ -188,7 +188,7 @@ function TenantDealsContent() {
     if (!firm) return null;
 
     const firmDeals = deals.filter(d => d.firmId === firm.id);
-    const firmTeam = teamMembers.filter(m => m.firmId === firm.id);
+    const firmTeam = teamMembers.filter(m => (m.firmIds || []).includes(firm.id));
 
     const handleAddDeal = (e: React.FormEvent) => {
         e.preventDefault();

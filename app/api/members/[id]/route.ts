@@ -3,11 +3,12 @@ import prisma from '@/lib/prisma';
 
 export async function GET(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const member = await prisma.teamMember.findUnique({
-            where: { id: params.id },
+            where: { id },
         });
         if (!member) {
             return NextResponse.json({ error: 'Member not found' }, { status: 404 });
@@ -21,12 +22,13 @@ export async function GET(
 
 export async function PUT(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const body = await req.json();
         const member = await prisma.teamMember.update({
-            where: { id: params.id },
+            where: { id },
             data: {
                 name: body.name,
                 slug: body.slug,
@@ -45,11 +47,12 @@ export async function PUT(
 
 export async function DELETE(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         await prisma.teamMember.delete({
-            where: { id: params.id },
+            where: { id },
         });
         return NextResponse.json({ success: true });
     } catch (error: any) {
