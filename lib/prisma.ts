@@ -3,8 +3,11 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 
 const prismaClientSingleton = () => {
+    // For Supabase with PgBouncer, it's often better to let Prisma handle the connection 
+    // pooling via the DATABASE_URL (Transaction Mode) on port 6543.
+    // However, since @prisma/adapter-pg is being used, we must ensure it points to the Pooled URL.
     const pool = new pg.Pool({
-        connectionString: process.env.DIRECT_URL,
+        connectionString: process.env.DATABASE_URL,
         ssl: {
             rejectUnauthorized: false
         }
