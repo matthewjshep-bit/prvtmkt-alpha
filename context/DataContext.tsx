@@ -96,7 +96,7 @@ interface DataContextType {
     deals: Deal[];
     teamMembers: TeamMember[];
     users: User[];
-    updateFirm: (id: string, updates: Partial<Firm>) => Promise<boolean>;
+    updateFirm: (id: string, updates: Partial<Firm>) => Promise<boolean | string>;
     updateTeamMember: (id: string, updates: Partial<TeamMember>) => Promise<boolean>;
     updateDeal: (id: string, updates: Partial<Deal> | ((prev: Deal) => Partial<Deal>)) => Promise<boolean>;
     addFirm: (firm: Firm) => Promise<void>;
@@ -248,7 +248,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             } else {
                 const errorData = await res.json();
                 console.error('Firm update failed:', errorData);
-                return false;
+                return errorData.error || `Update failed with status: ${res.status}`;
             }
         } catch (error) {
             console.error('Failed to update firm:', error);

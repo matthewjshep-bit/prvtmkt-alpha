@@ -58,15 +58,15 @@ export default function MySiteOverhaul() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const success = await updateFirm(firm.id, formData);
-            if (success) {
+            const successOrError = await updateFirm(firm.id, formData);
+            if (successOrError === true) {
                 setMessage("Registry Updated Successfully");
             } else {
-                setMessage("Update Failed - Check Server Logs");
+                setMessage(typeof successOrError === 'string' ? `Error: ${successOrError}` : "Update Failed - Check Server Logs");
             }
-            setTimeout(() => setMessage(""), 3000);
-        } catch (err) {
-            setMessage("Update Failed");
+            setTimeout(() => setMessage(""), 5000);
+        } catch (err: any) {
+            setMessage(`Update Failed: ${err.message}`);
         } finally {
             setIsSaving(false);
         }
