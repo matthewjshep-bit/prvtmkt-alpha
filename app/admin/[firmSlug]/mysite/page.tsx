@@ -481,24 +481,40 @@ export default function MySiteOverhaul() {
                                         if (!file) return;
 
                                         setIsUploadingHero(true);
-                                        const formData = new FormData();
-                                        formData.append("file", file);
-                                        formData.append("id", firm.id);
-                                        formData.append("type", "firms");
 
                                         try {
-                                            const res = await fetch("/api/upload", {
+                                            // 1. Get signed URL
+                                            const signRes = await fetch("/api/upload/signed-url", {
                                                 method: "POST",
-                                                body: formData,
+                                                headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify({
+                                                    fileName: file.name,
+                                                    contentType: file.type,
+                                                    id: firm.id,
+                                                    type: "firms"
+                                                }),
                                             });
 
-                                            if (!res.ok) throw new Error("Upload failed");
+                                            if (!signRes.ok) throw new Error("Failed to get signed upload URL");
+                                            const { signedUrl, publicUrl } = await signRes.json();
 
-                                            const { url } = await res.json();
-                                            updateField('heroMediaUrl', url);
+                                            // 2. Upload directly to Supabase
+                                            const uploadRes = await fetch(signedUrl, {
+                                                method: "PUT",
+                                                body: file,
+                                                headers: {
+                                                    "Content-Type": file.type,
+                                                },
+                                            });
+
+                                            if (!uploadRes.ok) throw new Error("Upload to storage failed");
+
+                                            // 3. Update field with public URL
+                                            updateField('heroMediaUrl', publicUrl);
                                             setMessage("Media Uploaded Successfully");
                                             setTimeout(() => setMessage(""), 3000);
                                         } catch (err: any) {
+                                            console.error("Upload error:", err);
                                             setMessage(`Upload Error: ${err.message}`);
                                             setTimeout(() => setMessage(""), 5000);
                                         } finally {
