@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useData } from "@/context/DataContext";
-import { LayoutDashboard, Users, PlusCircle, Globe, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, Users, PlusCircle, Globe, ArrowLeft, Briefcase } from "lucide-react";
 
 export default function Navbar() {
     const pathname = usePathname();
@@ -69,18 +69,16 @@ export default function Navbar() {
                 </Link>
 
                 <div className="hidden items-center gap-8 md:flex">
-                    <NavLink href="/" icon={<Globe size={18} />} label="Explore Firms" />
                     {currentUser?.role === 'SYSTEM_ADMIN' && (
                         <NavLink href="/admin" icon={<LayoutDashboard size={18} />} label="Platform Admin" />
                     )}
-                    {currentUser?.role === 'ADMIN' && currentUser.firmId && (
+                    {currentUser?.role === 'FIRM_ADMIN' && currentUser.firmId && (
                         <NavLink
                             href={`/admin/${firms.find(f => f.id === currentUser.firmId)?.slug || ''}`}
                             icon={<LayoutDashboard size={18} />}
                             label="Firm Admin"
                         />
                     )}
-                    <NavLink href="/deals/new" icon={<PlusCircle size={18} />} label="System Intake" />
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -108,7 +106,7 @@ export default function Navbar() {
                                 href="/auth/signup"
                                 className="rounded-full bg-white/5 px-4 py-2 text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-white/10"
                             >
-                                Register Firm
+                                Sign Up
                             </Link>
                         </div>
                     )}

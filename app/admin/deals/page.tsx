@@ -359,7 +359,7 @@ function AdminDealsContent() {
                                         {teamMembers
                                             .filter(m => !newDeal.teamMemberIds.includes(m.id))
                                             .map(member => (
-                                                <option key={member.id} value={member.id}>{member.name} ({firms.filter(f => (member.firmIds || []).includes(f.id)).map(f => f.name).join(', ')})</option>
+                                                <option key={member.id} value={member.id}>{member.name} ({firms.find(f => f.id === member.firmId)?.name || 'Unknown Firm'})</option>
                                             ))
                                         }
                                     </select>
@@ -581,7 +581,7 @@ function AdminDealsContent() {
                                             {teamMembers
                                                 .filter(m => !(editingDeal.teamMemberIds || []).includes(m.id))
                                                 .map(member => (
-                                                    <option key={member.id} value={member.id}>{member.name} ({firms.filter(f => (member.firmIds || []).includes(f.id)).map(f => f.name).join(', ')})</option>
+                                                    <option key={member.id} value={member.id}>{member.name} ({firms.find(f => f.id === member.firmId)?.name || 'Unknown Firm'})</option>
                                                 ))
                                             }
                                         </select>
@@ -635,6 +635,7 @@ function AdminDealsContent() {
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-foreground/40">Asset</th>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-foreground/40">Firm</th>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-foreground/40">Status</th>
+                                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-foreground/40">Date Added</th>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-foreground/40">Price</th>
                                 <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-widest text-foreground/40">Actions</th>
                             </tr>
@@ -681,6 +682,16 @@ function AdminDealsContent() {
                                                 <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${deal.isPublic ? 'bg-green-500/10 text-green-500' : 'bg-brand-gold/10 text-brand-gold'}`}>
                                                     {deal.isPublic ? 'Public' : 'Private'}
                                                 </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="space-y-1">
+                                                    <p className="text-xs font-bold text-white">
+                                                        {new Date(deal.createdAt || Date.now()).toLocaleDateString()}
+                                                    </p>
+                                                    <p className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">
+                                                        {new Date(deal.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <p className="text-sm font-bold text-white">${(deal.purchaseAmount || 0).toLocaleString()}</p>

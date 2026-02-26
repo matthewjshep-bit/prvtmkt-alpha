@@ -188,7 +188,7 @@ function TenantDealsContent() {
     if (!firm) return null;
 
     const firmDeals = deals.filter(d => d.firmId === firm.id);
-    const firmTeam = teamMembers.filter(m => (m.firmIds || []).includes(firm.id));
+    const firmTeam = teamMembers.filter(m => m.firmId === firm.id);
 
     const handleAddDeal = (e: React.FormEvent) => {
         e.preventDefault();
@@ -465,6 +465,7 @@ function TenantDealsContent() {
                             <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Financial Metrics</th>
                             <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Investment Overview</th>
                             <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Strategy & Structure</th>
+                            <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Date Added</th>
                             <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Responsible Parties</th>
                         </tr>
                     </thead>
@@ -608,6 +609,16 @@ function TenantDealsContent() {
                                                 <option value="Debt Financing">Debt Financing</option>
                                                 <option value="Equity Ownership">Equity Ownership</option>
                                             </select>
+                                        </div>
+                                    </td>
+                                    <td className="px-10 py-8 min-w-[150px]">
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-bold text-white">
+                                                {new Date(deal.createdAt || Date.now()).toLocaleDateString()}
+                                            </p>
+                                            <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
+                                                {new Date(deal.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
                                         </div>
                                     </td>
                                     <td className="px-10 py-8 min-w-[250px]">

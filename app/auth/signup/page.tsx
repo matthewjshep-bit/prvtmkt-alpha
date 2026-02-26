@@ -38,14 +38,14 @@ export default function SignupPage() {
     const handleSignup = async () => {
         setIsLoading(true);
         try {
-            const success = await signup(
-                { email: formData.email, password: formData.password, firmId: "", role: "ADMIN" },
+            const result = await signup(
+                { email: formData.email, password: formData.password, firmId: "", role: "FIRM_ADMIN" },
                 { name: formData.firmName, slug: formData.firmSlug, primaryColor: formData.primaryColor, logoUrl: "" }
             );
-            if (success) {
+            if (result) {
                 setStep(3);
                 setTimeout(() => {
-                    router.push("/admin");
+                    router.push(`/admin/${result.firm.slug || result.firm.id}`);
                 }, 2000);
             }
         } catch (err) {

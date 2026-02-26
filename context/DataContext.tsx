@@ -23,7 +23,7 @@ interface Firm {
 
 interface TeamMember {
     id: string;
-    firmIds: string[];
+    firmId: string;
     userId?: string; // Link to a System User for self-editing
     name: string;
     slug: string;
@@ -42,12 +42,13 @@ interface User {
     email: string;
     password?: string; // Hashed in production
     firmId: string; // the firm this user belongs to
-    role: "ADMIN" | "USER" | "SYSTEM_ADMIN";
+    role: "FIRM_ADMIN" | "USER" | "SYSTEM_ADMIN";
 }
 
 interface Deal {
     id: string;
     firmId: string;
+    teamMemberId: string;
     address: string;
     assetType: string;
     strategy: string;
@@ -58,7 +59,8 @@ interface Deal {
     isPublic: boolean;
     capRate?: number | null;
     sqFt?: number | null;
-    teamMemberIds: string[];
+    createdAt?: string;
+    updatedAt?: string;
     context?: string;
     financingType?: "Debt Financing" | "Equity Ownership";
     rehabAmount?: number;
@@ -98,8 +100,8 @@ interface DataContextType {
     // Auth actions
     currentUser: User | null;
     isAuthenticated: boolean;
-    login: (email: string, password: string) => Promise<boolean>;
-    signup: (userData: Omit<User, 'id'>, firmData: Omit<Firm, 'id'>) => Promise<boolean>;
+    login: (email: string, password: string) => Promise<User | null>;
+    signup: (userData: Omit<User, 'id'>, firmData: Omit<Firm, 'id'>) => Promise<{ user: User; firm: Firm } | null>;
     logout: () => void;
 
     activities: Activity[];
@@ -110,77 +112,34 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
-    const [firms, setFirms] = useState<Firm[]>(MOCK_FIRMS);
-    const [deals, setDeals] = useState<Deal[]>(MOCK_DEALS);
-    const [teamMembers, setTeamMembers] = useState<TeamMember[]>(MOCK_TEAM_MEMBERS);
+    const [firms, setFirms] = useState<Firm[]>([]);
+    const [deals, setDeals] = useState<Deal[]>([]);
+    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [activities, setActivities] = useState<Activity[]>([]);
     const [isInitialized, setIsInitialized] = useState(false);
 
-    // Robust loading from storage (IndexedDB with LocalStorage fallback/migration)
+    // Load initial data from Supabase API
     useEffect(() => {
         const loadInitialData = async () => {
             try {
-                // 1. Try to load from IndexedDB (the new source of truth)
-                const savedFirms = await storage.getItem<Firm[]>('prvtmkt_firms');
-                const savedDeals = await storage.getItem<Deal[]>('prvtmkt_deals');
-                const savedTeam = await storage.getItem<TeamMember[]>('prvtmkt_team');
-                const savedUsers = await storage.getItem<User[]>('prvtmkt_users');
+                // Fetch basic data from Supabase
+                const [firmsRes, dealsRes, membersRes] = await Promise.all([
+                    fetch('/api/firms'),
+                    fetch('/api/deals'),
+                    fetch('/api/members')
+                ]);
 
-                if (savedFirms) setFirms(savedFirms);
-                if (savedDeals) {
-                    const normalizedDeals = savedDeals.map((d: any) => ({
-                        ...d,
-                        teamMemberIds: d.teamMemberIds || (d.teamMemberId ? [d.teamMemberId] : []),
-                        investmentOverview: d.investmentOverview || d.context || ""
-                    }));
-                    setDeals(normalizedDeals);
-                }
-                if (savedTeam) {
-                    const normalizedTeam = savedTeam.map((m: any) => ({
-                        ...m,
-                        firmIds: m.firmIds || (m.firmId ? [m.firmId] : [])
-                    }));
-                    setTeamMembers(normalizedTeam);
-                }
-                if (savedUsers) setUsers(savedUsers);
+                if (firmsRes.ok) setFirms(await firmsRes.json());
+                if (dealsRes.ok) setDeals(await dealsRes.json());
+                if (membersRes.ok) setTeamMembers(await membersRes.json());
 
                 // Load session if exists
                 const savedSession = await storage.getItem<User>('prvtmkt_session');
                 if (savedSession) setCurrentUser(savedSession);
-
-                // 2. Fallback/Migration: If IndexedDB is empty, check LocalStorage
-                if (!savedFirms && !savedDeals && !savedTeam && !savedUsers) {
-                    const legacyFirms = localStorage.getItem('prvtmkt_firms');
-                    const legacyDeals = localStorage.getItem('prvtmkt_deals');
-                    const legacyTeam = localStorage.getItem('prvtmkt_team');
-                    const legacyUsers = localStorage.getItem('prvtmkt_users');
-
-                    if (legacyFirms) setFirms(JSON.parse(legacyFirms));
-                    if (legacyDeals) {
-                        const parsedDeals = JSON.parse(legacyDeals);
-                        const normalizedDeals = parsedDeals.map((d: any) => ({
-                            ...d,
-                            teamMemberIds: d.teamMemberIds || (d.teamMemberId ? [d.teamMemberId] : []),
-                            investmentOverview: d.investmentOverview || d.context || ""
-                        }));
-                        setDeals(normalizedDeals);
-                    }
-                    if (legacyTeam) {
-                        const parsedTeam = JSON.parse(legacyTeam);
-                        const normalizedTeam = parsedTeam.map((m: any) => ({
-                            ...m,
-                            firmIds: m.firmIds || (m.firmId ? [m.firmId] : [])
-                        }));
-                        setTeamMembers(normalizedTeam);
-                    }
-                    if (legacyUsers) setUsers(JSON.parse(legacyUsers));
-
-                    console.log("Storage: Migrated legacy data from LocalStorage to IndexedDB.");
-                }
             } catch (error) {
-                console.error("Storage: Failed to initialize data from persistence layer.", error);
+                console.error("Storage: Failed to initialize data from Supabase.", error);
             } finally {
                 setIsInitialized(true);
             }
@@ -231,30 +190,78 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
     }, [deals, isInitialized]);
 
-    const updateFirm = (id: string, updates: Partial<Firm>) => {
-        setFirms(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
+    const updateFirm = async (id: string, updates: Partial<Firm>) => {
+        try {
+            const res = await fetch(`/api/firms/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates),
+            });
+            if (res.ok) {
+                const updatedFirm = await res.json();
+                setFirms(prev => prev.map(f => f.id === id ? updatedFirm : f));
+            }
+        } catch (error) {
+            console.error('Failed to update firm:', error);
+        }
     };
 
-    const updateTeamMember = (id: string, updates: Partial<TeamMember>) => {
-        setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+    const updateTeamMember = async (id: string, updates: Partial<TeamMember>) => {
+        try {
+            const res = await fetch(`/api/members/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates),
+            });
+            if (res.ok) {
+                const updatedMember = await res.json();
+                setTeamMembers(prev => prev.map(m => m.id === id ? updatedMember : m));
+            }
+        } catch (error) {
+            console.error('Failed to update team member:', error);
+        }
     };
 
-    const addFirm = (firm: Firm) => {
-        setFirms(prev => [firm, ...prev]);
-        addActivity({
-            type: 'FIRM_ADDED',
-            title: `Added new firm: ${firm.name}`,
-            firmId: firm.id
-        });
+    const addFirm = async (firm: Firm) => {
+        try {
+            const res = await fetch('/api/firms', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(firm),
+            });
+            if (res.ok) {
+                const savedFirm = await res.json();
+                setFirms(prev => [savedFirm, ...prev]);
+                addActivity({
+                    type: 'FIRM_ADDED',
+                    title: `Added new firm: ${savedFirm.name}`,
+                    firmId: savedFirm.id
+                });
+            }
+        } catch (error) {
+            console.error('Failed to add firm:', error);
+        }
     };
 
-    const addTeamMember = (member: TeamMember) => {
-        setTeamMembers(prev => [member, ...prev]);
-        addActivity({
-            type: 'MEMBER_ADDED',
-            title: `Added new team member: ${member.name}`,
-            firmId: member.firmIds?.[0] || ""
-        });
+    const addTeamMember = async (member: TeamMember) => {
+        try {
+            const res = await fetch('/api/members', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(member),
+            });
+            if (res.ok) {
+                const savedMember = await res.json();
+                setTeamMembers(prev => [savedMember, ...prev]);
+                addActivity({
+                    type: 'MEMBER_ADDED',
+                    title: `Added new team member: ${savedMember.name}`,
+                    firmId: savedMember.firmId || ""
+                });
+            }
+        } catch (error) {
+            console.error('Failed to add team member:', error);
+        }
     };
 
     // New user helpers
@@ -281,14 +288,26 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const addDeal = (deal: Deal) => {
-        setDeals(prev => [deal, ...prev]);
-        addActivity({
-            type: 'DEAL_ADDED',
-            title: `New deal uploaded: ${deal.address}`,
-            dealId: deal.id,
-            firmId: deal.firmId
-        });
+    const addDeal = async (deal: Deal) => {
+        try {
+            const res = await fetch('/api/deals', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(deal),
+            });
+            if (res.ok) {
+                const savedDeal = await res.json();
+                setDeals(prev => [savedDeal, ...prev]);
+                addActivity({
+                    type: 'DEAL_ADDED',
+                    title: `New deal uploaded: ${savedDeal.address}`,
+                    dealId: savedDeal.id,
+                    firmId: savedDeal.firmId
+                });
+            }
+        } catch (error) {
+            console.error('Failed to add deal:', error);
+        }
     };
 
     // Auth Implementation
@@ -298,9 +317,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             // In a real app, verify password here
             setCurrentUser(user);
             await storage.setItem('prvtmkt_session', user);
-            return true;
+            return user;
         }
-        return false;
+        return null;
     };
 
     const signup = async (userData: Omit<User, 'id'>, firmData: Omit<Firm, 'id'>) => {
@@ -319,7 +338,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 ...userData,
                 id: newUserId,
                 firmId: newFirmId,
-                role: "ADMIN" // First user of a firm is an admin
+                role: "FIRM_ADMIN" // First user of a firm is an admin
             };
 
             setFirms(prev => [newFirm, ...prev]);
@@ -334,10 +353,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 firmId: newFirmId
             });
 
-            return true;
+            return { user: newUser, firm: newFirm };
         } catch (error) {
             console.error("Signup failed:", error);
-            return false;
+            return null;
         }
     };
 
@@ -346,35 +365,49 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         storage.removeItem('prvtmkt_session');
     };
 
-    const updateDeal = (id: string, updates: Partial<Deal> | ((prev: Deal) => Partial<Deal>)) => {
-        setDeals(prev => prev.map(d => {
-            if (d.id !== id) return d;
-            const resolvedUpdates = typeof updates === 'function' ? updates(d) : updates;
-            return { ...d, ...resolvedUpdates };
-        }));
+    const updateDeal = async (id: string, updates: Partial<Deal> | ((prev: Deal) => Partial<Deal>)) => {
+        try {
+            const currentDeal = deals.find(d => d.id === id);
+            if (!currentDeal) return;
+            const resolvedUpdates = typeof updates === 'function' ? updates(currentDeal) : updates;
+
+            const res = await fetch(`/api/deals/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(resolvedUpdates),
+            });
+            if (res.ok) {
+                const updatedDeal = await res.json();
+                setDeals(prev => prev.map(d => d.id === id ? updatedDeal : d));
+            }
+        } catch (error) {
+            console.error('Failed to update deal:', error);
+        }
     };
 
-    const deleteDeal = (id: string) => {
-        setDeals(prev => prev.filter(d => d.id !== id));
+    const deleteDeal = async (id: string) => {
+        try {
+            const res = await fetch(`/api/deals/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                setDeals(prev => prev.filter(d => d.id !== id));
+            }
+        } catch (error) {
+            console.error('Failed to delete deal:', error);
+        }
     };
 
-    const deleteFirm = (id: string) => {
-        setFirms(prev => prev.filter(f => f.id !== id));
-        // Cascading: Unlink deals (keep single firmId logic for deals)
-        setDeals(prev => prev.map(d => d.firmId === id ? { ...d, firmId: "" } : d));
-        // Cascading: Remove firm from team member firmIds
-        setTeamMembers(prev => prev.map(m => ({
-            ...m,
-            firmIds: (m.firmIds || []).filter(fId => fId !== id)
-        })));
-        // Cascading: Remove members from deals teamMemberIds
-        setDeals(prev => prev.map(d => ({
-            ...d,
-            teamMemberIds: (d.teamMemberIds || []).filter(mId => {
-                const member = teamMembers.find(m => m.id === mId);
-                return member && (member.firmIds || []).includes(id) ? false : true;
-            })
-        })));
+    const deleteFirm = async (id: string) => {
+        try {
+            const res = await fetch(`/api/firms/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                setFirms(prev => prev.filter(f => f.id !== id));
+                // Cascading: These would ideally be handled by the server but we update local state for immediate feedback
+                setDeals(prev => prev.map(d => d.firmId === id ? { ...d, firmId: "" } : d));
+                setTeamMembers(prev => prev.map(m => m.firmId === id ? { ...m, firmId: "" } : m));
+            }
+        } catch (error) {
+            console.error('Failed to delete firm:', error);
+        }
     };
 
     const addActivity = (activity: Omit<Activity, 'id' | 'timestamp'>) => {

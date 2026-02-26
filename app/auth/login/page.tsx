@@ -7,7 +7,7 @@ import Link from "next/link";
 import { LogIn, Mail, Lock, ArrowRight, ShieldCheck } from "lucide-react";
 
 export default function LoginPage() {
-    const { login } = useData();
+    const { login, firms } = useData();
     const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -20,9 +20,14 @@ export default function LoginPage() {
         setError("");
 
         try {
-            const success = await login(email, password);
-            if (success) {
-                router.push("/admin");
+            const user = await login(email, password);
+            if (user) {
+                if (user.role === 'SYSTEM_ADMIN') {
+                    router.push("/admin");
+                } else {
+                    const firm = firms.find(f => f.id === user.firmId);
+                    router.push(`/admin/${firm?.slug || user.firmId}`);
+                }
             } else {
                 setError("Invalid credentials. Please try again.");
             }

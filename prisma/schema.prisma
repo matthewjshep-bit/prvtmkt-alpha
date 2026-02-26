@@ -9,9 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 model Firm {
@@ -44,7 +42,7 @@ model User {
 }
 
 enum UserRole {
-  ADMIN
+  FIRM_ADMIN
   USER
   SYSTEM_ADMIN
 }
