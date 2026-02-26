@@ -507,7 +507,17 @@ export default function MySiteOverhaul() {
                                                 },
                                             });
 
-                                            if (!uploadRes.ok) throw new Error("Upload to storage failed");
+                                            if (!uploadRes.ok) {
+                                                const errorText = await uploadRes.text();
+                                                let errorMsg = "Upload to storage failed";
+                                                try {
+                                                    const errorJson = JSON.parse(errorText);
+                                                    errorMsg = errorJson.message || errorMsg;
+                                                } catch {
+                                                    errorMsg = errorText || errorMsg;
+                                                }
+                                                throw new Error(errorMsg);
+                                            }
 
                                             // 3. Update field with public URL
                                             updateField('heroMediaUrl', publicUrl);
