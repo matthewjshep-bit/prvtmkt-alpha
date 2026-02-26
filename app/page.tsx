@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useData } from "@/context/DataContext";
 import { ShieldCheck, Zap, Globe, Building2, PlusCircle, Filter, Users, Briefcase, Search, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
 const CATEGORIES = ["ALL", "INDUSTRIAL", "RETAIL", "MULTIFAMILY", "SF"];
 
 export default function PlatformLandingPage() {
@@ -35,35 +34,34 @@ export default function PlatformLandingPage() {
   const assetTypes = ["ALL", ...Array.from(new Set(publicDeals.map(d => d.assetType)))];
 
   return (
-    <div className="min-h-screen bg-brand-dark pt-40 pb-20">
+    <div className="min-h-screen bg-brand-dark pb-20 pt-40">
       <div className="container mx-auto px-6">
-        {/* Adjusted Hero Section */}
-        <div className="mb-20 text-center flex flex-col items-center">
-          <div className="mb-2 relative h-48 w-full max-w-4xl overflow-hidden flex items-center justify-center">
+        {/* Hero Section */}
+        <div className="mb-24 text-center flex flex-col items-center">
+          <div className="mb-8 relative h-32 md:h-48 w-full max-w-4xl overflow-hidden flex items-center justify-center">
             <img
               src="/logo.svg"
               alt="PRVT MKT Logo"
               className="h-full w-full object-contain scale-[1.1] brightness-200"
             />
           </div>
-          <div className="space-y-4">
+          <div className="space-y-6">
             <h1
-              className="text-4xl md:text-5xl text-white tracking-tighter"
+              className="text-4xl md:text-5xl lg:text-6xl text-white tracking-tighter"
               style={{ fontFamily: "'Bank Gothic', sans-serif", fontWeight: 600 }}
             >
-              Private Markets, Professionally Presented.
+              Private Markets Professionally Presented
             </h1>
             <p
-              className="mx-auto max-w-3xl text-xl text-white leading-relaxed px-4 opacity-40 tracking-widest"
+              className="mx-auto max-w-3xl text-sm md:text-xl text-white leading-relaxed px-4 opacity-40 tracking-widest"
               style={{ fontFamily: "'Bank Gothic', sans-serif", fontWeight: 600 }}
             >
               Your Track Record, Your Team, Your Brand. All In One Platform.
             </p>
           </div>
         </div>
-
         {/* Discovery Navigation */}
-        <div className="mb-10 flex flex-col items-center gap-8">
+        <div id="discovery-nav" className="mb-10 flex flex-col items-center gap-8 scroll-mt-24">
           <div className="flex gap-2 p-1.5 bg-white/5 rounded-[2rem] border border-white/5 overflow-x-auto max-w-full">
             <DiscoveryTab
               label="Explore Firms"

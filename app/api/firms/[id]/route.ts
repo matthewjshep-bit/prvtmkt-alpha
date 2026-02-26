@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { revalidatePath } from 'next/cache';
 
 export async function GET(
     req: Request,
@@ -31,6 +32,9 @@ export async function PUT(
     const { id } = await params;
     try {
         const body = await req.json();
+        console.log(`[Firm API] PUT Request for ID: ${id}`);
+        console.log(`[Firm API] Payload:`, JSON.stringify(body, null, 2));
+
         const firm = await prisma.firm.update({
             where: { id },
             data: {
@@ -38,12 +42,23 @@ export async function PUT(
                 slug: body.slug,
                 logoUrl: body.logoUrl,
                 primaryColor: body.primaryColor,
+                backgroundColor: body.backgroundColor,
+                fontColor: body.fontColor,
+                accentColor: body.accentColor,
+                showAgencyBranding: body.showAgencyBranding,
                 bio: body.bio,
+                heroMediaUrl: body.heroMediaUrl,
                 physicalAddress: body.physicalAddress,
                 linkedInUrl: body.linkedInUrl,
                 googleReviewsUrl: body.googleReviewsUrl,
             },
         });
+
+        // Trigger cache invalidation for global style propagation
+        revalidatePath(`/firms/${firm.slug}`);
+        revalidatePath(`/admin/${firm.slug}/mysite`);
+        revalidatePath('/'); // For global dashboards if applicable
+
         return NextResponse.json(firm);
     } catch (error: any) {
         console.error('[Firm API] PUT Error:', error);

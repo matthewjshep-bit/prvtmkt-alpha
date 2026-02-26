@@ -28,7 +28,7 @@ export default function AdminFirmsPage() {
         bio: "",
         backgroundColor: "#0a0a0a",
         fontColor: "#ffffff",
-        secondaryColor: "#151515",
+        accentColor: "#151515",
         showAgencyBranding: true,
         physicalAddress: "",
         linkedInUrl: "",
@@ -63,7 +63,7 @@ export default function AdminFirmsPage() {
             bio: "",
             backgroundColor: "#0a0a0a",
             fontColor: "#ffffff",
-            secondaryColor: "#151515",
+            accentColor: "#151515",
             showAgencyBranding: true,
             physicalAddress: "",
             linkedInUrl: "",
@@ -202,8 +202,8 @@ export default function AdminFirmsPage() {
                                         <div className="space-y-3">
                                             <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/40">Accent Shade</label>
                                             <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-brand-dark p-3">
-                                                <input type="color" className="h-8 w-8 rounded border-none bg-transparent cursor-pointer" value={newFirm.secondaryColor} onChange={(e) => setNewFirm({ ...newFirm, secondaryColor: e.target.value })} />
-                                                <span className="text-[10px] font-mono text-white/60">{newFirm.secondaryColor}</span>
+                                                <input type="color" className="h-8 w-8 rounded border-none bg-transparent cursor-pointer" value={newFirm.accentColor} onChange={(e) => setNewFirm({ ...newFirm, accentColor: e.target.value })} />
+                                                <span className="text-[10px] font-mono text-white/60">{newFirm.accentColor}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -382,8 +382,8 @@ export default function AdminFirmsPage() {
                                                 <div className="space-y-3 rounded-2xl border border-white/5 bg-brand-dark p-4">
                                                     <label className="text-[10px] font-bold uppercase tracking-wider text-white/30 block">Accent</label>
                                                     <div className="flex items-center gap-3">
-                                                        <input type="color" className="h-7 w-7 rounded border-none bg-transparent cursor-pointer" value={firm.secondaryColor || "#151515"} onChange={(e) => updateFirm(firm.id, { secondaryColor: e.target.value })} />
-                                                        <span className="text-[10px] font-mono text-white/60">{firm.secondaryColor}</span>
+                                                        <input type="color" className="h-7 w-7 rounded border-none bg-transparent cursor-pointer" value={firm.accentColor || "#151515"} onChange={(e) => updateFirm(firm.id, { accentColor: e.target.value })} />
+                                                        <span className="text-[10px] font-mono text-white/60">{firm.accentColor}</span>
                                                     </div>
                                                 </div>
                                             </div>

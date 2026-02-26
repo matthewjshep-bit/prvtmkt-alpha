@@ -4,24 +4,24 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { MOCK_FIRMS, MOCK_DEALS, MOCK_TEAM_MEMBERS } from '@/lib/mock-data';
 import { storage } from '@/lib/storage';
 
-interface Firm {
+export interface Firm {
     id: string;
     name: string;
     slug: string;
-    logoUrl: string;
-    primaryColor: string;
     bio?: string;
+    primaryColor?: string;
     backgroundColor?: string;
     fontColor?: string;
-    secondaryColor?: string;
+    accentColor?: string;
     showAgencyBranding?: boolean;
+    logoUrl?: string;
+    heroMediaUrl?: string;
     physicalAddress?: string;
     linkedInUrl?: string;
     googleReviewsUrl?: string;
-    heroMediaUrl?: string;
 }
 
-interface TeamMember {
+export interface TeamMember {
     id: string;
     firmId: string;
     firmIds: string[];
@@ -38,15 +38,15 @@ interface TeamMember {
 }
 
 // Enhanced User interface for multi‑tenant authentication
-interface User {
+export interface User {
     id: string;
     email: string;
     password?: string; // Hashed in production
-    firmId: string; // the firm this user belongs to
+    firmId?: string; // the firm this user belongs to
     role: "FIRM_ADMIN" | "USER" | "SYSTEM_ADMIN";
 }
 
-interface Deal {
+export interface Deal {
     id: string;
     firmId: string;
     teamMemberId?: string;
@@ -73,7 +73,7 @@ interface Deal {
 
 interface Activity {
     id: string;
-    type: 'DEAL_ADDED' | 'FIRM_ADDED' | 'MEMBER_ADDED';
+    type: 'DEAL_ADDED' | 'DEAL_DELETED' | 'FIRM_ADDED' | 'FIRM_DELETED' | 'MEMBER_ADDED' | 'MEMBER_DELETED' | 'USER_ADDED' | 'USER_DELETED';
     title: string;
     timestamp: string;
     firmId?: string;
@@ -85,17 +85,18 @@ interface DataContextType {
     deals: Deal[];
     teamMembers: TeamMember[];
     users: User[];
-    updateFirm: (id: string, updates: Partial<Firm>) => void;
-    updateTeamMember: (id: string, updates: Partial<TeamMember>) => void;
-    updateDeal: (id: string, updates: Partial<Deal> | ((prev: Deal) => Partial<Deal>)) => void;
-    addFirm: (firm: Firm) => void;
-    addTeamMember: (member: TeamMember) => void;
-    addDeal: (deal: Deal) => void;
+    updateFirm: (id: string, updates: Partial<Firm>) => Promise<boolean>;
+    updateTeamMember: (id: string, updates: Partial<TeamMember>) => Promise<boolean>;
+    updateDeal: (id: string, updates: Partial<Deal> | ((prev: Deal) => Partial<Deal>)) => Promise<boolean>;
+    addFirm: (firm: Firm) => Promise<void>;
+    addTeamMember: (member: TeamMember) => Promise<void>;
+    addDeal: (deal: Deal) => Promise<void>;
     deleteDeal: (id: string) => void;
     deleteFirm: (id: string) => void;
     addUser: (user: User) => void;
     updateUser: (id: string, updates: Partial<User>) => void;
     deleteUser: (id: string) => void;
+    deleteTeamMember: (id: string) => void;
     getUserById: (id: string) => User | undefined;
     getUsersByFirmId: (firmId: string) => User[];
 
@@ -215,9 +216,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             if (res.ok) {
                 const updatedFirm = await res.json();
                 setFirms(prev => prev.map(f => f.id === id ? updatedFirm : f));
+                return true;
+            } else {
+                const errorData = await res.json();
+                console.error('Firm update failed:', errorData);
+                return false;
             }
         } catch (error) {
             console.error('Failed to update firm:', error);
+            return false;
         }
     };
 
@@ -231,9 +238,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             if (res.ok) {
                 const updatedMember = await res.json();
                 setTeamMembers(prev => prev.map(m => m.id === id ? updatedMember : m));
+                return true;
             }
+            return false;
         } catch (error) {
             console.error('Failed to update team member:', error);
+            return false;
         }
     };
 
@@ -253,8 +263,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                     firmId: savedFirm.id
                 });
             }
+            // No explicit return needed for Promise<void>
         } catch (error) {
             console.error('Failed to add firm:', error);
+            // No explicit return needed for Promise<void>
         }
     };
 
@@ -283,8 +295,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const addUser = (user: User) => {
         setUsers(prev => [user, ...prev]);
         addActivity({
-            type: 'FIRM_ADDED', // reuse activity type for simplicity
-            title: `Added user ${user.email} to firm ${user.firmId}`,
+            type: 'USER_ADDED',
+            title: `Added user ${user.email}`,
             firmId: user.firmId
         });
     };
@@ -297,7 +309,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     const deleteUser = (id: string) => {
+        const user = users.find(u => u.id === id);
         setUsers(prev => prev.filter(u => u.id !== id));
+        if (user) {
+            addActivity({
+                type: 'USER_DELETED',
+                title: `Removed user: ${user.email}`,
+                firmId: user.firmId
+            });
+        }
         if (currentUser?.id === id) {
             logout();
         }
@@ -383,7 +403,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const updateDeal = async (id: string, updates: Partial<Deal> | ((prev: Deal) => Partial<Deal>)) => {
         try {
             const currentDeal = deals.find(d => d.id === id);
-            if (!currentDeal) return;
+            if (!currentDeal) return false;
             const resolvedUpdates = typeof updates === 'function' ? updates(currentDeal) : updates;
 
             const res = await fetch(`/api/deals/${id}`, {
@@ -394,17 +414,28 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             if (res.ok) {
                 const updatedDeal = await res.json();
                 setDeals(prev => prev.map(d => d.id === id ? updatedDeal : d));
+                return true;
             }
+            return false;
         } catch (error) {
             console.error('Failed to update deal:', error);
+            return false;
         }
     };
 
     const deleteDeal = async (id: string) => {
         try {
+            const deal = deals.find(d => d.id === id);
             const res = await fetch(`/api/deals/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 setDeals(prev => prev.filter(d => d.id !== id));
+                if (deal) {
+                    addActivity({
+                        type: 'DEAL_DELETED',
+                        title: `Deleted deal: ${deal.address}`,
+                        firmId: deal.firmId
+                    });
+                }
             }
         } catch (error) {
             console.error('Failed to delete deal:', error);
@@ -413,15 +444,42 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const deleteFirm = async (id: string) => {
         try {
+            const firm = firms.find(f => f.id === id);
             const res = await fetch(`/api/firms/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 setFirms(prev => prev.filter(f => f.id !== id));
+                if (firm) {
+                    addActivity({
+                        type: 'FIRM_DELETED',
+                        title: `Deleted firm: ${firm.name}`,
+                        firmId: id
+                    });
+                }
                 // Cascading: These would ideally be handled by the server but we update local state for immediate feedback
                 setDeals(prev => prev.map(d => d.firmId === id ? { ...d, firmId: "" } : d));
                 setTeamMembers(prev => prev.map(m => m.firmId === id ? { ...m, firmId: "" } : m));
             }
         } catch (error) {
             console.error('Failed to delete firm:', error);
+        }
+    };
+
+    const deleteTeamMember = async (id: string) => {
+        try {
+            const member = teamMembers.find(m => m.id === id);
+            const res = await fetch(`/api/members/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                setTeamMembers(prev => prev.filter(m => m.id !== id));
+                if (member) {
+                    addActivity({
+                        type: 'MEMBER_DELETED',
+                        title: `Removed team member: ${member.name}`,
+                        firmId: member.firmIds[0] || member.firmId || ""
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Failed to delete team member:', error);
         }
     };
 
@@ -460,6 +518,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             logout,
             activities,
             addActivity,
+            deleteTeamMember,
             isInitialized
         }}>
             {children}

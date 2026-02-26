@@ -29,7 +29,7 @@ export default function TenantDashboard() {
     const firmActivities = activities.filter(a => a.firmId === firm.id).slice(0, 10);
 
     const stats = [
-        { label: "Firm Assets", value: firmDeals.length, icon: <Briefcase size={20} className="text-brand-gold" />, href: `/admin/${firmSlug}/deals` },
+        { label: "Deals", value: firmDeals.length, icon: <Briefcase size={20} className="text-brand-gold" />, href: `/admin/${firmSlug}/deals` },
         { label: "Team Members", value: firmTeam.length, icon: <Users size={20} className="text-brand-gold" />, href: `/admin/${firmSlug}/people` },
         { label: "Authorized Users", value: 1, icon: <Shield size={20} className="text-brand-gold" />, href: `/admin/${firmSlug}/users` },
     ];

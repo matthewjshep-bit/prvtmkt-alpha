@@ -82,7 +82,7 @@ export default function SignupPage() {
                             className="space-y-8"
                         >
                             <div className="text-center">
-                                <h1 className="text-4xl font-bold text-white mb-2">Personal <span className="text-brand-gold">Access</span></h1>
+                                <h1 className="text-4xl font-bold text-white mb-2">Create <span className="text-brand-gold">Account</span></h1>
                                 <p className="text-foreground/40 italic">Create your administrative identity.</p>
                             </div>
 
@@ -138,20 +138,20 @@ export default function SignupPage() {
                             className="space-y-8"
                         >
                             <div className="text-center">
-                                <h1 className="text-4xl font-bold text-white mb-2">Firm <span className="text-brand-gold">Branding</span></h1>
+                                <h1 className="text-4xl font-bold text-white mb-2">Firm <span className="text-brand-gold">Details</span></h1>
                                 <p className="text-foreground/40 italic">Set up your firm's digital presence.</p>
                             </div>
 
                             <div className="glass rounded-[2rem] p-10 border border-white/5 shadow-2xl space-y-6">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40 ml-1">Legal Firm Name</label>
+                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40 ml-1">Firm Name</label>
                                     <div className="relative group">
                                         <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/20 group-focus-within:text-brand-gold transition-colors" size={18} />
                                         <input
                                             required
                                             type="text"
                                             className="w-full h-14 rounded-xl border border-white/5 bg-brand-gray-900 pl-12 pr-4 text-white outline-none focus:border-brand-gold/50 transition-all font-bold"
-                                            placeholder="Blackstone Wealth"
+                                            placeholder="ABC Capital"
                                             value={formData.firmName}
                                             onChange={(e) => updateFormData({ firmName: e.target.value, firmSlug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
                                         />
@@ -174,21 +174,7 @@ export default function SignupPage() {
                                     <p className="text-[9px] text-foreground/20 uppercase tracking-widest pl-1">yourportal.com/firms/{formData.firmSlug || '...'}</p>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40 ml-1">Identity Color</label>
-                                    <div className="flex gap-3">
-                                        <div className="relative flex-1 group">
-                                            <Palette className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/20 group-focus-within:text-brand-gold transition-colors" size={18} />
-                                            <input
-                                                type="text"
-                                                className="w-full h-14 rounded-xl border border-white/5 bg-brand-gray-900 pl-12 pr-4 text-white outline-none focus:border-brand-gold/50 transition-all font-bold"
-                                                value={formData.primaryColor}
-                                                onChange={(e) => updateFormData({ primaryColor: e.target.value })}
-                                            />
-                                        </div>
-                                        <div className="h-14 w-14 rounded-xl border border-white/10 shadow-inner" style={{ backgroundColor: formData.primaryColor }} />
-                                    </div>
-                                </div>
+
 
                                 <div className="flex gap-4">
                                     <button

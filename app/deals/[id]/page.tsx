@@ -43,7 +43,7 @@ export default function DealPage({
         '--firm-bg': firm?.backgroundColor || '#0a0a0a',
         '--firm-text': firm?.fontColor || '#ffffff',
         '--firm-primary': firm?.primaryColor || '#ffffff',
-        '--firm-secondary': firm?.secondaryColor || '#f5f5f5',
+        '--firm-secondary': firm?.accentColor || '#f5f5f5',
     } as React.CSSProperties;
 
     return (

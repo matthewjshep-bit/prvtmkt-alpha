@@ -37,7 +37,7 @@ export default function FirmSettingsPage() {
         primaryColor: firm?.primaryColor || "#ffffff",
         backgroundColor: firm?.backgroundColor || "#0a0a0a",
         fontColor: firm?.fontColor || "#ffffff",
-        secondaryColor: firm?.secondaryColor || "#151515",
+        accentColor: firm?.accentColor || "#151515",
         showAgencyBranding: firm?.showAgencyBranding ?? true,
         logoUrl: firm?.logoUrl || "",
         heroMediaUrl: firm?.heroMediaUrl || "",
@@ -147,8 +147,8 @@ export default function FirmSettingsPage() {
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black uppercase tracking-wider text-white/30 block ml-1">Accent Shade</label>
                                 <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-brand-dark p-3">
-                                    <input type="color" className="h-8 w-8 rounded border-none bg-transparent cursor-pointer" value={formData.secondaryColor} onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })} />
-                                    <span className="text-[10px] font-mono text-white/60">{formData.secondaryColor}</span>
+                                    <input type="color" className="h-8 w-8 rounded border-none bg-transparent cursor-pointer" value={formData.accentColor} onChange={(e) => setFormData({ ...formData, accentColor: e.target.value })} />
+                                    <span className="text-[10px] font-mono text-white/60">{formData.accentColor}</span>
                                 </div>
                             </div>
                         </div>

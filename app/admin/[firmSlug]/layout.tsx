@@ -14,7 +14,8 @@ import {
     Menu,
     X,
     UserCircle,
-    Shield
+    Shield,
+    ExternalLink
 } from "lucide-react";
 
 export default function TenantAdminLayout({
@@ -56,6 +57,7 @@ export default function TenantAdminLayout({
     }
 
     const navItems = [
+        { label: "My Site", icon: <ExternalLink size={20} />, href: `/admin/${firmSlug}/mysite` },
         { label: "Dashboard", icon: <LayoutDashboard size={20} />, href: `/admin/${firmSlug}` },
         { label: "Firm Deals", icon: <Briefcase size={20} />, href: `/admin/${firmSlug}/deals` },
         { label: "Firm People", icon: <Users size={20} />, href: `/admin/${firmSlug}/people` },
