@@ -50,7 +50,7 @@ export default function PlatformLandingPage() {
               className="text-4xl md:text-5xl lg:text-6xl text-white tracking-tighter"
               style={{ fontFamily: "'Bank Gothic', sans-serif", fontWeight: 600 }}
             >
-              Private Markets Professionally Presented
+              Private Markets, Professionally Presented.
             </h1>
             <p
               className="mx-auto max-w-3xl text-sm md:text-xl text-white leading-relaxed px-4 opacity-40 tracking-widest"
