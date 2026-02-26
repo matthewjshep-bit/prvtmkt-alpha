@@ -35,7 +35,7 @@ async function main() {
             create: {
                 email,
                 password: 'password123', // Demo password
-                role: UserRole.ADMIN,
+                role: UserRole.FIRM_ADMIN,
                 firmId: mockFirm.id,
             },
         });
