@@ -5,13 +5,14 @@ export async function POST(req: Request) {
     try {
         const formData = await req.formData();
         const file = formData.get("file") as File;
-        const dealId = formData.get("dealId") as string;
+        const id = formData.get("id") as string;
+        const type = formData.get("type") as string || 'deals'; // Fallback to 'deals' for compatibility
 
-        if (!file || !dealId) {
-            return NextResponse.json({ error: "Missing file or dealId" }, { status: 400 });
+        if (!file || !id) {
+            return NextResponse.json({ error: "Missing file or target ID" }, { status: 400 });
         }
 
-        console.log(`[Upload API] Received file: ${file.name} (${file.type}, ${file.size} bytes) for dealId: ${dealId}`);
+        console.log(`[Upload API] Received file: ${file.name} (${file.type}, ${file.size} bytes) for ${type} ID: ${id}`);
 
         // Sanitize filename: replace spaces with dashes, remove special characters (except dots/dashes), lowercase
         const sanitizedName = file.name
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
             .replace(/[^a-z0-9.-]/g, '');
 
         const buffer = Buffer.from(await file.arrayBuffer());
-        const fileName = `deals/${dealId}/${Date.now()}-${sanitizedName}`;
+        const fileName = `${type}/${id}/${Date.now()}-${sanitizedName}`;
 
         console.log(`[Upload API] Attempting Supabase upload: ${fileName}`);
         const url = await uploadToSupabase(buffer, fileName, file.type);

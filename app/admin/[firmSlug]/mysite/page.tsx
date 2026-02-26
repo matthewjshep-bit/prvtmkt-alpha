@@ -37,6 +37,7 @@ export default function MySiteOverhaul() {
     const [previewMode, setPreviewMode] = useState<"DESKTOP" | "MOBILE">("DESKTOP");
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState("");
+    const [isUploadingHero, setIsUploadingHero] = useState(false);
 
     // Local state for live sync
     const [formData, setFormData] = useState<Firm | null>(null);
@@ -453,22 +454,58 @@ export default function MySiteOverhaul() {
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center justify-center h-full text-foreground/10 p-4">
-                                        <ImageIcon size={48} className="mb-2 opacity-50" />
-                                        <p className="text-[9px] font-black uppercase tracking-[0.3em]">Blank Slate</p>
+                                        {isUploadingHero ? (
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-gold/30 border-t-brand-gold" />
+                                                <p className="text-[8px] font-black uppercase tracking-widest text-brand-gold">Uploading Media...</p>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <ImageIcon size={48} className="mb-2 opacity-50" />
+                                                <p className="text-[9px] font-black uppercase tracking-[0.3em]">Blank Slate</p>
+                                            </>
+                                        )}
                                     </div>
                                 )}
                             </div>
-                            <label className="flex items-center justify-center gap-3 w-full h-14 rounded-xl border-2 border-dashed border-white/5 bg-white/[0.02] px-4 text-white outline-none cursor-pointer hover:border-brand-gold/50 transition-all font-bold text-[10px] uppercase tracking-widest">
+                            <label className={`flex items-center justify-center gap-3 w-full h-14 rounded-xl border-2 border-dashed border-white/5 bg-white/[0.02] px-4 text-white outline-none cursor-pointer hover:border-brand-gold/50 transition-all font-bold text-[10px] uppercase tracking-widest ${isUploadingHero ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                 <Upload size={16} className="text-brand-gold" />
-                                Click to Upload Portfolio Media
-                                <input type="file" className="hidden" accept="image/*,video/*" onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                        const reader = new FileReader();
-                                        reader.onloadend = () => updateField('heroMediaUrl', reader.result as string);
-                                        reader.readAsDataURL(file);
-                                    }
-                                }} />
+                                {isUploadingHero ? "Processing..." : "Click to Upload Portfolio Media"}
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*,video/*"
+                                    disabled={isUploadingHero}
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+
+                                        setIsUploadingHero(true);
+                                        const formData = new FormData();
+                                        formData.append("file", file);
+                                        formData.append("id", firm.id);
+                                        formData.append("type", "firms");
+
+                                        try {
+                                            const res = await fetch("/api/upload", {
+                                                method: "POST",
+                                                body: formData,
+                                            });
+
+                                            if (!res.ok) throw new Error("Upload failed");
+
+                                            const { url } = await res.json();
+                                            updateField('heroMediaUrl', url);
+                                            setMessage("Media Uploaded Successfully");
+                                            setTimeout(() => setMessage(""), 3000);
+                                        } catch (err: any) {
+                                            setMessage(`Upload Error: ${err.message}`);
+                                            setTimeout(() => setMessage(""), 5000);
+                                        } finally {
+                                            setIsUploadingHero(false);
+                                        }
+                                    }}
+                                />
                             </label>
                         </div>
                     </div>
@@ -514,7 +551,7 @@ export default function MySiteOverhaul() {
                 <div className="p-8 border-t border-white/5 bg-brand-dark shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
                     <button
                         onClick={handleSave}
-                        disabled={isSaving}
+                        disabled={isSaving || isUploadingHero}
                         className="w-full h-16 flex items-center justify-center gap-4 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-xs transition-all hover:scale-[1.03] active:scale-[0.97] hover:shadow-[0_0_50px_rgba(255,255,255,0.2)] disabled:opacity-50"
                     >
                         <Save size={18} />
