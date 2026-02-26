@@ -4,9 +4,15 @@ import pg from 'pg';
 
 const prismaClientSingleton = () => {
     // We use DATABASE_URL (Transaction Mode / port 6543).
-    // The pg driver allows us to bypass the TLS self-signed cert error with rejectUnauthorized: false.
+    const url = process.env.DATABASE_URL;
+    // Belt and suspenders: Explicitly add sslmode=no-verify to the string 
+    // to force the underlying driver to bypass cert validation.
+    const connectionString = url?.includes('sslmode=')
+        ? url.replace(/sslmode=[^&]+/, 'sslmode=no-verify')
+        : `${url}${url?.includes('?') ? '&' : '?'}sslmode=no-verify`;
+
     const pool = new pg.Pool({
-        connectionString: process.env.DATABASE_URL,
+        connectionString,
         ssl: {
             rejectUnauthorized: false
         }
