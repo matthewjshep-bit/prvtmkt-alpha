@@ -22,6 +22,17 @@ async function main() {
                 linkedInUrl: mockFirm.linkedInUrl,
                 googleReviewsUrl: mockFirm.googleReviewsUrl,
                 bio: mockFirm.bio,
+                backgroundColor: mockFirm.backgroundColor || "#0a0a0a",
+                accentColor: mockFirm.accentColor || "#151515",
+                fontColor: mockFirm.fontColor || "#ffffff",
+                logoScale: mockFirm.logoScale || 100,
+                borderRadius: mockFirm.borderRadius || "rounded",
+                isColorLinked: mockFirm.isColorLinked || false,
+                firmNameFontFamily: mockFirm.firmNameFontFamily || "Inter",
+                firmNameFontWeight: mockFirm.firmNameFontWeight || "900",
+                firmNameFontSize: mockFirm.firmNameFontSize || 72,
+                bioFontFamily: mockFirm.bioFontFamily || "Inter",
+                bioFontSize: mockFirm.bioFontSize || 18,
             },
         });
     }

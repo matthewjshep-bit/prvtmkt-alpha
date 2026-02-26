@@ -51,6 +51,17 @@ export async function PUT(
                 physicalAddress: body.physicalAddress,
                 linkedInUrl: body.linkedInUrl,
                 googleReviewsUrl: body.googleReviewsUrl,
+                logoScale: body.logoScale,
+                borderRadius: body.borderRadius,
+                isColorLinked: body.isColorLinked,
+                isFontLinked: body.isFontLinked,
+                firmNameFontFamily: body.firmNameFontFamily,
+                firmNameFontWeight: body.firmNameFontWeight,
+                firmNameFontSize: body.firmNameFontSize,
+                firmNameFontColor: body.firmNameFontColor,
+                bioFontFamily: body.bioFontFamily,
+                bioFontSize: body.bioFontSize,
+                bioFontColor: body.bioFontColor,
             },
         });
 
@@ -62,7 +73,12 @@ export async function PUT(
         return NextResponse.json(firm);
     } catch (error: any) {
         console.error('[Firm API] PUT Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({
+            error: error.message,
+            stack: error.stack,
+            cause: error.cause,
+            code: error.code // Prisma error codes
+        }, { status: 500 });
     }
 }
 

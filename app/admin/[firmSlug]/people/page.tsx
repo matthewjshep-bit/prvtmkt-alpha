@@ -223,7 +223,7 @@ function TenantPeopleContent() {
                     const isEditable = canEdit(member);
                     return (
                         <div key={member.id} className="glass group overflow-hidden rounded-[2.5rem] border border-white/5 bg-brand-gray-900/20 p-8 transition-all hover:border-brand-gold/30">
-                            <div className="flex items-center gap-6 mb-8">
+                            <div className="flex items-center gap-10 mb-8">
                                 <div className="group/img relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-4 border-white/5 shadow-2xl">
                                     <img src={member.imageURL || ""} alt={member.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                     {isEditable && (
@@ -297,7 +297,7 @@ function TenantPeopleContent() {
                                                 }}
                                             >
                                                 <option value="" disabled>+ Link Firm</option>
-                                                {firms.filter(item => !member.firmIds.includes(item.id)).map(f => (
+                                                {firms.filter(item => !(member.firmIds || []).includes(item.id)).map(f => (
                                                     <option key={f.id} value={f.id}>{f.name}</option>
                                                 ))}
                                             </select>

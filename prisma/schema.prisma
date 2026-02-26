@@ -26,11 +26,14 @@ model Firm {
   logoScale          Float        @default(100.0)
   borderRadius       String       @default("rounded")
   isColorLinked      Boolean      @default(false)
+  isFontLinked       Boolean      @default(false)
   firmNameFontFamily String       @default("Inter")
   firmNameFontWeight String       @default("900")
   firmNameFontSize   Int          @default(72)
+  firmNameFontColor  String       @default("#000000")
   bioFontFamily      String       @default("Inter")
   bioFontSize        Int          @default(18)
+  bioFontColor       String       @default("#000000")
   deals              Deal[]
   teamMembers        TeamMember[]
   users              User[]
@@ -68,11 +71,18 @@ model Deal {
   strategy          Strategy
   purchaseAmount    Float?
   financedAmount    Float?
+  rehabAmount       Float?
+  arv               Float?
   stillImageURL     String?
   generatedVideoURL String?
   isPublic          Boolean     @default(false)
   capRate           Float?
   sqFt              Float?
+  investmentOverview String?
+  images            String[]    @default([])
+  financingType     String?
+  teamMemberIds     String[]    @default([])
+  context           String?
   firmId            String
   teamMemberId      String?
   createdAt         DateTime    @default(now())

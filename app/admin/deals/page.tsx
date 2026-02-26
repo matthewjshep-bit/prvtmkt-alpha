@@ -330,14 +330,14 @@ function AdminDealsContent() {
                                         Responsible Parties <span className="text-brand-gold ml-1 text-[8px] italic">MULTI-SELECT ACTIVE</span>
                                     </label>
                                     <div className="flex flex-wrap gap-2 mb-2">
-                                        {newDeal.teamMemberIds.map(mId => {
+                                        {(newDeal.teamMemberIds || []).map(mId => {
                                             const member = teamMembers.find(m => m.id === mId);
                                             return (
                                                 <div key={mId} className="flex items-center gap-2 rounded-lg bg-brand-gold/10 border border-brand-gold/20 px-3 py-1.5 text-[10px] font-bold text-brand-gold">
                                                     {member?.name}
                                                     <button
                                                         type="button"
-                                                        onClick={() => setNewDeal({ ...newDeal, teamMemberIds: newDeal.teamMemberIds.filter(id => id !== mId) })}
+                                                        onClick={() => setNewDeal({ ...newDeal, teamMemberIds: (newDeal.teamMemberIds || []).filter(id => id !== mId) })}
                                                         className="hover:text-white"
                                                     >
                                                         <X size={12} />
@@ -350,14 +350,14 @@ function AdminDealsContent() {
                                         className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none appearance-none"
                                         value=""
                                         onChange={(e) => {
-                                            if (e.target.value && !newDeal.teamMemberIds.includes(e.target.value)) {
-                                                setNewDeal({ ...newDeal, teamMemberIds: [...newDeal.teamMemberIds, e.target.value] });
+                                            if (e.target.value && !(newDeal.teamMemberIds || []).includes(e.target.value)) {
+                                                setNewDeal({ ...newDeal, teamMemberIds: [...(newDeal.teamMemberIds || []), e.target.value] });
                                             }
                                         }}
                                     >
                                         <option value="">+ Add Transaction Lead...</option>
                                         {teamMembers
-                                            .filter(m => !newDeal.teamMemberIds.includes(m.id))
+                                            .filter(m => !(newDeal.teamMemberIds || []).includes(m.id))
                                             .map(member => (
                                                 <option key={member.id} value={member.id}>{member.name} ({firms.find(f => f.id === member.firmId)?.name || 'Unknown Firm'})</option>
                                             ))

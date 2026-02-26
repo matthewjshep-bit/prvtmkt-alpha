@@ -28,6 +28,7 @@ function TenantDealsContent() {
     // Bulk Editing State
     const [localDeals, setLocalDeals] = useState<any[]>([]);
     const [changedDealIds, setChangedDealIds] = useState<Set<string>>(new Set());
+    const [isSaving, setIsSaving] = useState(false);
     const [activeMediaDealId, setActiveMediaDealId] = useState<string | null>(null);
     const [aiProcessingIds, setAiProcessingIds] = useState<Set<string>>(new Set());
     const [isUploading, setIsUploading] = useState(false);
@@ -71,7 +72,7 @@ function TenantDealsContent() {
                     const persistData = await persistRes.json();
 
                     if (persistData.url) {
-                        handleLocalUpdate(dealId, { generatedVideoURL: persistData.url });
+                        handleLocalUpdate(dealId, { generatedVideoURL: persistData.url }, true); // Persist immediately
                         setAiProcessingIds(prev => {
                             const next = new Set(prev);
                             next.delete(imageUrl);
@@ -98,12 +99,15 @@ function TenantDealsContent() {
     };
 
     useEffect(() => {
-        if (isInitialized && firm) {
+        // Only sync from global 'deals' if we don't have pending changes.
+        // This prevents re-renders (triggered by other background syncs) from
+        // overwriting local changes while a user is typing.
+        if (isInitialized && firm && changedDealIds.size === 0) {
             setLocalDeals(deals.filter(d => d.firmId === firm.id));
         }
-    }, [deals, isInitialized, firm?.id]);
+    }, [deals, isInitialized, firm?.id, changedDealIds.size]);
 
-    const handleLocalUpdate = (dealId: string, updates: any) => {
+    const handleLocalUpdate = (dealId: string, updates: any, persist = false) => {
         // 1. Update UI-local state (for immediate feedback)
         setLocalDeals(prev => prev.map(d => {
             if (d.id !== dealId) return d;
@@ -119,29 +123,46 @@ function TenantDealsContent() {
         }));
         setChangedDealIds(prev => new Set(prev).add(dealId));
 
-        // 2. Immediately PERSIST to DataContext (IndexedDB)
-        // This solves the 'disappearing' media issue by saving URLs instantly.
-        updateDeal(dealId, (prev) => {
-            const delta: any = {};
-            Object.keys(updates).forEach(key => {
-                if (typeof updates[key] === 'function') {
-                    delta[key] = updates[key]((prev as any)[key]);
-                } else {
-                    delta[key] = updates[key];
-                }
+        // 2. Conditionally PERSIST to DataContext (IndexedDB)
+        // If persist is false (default for typing), we wait for the 'Save All' button.
+        // If persist is true (e.g. for media uploads), we save immediately.
+        if (persist) {
+            updateDeal(dealId, (prev) => {
+                const delta: any = {};
+                Object.keys(updates).forEach(key => {
+                    if (typeof updates[key] === 'function') {
+                        delta[key] = updates[key]((prev as any)[key]);
+                    } else {
+                        delta[key] = updates[key];
+                    }
+                });
+                return delta;
             });
-            return delta;
-        });
+        }
     };
 
-    const handleSaveAll = () => {
-        changedDealIds.forEach(id => {
-            const deal = localDeals.find(d => d.id === id);
-            if (deal) {
-                updateDeal(id, deal);
+    const handleSaveAll = async () => {
+        setIsSaving(true);
+        try {
+            const savePromises = Array.from(changedDealIds).map(id => {
+                const deal = localDeals.find(d => d.id === id);
+                if (deal) {
+                    return updateDeal(id, deal);
+                }
+                return Promise.resolve(true);
+            });
+
+            const results = await Promise.all(savePromises);
+            if (results.every(r => r)) {
+                setChangedDealIds(new Set());
+            } else {
+                console.error("Some deals failed to save.");
             }
-        });
-        setChangedDealIds(new Set());
+        } catch (error) {
+            console.error("Error saving all deals:", error);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     interface DealForm {
@@ -387,14 +408,14 @@ function TenantDealsContent() {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 ml-1">Responsible Parties</label>
                                 <div className="flex flex-wrap gap-2 mb-2">
-                                    {newDeal.teamMemberIds.map(mId => {
+                                    {(newDeal.teamMemberIds || []).map(mId => {
                                         const member = firmTeam.find(m => m.id === mId);
                                         return (
                                             <div key={mId} className="flex items-center gap-2 rounded-lg bg-brand-gold/10 border border-brand-gold/20 px-3 py-1.5 text-[10px] font-bold text-brand-gold">
                                                 {member?.name}
                                                 <button
                                                     type="button"
-                                                    onClick={() => setNewDeal({ ...newDeal, teamMemberIds: newDeal.teamMemberIds.filter(id => id !== mId) })}
+                                                    onClick={() => setNewDeal({ ...newDeal, teamMemberIds: (newDeal.teamMemberIds || []).filter(id => id !== mId) })}
                                                     className="hover:text-white"
                                                 >
                                                     <X size={12} />
@@ -407,14 +428,14 @@ function TenantDealsContent() {
                                     className="w-full h-14 rounded-xl border border-white/5 bg-brand-dark px-4 text-white focus:border-brand-gold/50 focus:outline-none appearance-none font-bold"
                                     value=""
                                     onChange={(e) => {
-                                        if (e.target.value && !newDeal.teamMemberIds.includes(e.target.value)) {
-                                            setNewDeal({ ...newDeal, teamMemberIds: [...newDeal.teamMemberIds, e.target.value] });
+                                        if (e.target.value && !(newDeal.teamMemberIds || []).includes(e.target.value)) {
+                                            setNewDeal({ ...newDeal, teamMemberIds: [...(newDeal.teamMemberIds || []), e.target.value] });
                                         }
                                     }}
                                 >
                                     <option value="">+ Add Team Member...</option>
                                     {firmTeam
-                                        .filter(m => !newDeal.teamMemberIds.includes(m.id))
+                                        .filter(m => !(newDeal.teamMemberIds || []).includes(m.id))
                                         .map(member => (
                                             <option key={member.id} value={member.id}>{member.name}</option>
                                         ))
@@ -623,14 +644,14 @@ function TenantDealsContent() {
                                     </td>
                                     <td className="px-10 py-8 min-w-[250px]">
                                         <div className="flex flex-wrap gap-2">
-                                            {deal.teamMemberIds.map((mId: string) => {
+                                            {(deal.teamMemberIds || []).map((mId: string) => {
                                                 const member = firmTeam.find(m => m.id === mId);
                                                 return (
                                                     <div key={mId} className="flex items-center gap-2 rounded-lg bg-brand-gold/10 border border-brand-gold/20 px-3 py-1.5 text-[10px] font-bold text-brand-gold">
                                                         {member?.name}
                                                         <button
                                                             type="button"
-                                                            onClick={() => handleLocalUpdate(deal.id, { teamMemberIds: deal.teamMemberIds.filter((id: string) => id !== mId) })}
+                                                            onClick={() => handleLocalUpdate(deal.id, { teamMemberIds: (deal.teamMemberIds || []).filter((id: string) => id !== mId) })}
                                                             className="hover:text-white"
                                                         >
                                                             <X size={12} />
@@ -642,14 +663,14 @@ function TenantDealsContent() {
                                                 className="w-full bg-transparent border-b border-white/5 py-1 text-[10px] font-bold text-brand-gold/60 focus:outline-none cursor-pointer"
                                                 value=""
                                                 onChange={(e) => {
-                                                    if (e.target.value && !deal.teamMemberIds.includes(e.target.value)) {
-                                                        handleLocalUpdate(deal.id, { teamMemberIds: [...deal.teamMemberIds, e.target.value] });
+                                                    if (e.target.value && !(deal.teamMemberIds || []).includes(e.target.value)) {
+                                                        handleLocalUpdate(deal.id, { teamMemberIds: [...(deal.teamMemberIds || []), e.target.value] });
                                                     }
                                                 }}
                                             >
                                                 <option value="">+ Assign Team...</option>
                                                 {firmTeam
-                                                    .filter(m => !deal.teamMemberIds.includes(m.id))
+                                                    .filter(m => !(deal.teamMemberIds || []).includes(m.id))
                                                     .map(member => (
                                                         <option key={member.id} value={member.id}>{member.name}</option>
                                                     ))
@@ -745,7 +766,7 @@ function TenantDealsContent() {
                                                             handleLocalUpdate(activeMediaDeal.id, {
                                                                 images: (prev: string[]) => [...(prev || []), url],
                                                                 stillImageURL: (prev: string) => !prev ? url : prev
-                                                            });
+                                                            }, true); // Persist immediately for media
                                                             console.log("Portfolio Upload Success:", url);
                                                         }
                                                     } catch (err: any) {
@@ -804,7 +825,7 @@ function TenantDealsContent() {
                                                         handleLocalUpdate(activeMediaDeal.id, {
                                                             images: (prev: string[]) => [...(prev || []), url],
                                                             stillImageURL: (prev: string) => !prev ? url : prev
-                                                        });
+                                                        }, true); // Persist immediately for media
                                                         console.log("AI Engine Upload Success:", url);
 
                                                         // Force Trigger Kling for this specific uploader

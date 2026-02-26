@@ -186,7 +186,7 @@ export default function MySiteOverhaul() {
                                     <input
                                         type="range"
                                         min="50"
-                                        max="150"
+                                        max="300"
                                         value={formData.logoScale || 100}
                                         onChange={(e) => updateField('logoScale', parseInt(e.target.value))}
                                         className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-gold"
@@ -289,6 +289,22 @@ export default function MySiteOverhaul() {
                             <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-brand-gold flex items-center gap-2">
                                 <Type size={14} />
                                 Typography
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        const nextLinked = !formData.isFontLinked;
+                                        updateField('isFontLinked', nextLinked);
+                                        if (nextLinked) {
+                                            updateField('bioFontFamily', formData.firmNameFontFamily);
+                                            updateField('bioFontSize', formData.firmNameFontSize);
+                                            updateField('bioFontColor', formData.firmNameFontColor);
+                                        }
+                                    }}
+                                    className={`ml-auto flex items-center gap-1.5 px-2 py-1 rounded-md text-[7px] font-black tracking-widest transition-all ${formData.isFontLinked ? 'bg-brand-gold text-brand-dark' : 'bg-white/5 text-white/30'}`}
+                                >
+                                    {formData.isFontLinked ? <LinkIcon size={8} /> : <Unlink size={8} />}
+                                    {formData.isFontLinked ? 'LINKED' : 'LINK STYLES'}
+                                </button>
                             </h4>
 
                             <div className="space-y-6">
@@ -299,7 +315,13 @@ export default function MySiteOverhaul() {
                                         <select
                                             className="h-9 rounded-lg bg-brand-dark border border-white/5 px-2 text-[9px] font-bold text-white outline-none"
                                             value={formData.firmNameFontFamily}
-                                            onChange={(e) => updateField('firmNameFontFamily', e.target.value)}
+                                            onChange={(e) => {
+                                                const newFont = e.target.value;
+                                                updateField('firmNameFontFamily', newFont);
+                                                if (formData.isFontLinked) {
+                                                    updateField('bioFontFamily', newFont);
+                                                }
+                                            }}
                                         >
                                             <option value="Inter">Inter</option>
                                             <option value="Roboto">Roboto</option>
@@ -328,8 +350,31 @@ export default function MySiteOverhaul() {
                                             type="range" min="32" max="120" step="2"
                                             className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-gold"
                                             value={formData.firmNameFontSize}
-                                            onChange={(e) => updateField('firmNameFontSize', parseInt(e.target.value))}
+                                            onChange={(e) => {
+                                                const newSize = parseInt(e.target.value);
+                                                updateField('firmNameFontSize', newSize);
+                                                if (formData.isFontLinked) {
+                                                    updateField('bioFontSize', newSize);
+                                                }
+                                            }}
                                         />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[8px] text-white/20 uppercase">Color</span>
+                                            <input
+                                                type="color"
+                                                className="h-4 w-4 rounded border-none bg-transparent cursor-pointer"
+                                                value={formData.firmNameFontColor || '#000000'}
+                                                onChange={(e) => {
+                                                    const newColor = e.target.value;
+                                                    updateField('firmNameFontColor', newColor);
+                                                    if (formData.isFontLinked) {
+                                                        updateField('bioFontColor', newColor);
+                                                    }
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -357,6 +402,17 @@ export default function MySiteOverhaul() {
                                             value={formData.bioFontSize}
                                             onChange={(e) => updateField('bioFontSize', parseInt(e.target.value))}
                                         />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[8px] text-white/20 uppercase">Color</span>
+                                            <input
+                                                type="color"
+                                                className="h-4 w-4 rounded border-none bg-transparent cursor-pointer"
+                                                value={formData.bioFontColor || '#000000'}
+                                                onChange={(e) => updateField('bioFontColor', e.target.value)}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>

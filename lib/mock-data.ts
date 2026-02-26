@@ -12,7 +12,17 @@ export const MOCK_FIRMS = [
         showAgencyBranding: true,
         physicalAddress: "123 Aspen Heights, Denver, CO 80202",
         linkedInUrl: "https://linkedin.com/company/grand-peaks",
-        googleReviewsUrl: "https://goo.gl/maps/grand-peaks-reviews"
+        googleReviewsUrl: "https://goo.gl/maps/grand-peaks-reviews",
+        accentColor: "#ffffff",
+        logoScale: 100,
+        borderRadius: "rounded",
+        isColorLinked: false,
+        isFontLinked: false,
+        firmNameFontFamily: "Inter",
+        firmNameFontWeight: "900",
+        firmNameFontSize: 72,
+        bioFontFamily: "Inter",
+        bioFontSize: 18,
     },
     {
         id: "f2",
@@ -27,7 +37,17 @@ export const MOCK_FIRMS = [
         showAgencyBranding: true,
         physicalAddress: "456 Market St, New York, NY 10001",
         linkedInUrl: "https://linkedin.com/company/prvt-mkt",
-        googleReviewsUrl: "https://goo.gl/maps/prvt-mkt-reviews"
+        googleReviewsUrl: "https://goo.gl/maps/prvt-mkt-reviews",
+        accentColor: "#151515",
+        logoScale: 100,
+        borderRadius: "rounded",
+        isColorLinked: false,
+        isFontLinked: false,
+        firmNameFontFamily: "Inter",
+        firmNameFontWeight: "900",
+        firmNameFontSize: 72,
+        bioFontFamily: "Inter",
+        bioFontSize: 18,
     }
 ];
 

@@ -64,8 +64,10 @@ export default function PublicPortalView({
         '--firm-name-font': firm.firmNameFontFamily || 'Inter',
         '--firm-name-weight': firm.firmNameFontWeight || '900',
         '--firm-name-size': `${firm.firmNameFontSize || 72}px`,
+        '--firm-name-color': firm.firmNameFontColor || '#000000',
         '--firm-bio-font': firm.bioFontFamily || 'Inter',
         '--firm-bio-size': `${firm.bioFontSize || 18}px`,
+        '--firm-bio-color': firm.bioFontColor || 'rgba(0,0,0,0.6)',
     } as React.CSSProperties;
 
     const radiusClass = firm.borderRadius === 'square' ? 'rounded-none' : 'rounded-[2.5rem]';
@@ -91,7 +93,7 @@ export default function PublicPortalView({
 
     return (
         <div
-            className={`min-h-full pb-20 transition-colors duration-500 rounded-[2.5rem] overflow-hidden ${isPreview ? "" : "pt-28"}`}
+            className={`min-h-full pb-20 transition-colors duration-500 overflow-hidden ${radiusClass} ${isPreview ? "" : "pt-28"}`}
             style={{
                 ...themeStyles,
                 backgroundColor: 'var(--firm-bg)',
@@ -134,12 +136,12 @@ export default function PublicPortalView({
                             )}
                         </div>
                         <div className="text-center lg:text-left">
-                            <h1 className="mb-4 tracking-tight text-black" style={{ fontFamily: 'var(--firm-name-font)', fontWeight: 'var(--firm-name-weight)', fontSize: 'var(--firm-name-size)' }}>
+                            <h1 className="mb-4 tracking-tight" style={{ fontFamily: 'var(--firm-name-font)', fontWeight: 'var(--firm-name-weight)', fontSize: 'var(--firm-name-size)', color: 'var(--firm-name-color)' }}>
                                 {firm.name}
                             </h1>
                             <div
                                 className="font-bold opacity-40 leading-relaxed max-w-2xl prose prose-invert prose-p:leading-relaxed"
-                                style={{ color: 'inherit', fontFamily: 'var(--firm-bio-font)', fontSize: 'var(--firm-bio-size)' }}
+                                style={{ color: 'var(--firm-bio-color)', fontFamily: 'var(--firm-bio-font)', fontSize: 'var(--firm-bio-size)' }}
                                 dangerouslySetInnerHTML={{ __html: firm.bio || "Professional institutional track record and specialized team directory." }}
                             />
 
@@ -260,7 +262,7 @@ export default function PublicPortalView({
                             <input
                                 type="text"
                                 placeholder="Search..."
-                                className="h-16 w-full rounded-2xl bg-white/50 border border-black/5 pl-14 pr-6 text-lg font-bold text-black outline-none transition-all focus:bg-white focus:border-black/10 placeholder:text-black/20"
+                                className={`h-16 w-full bg-white/50 border border-black/5 pl-14 pr-6 text-lg font-bold text-black outline-none transition-all focus:bg-white focus:border-black/10 placeholder:text-black/20 ${subRadiusClass}`}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -357,14 +359,14 @@ export default function PublicPortalView({
                                     <AnimatePresence mode="popLayout">
                                         {filteredDeals.map((deal, index) => (
                                             <div key={deal.id} className={viewMode === "LIST" ? "w-full" : ""}>
-                                                <DealCard deal={deal} index={index} isListView={viewMode === "LIST"} />
+                                                <DealCard deal={deal} index={index} isListView={viewMode === "LIST"} firm={firm} />
                                             </div>
                                         ))}
                                     </AnimatePresence>
                                 </motion.div>
 
                                 {filteredDeals.length === 0 && (
-                                    <div className="flex h-64 flex-col items-center justify-center rounded-[3rem] border-2 border-dashed border-white/5 bg-white/5">
+                                    <div className={`flex h-64 flex-col items-center justify-center border-2 border-dashed border-white/5 bg-white/5 ${radiusClass}`}>
                                         <p className="text-lg font-bold opacity-30 uppercase tracking-widest">No matching assets</p>
                                         <button
                                             onClick={() => { setFilter("ALL"); setSearchQuery(""); }}
@@ -377,7 +379,7 @@ export default function PublicPortalView({
                                 )}
                             </>
                         ) : (
-                            <div className="flex flex-col items-center justify-center rounded-[4rem] border-2 border-dashed border-white/10 bg-white/5 p-24 text-center">
+                            <div className={`flex flex-col items-center justify-center border-2 border-dashed border-white/10 bg-white/5 p-24 text-center ${radiusClass}`}>
                                 <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-black/20">
                                     <FilePlus size={40} className="animate-pulse" style={{ color: 'var(--firm-primary)' }} />
                                 </div>
@@ -429,8 +431,9 @@ export default function PublicPortalView({
                                 className={teamViewMode === "GRID" ? "grid gap-10 sm:grid-cols-2 lg:grid-cols-3" : "flex flex-col gap-8"}
                             >
                                 {firmTeamMembers.map((member) => (
-                                    <div
+                                    <Link
                                         key={member.id}
+                                        href={`/team/${member.slug}`}
                                         className={`group overflow-hidden border border-black/5 bg-white/50 p-6 transition-all hover:scale-[1.02] hover:shadow-2xl flex ${radiusClass} ${teamViewMode === "GRID" ? "flex-col aspect-[4/5] w-full" : "flex-row items-center gap-10"}`}
                                     >
                                         <div className={`${teamViewMode === "GRID" ? "aspect-[4/5] w-full" : "h-40 w-40 shrink-0"} overflow-hidden shadow-md border-4 border-white ${cardRadiusClass}`}>
@@ -449,11 +452,11 @@ export default function PublicPortalView({
                                                 {member.bio}
                                             </p>
                                         </div>
-                                    </div>
+                                    </Link>
                                 ))}
                             </motion.div>
                         ) : (
-                            <div className="flex flex-col items-center justify-center rounded-[4rem] border-2 border-dashed border-white/10 bg-white/5 p-24 text-center">
+                            <div className={`flex flex-col items-center justify-center border-2 border-dashed border-white/10 bg-white/5 p-24 text-center ${radiusClass}`}>
                                 <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-black/20">
                                     <UserPlus size={40} style={{ color: 'var(--firm-primary)' }} />
                                 </div>

@@ -22,11 +22,14 @@ export interface Firm {
     logoScale?: number;
     borderRadius?: 'rounded' | 'square';
     isColorLinked?: boolean;
+    isFontLinked?: boolean;
     firmNameFontFamily?: string;
     firmNameFontWeight?: string;
     firmNameFontSize?: number;
+    firmNameFontColor?: string;
     bioFontFamily?: string;
     bioFontSize?: number;
+    bioFontColor?: string;
 }
 
 export interface TeamMember {
@@ -216,10 +219,27 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const updateFirm = async (id: string, updates: Partial<Firm>) => {
         try {
+            // Typography Sync Logic
+            const firmToUpdate = firms.find(f => f.id === id);
+            let finalUpdates = { ...updates };
+
+            if (firmToUpdate?.isFontLinked || updates.isFontLinked) {
+                // If font is linked, sync family and size from Firm Name to Bio
+                if (updates.firmNameFontFamily) {
+                    finalUpdates.bioFontFamily = updates.firmNameFontFamily;
+                }
+                if (updates.firmNameFontSize) {
+                    finalUpdates.bioFontSize = updates.firmNameFontSize;
+                }
+                if (updates.firmNameFontColor) {
+                    finalUpdates.bioFontColor = updates.firmNameFontColor;
+                }
+            }
+
             const res = await fetch(`/api/firms/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updates),
+                body: JSON.stringify(finalUpdates),
             });
             if (res.ok) {
                 const updatedFirm = await res.json();
@@ -245,7 +265,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             });
             if (res.ok) {
                 const updatedMember = await res.json();
-                setTeamMembers(prev => prev.map(m => m.id === id ? updatedMember : m));
+                const normalizedMember = {
+                    ...updatedMember,
+                    firmIds: updatedMember.firmIds || (updatedMember.firmId ? [updatedMember.firmId] : [])
+                };
+                setTeamMembers(prev => prev.map(m => m.id === id ? normalizedMember : m));
                 return true;
             }
             return false;
@@ -287,11 +311,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             });
             if (res.ok) {
                 const savedMember = await res.json();
-                setTeamMembers(prev => [savedMember, ...prev]);
+                const normalizedMember = {
+                    ...savedMember,
+                    firmIds: savedMember.firmIds || (savedMember.firmId ? [savedMember.firmId] : [])
+                };
+                setTeamMembers(prev => [normalizedMember, ...prev]);
                 addActivity({
                     type: 'MEMBER_ADDED',
-                    title: `Added new team member: ${savedMember.name}`,
-                    firmId: savedMember.firmId || ""
+                    title: `Added new team member: ${normalizedMember.name}`,
+                    firmId: normalizedMember.firmId || ""
                 });
             }
         } catch (error) {

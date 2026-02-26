@@ -23,11 +23,12 @@ interface DealCardProps {
     };
     index: number;
     isListView?: boolean;
+    firm?: any;
 }
 
-export default function DealCard({ deal, index, isListView = false }: DealCardProps) {
+export default function DealCard({ deal, index, isListView = false, firm: propFirm }: DealCardProps) {
     const { teamMembers, firms } = useData();
-    const firm = firms.find(f => f.id === deal.firmId);
+    const firm = propFirm || firms.find(f => f.id === deal.firmId);
     const members = (deal.teamMemberIds || []).map(mId => teamMembers.find(m => m.id === mId)).filter(Boolean);
     const member = members[0]; // Show the primary (first) lead on the card
 
@@ -56,6 +57,7 @@ export default function DealCard({ deal, index, isListView = false }: DealCardPr
             style={themeStyles}
             className={`group relative overflow-hidden border border-white/5 bg-[var(--firm-bg)] transition-all hover:border-[var(--firm-primary)]/30 hover:shadow-2xl flex ${radiusClass} ${isListView ? 'w-full flex-row items-center p-8 gap-10' : 'flex-col'}`}
         >
+            <Link href={`/deals/${deal.id}`} className="absolute inset-0 z-20" />
             {/* Image Container */}
             <div className={`relative overflow-hidden ${subRadiusClass} ${isListView ? 'h-48 w-72 shrink-0' : 'aspect-[16/9]'}`}>
                 {deal.generatedVideoURL ? (
@@ -82,11 +84,11 @@ export default function DealCard({ deal, index, isListView = false }: DealCardPr
 
                 {/* Badges */}
                 <div className={`absolute left-6 ${isListView ? 'bottom-4' : 'top-6'} flex gap-2`}>
-                    <span className="glass rounded-xl px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--firm-text)] border border-white/20 backdrop-blur-md">
+                    <span className={`glass px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--firm-text)] border border-white/20 backdrop-blur-md ${subRadiusClass}`}>
                         {deal.assetType.replace("_", " ")}
                     </span>
                     {!isListView && (
-                        <span className="glass rounded-xl px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--firm-text)]/70 border border-white/10 backdrop-blur-md">
+                        <span className={`glass px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--firm-text)]/70 border border-white/10 backdrop-blur-md ${subRadiusClass}`}>
                             {deal.strategy.replace("_", " ")}
                         </span>
                     )}
@@ -147,7 +149,7 @@ export default function DealCard({ deal, index, isListView = false }: DealCardPr
                                                 key={m.id}
                                                 src={m.imageURL}
                                                 alt={m.name}
-                                                className="h-8 w-8 rounded-lg object-cover border-2 border-[var(--firm-bg)] shadow-xl"
+                                                className={`h-8 w-8 object-cover border-2 border-[var(--firm-bg)] shadow-xl ${subRadiusClass}`}
                                             />
                                         ))}
                                     </div>
@@ -166,13 +168,7 @@ export default function DealCard({ deal, index, isListView = false }: DealCardPr
                         </div>
                     </div>
 
-                    {/* CTA Button */}
-                    <Link
-                        href={`/deals/${deal.id}`}
-                        className={`inline-flex items-center justify-center rounded-2xl border-2 border-[var(--firm-text)]/30 text-[9px] font-black uppercase tracking-[0.3em] text-[var(--firm-text)] transition-all hover:bg-[var(--firm-text)] hover:text-[var(--firm-bg)] ${isListView ? 'px-8 py-5' : 'w-full py-4'}`}
-                    >
-                        Tombstone
-                    </Link>
+                    {/* CTA Button (Removed for Universal Click) */}
                 </div>
             </div>
         </motion.div>
