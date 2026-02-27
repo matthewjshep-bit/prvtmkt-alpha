@@ -68,7 +68,7 @@ export default function TenantAdminLayout({
                 { label: "Gallery Editor", href: `/admin/${firmSlug}/people/gallery-editor` },
             ]
         },
-        { label: "Dashboard", href: `/admin/${firmSlug}`, icon: <LayoutDashboard size={18} /> },
+        { label: "Dashboard", href: `/admin/${firmSlug}/dashboard`, icon: <LayoutDashboard size={18} /> },
         { label: "Firm Deals", href: `/admin/${firmSlug}/deals`, icon: <Briefcase size={18} /> },
         { label: "Settings", href: `/admin/${firmSlug}/settings`, icon: <Settings size={18} /> },
     ];
