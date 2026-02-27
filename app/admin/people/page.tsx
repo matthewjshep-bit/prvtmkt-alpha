@@ -27,7 +27,7 @@ function AdminPeopleContent() {
         email: "",
         phoneNumber: "",
         linkedInUrl: "",
-        imageURL: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
+        imageURL: firms[0]?.logoUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
         bio: "",
         heroMediaUrl: ""
     });
@@ -57,7 +57,7 @@ function AdminPeopleContent() {
             email: "",
             phoneNumber: "",
             linkedInUrl: "",
-            imageURL: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
+            imageURL: firms[0]?.logoUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
             bio: "",
             heroMediaUrl: ""
         });
@@ -216,7 +216,7 @@ function AdminPeopleContent() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Biography</label>
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Profile Narrative</label>
                                     <textarea
                                         className="w-full h-24 rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white outline-none focus:border-brand-gold/50 resize-none"
                                         placeholder="Principal professional with a specialization in..."
@@ -473,7 +473,7 @@ function AdminPeopleContent() {
                                             </div>
                                         </div>
                                         <div className="flex flex-col gap-1 px-3">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Biography</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Profile Narrative</span>
                                             <textarea
                                                 className="w-full h-20 rounded-xl border border-white/5 bg-brand-dark px-3 py-2 text-xs text-foreground/70 outline-none focus:border-brand-gold/50 transition-all resize-none"
                                                 defaultValue={member.bio}

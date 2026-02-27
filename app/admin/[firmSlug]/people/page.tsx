@@ -12,6 +12,7 @@ import Link from "next/link";
 import PublicPortalView from "@/components/PublicPortalView";
 import RichTextEditor from "@/components/RichTextEditor";
 import { motion, AnimatePresence } from "framer-motion";
+import { Eye } from "lucide-react";
 
 export default function TenantPeoplePage() {
     return (
@@ -73,6 +74,18 @@ function TenantPeopleContent() {
         }
     };
 
+    const handleSaveAll = async () => {
+        const membersToSave = localTeam;
+        for (const member of membersToSave) {
+            handleSave(member);
+        }
+    };
+
+    const handleTeamView = () => {
+        setFocusedMemberId(null);
+        setPreviewMode("GALLERY");
+    };
+
     const handleOnboardMember = async () => {
         setIsAddingPerson(true);
         const newId = `p-${Date.now()}`;
@@ -83,7 +96,7 @@ function TenantPeopleContent() {
             name: "New Team Member",
             slug: `new-member-${Date.now()}`,
             role: "Role / Title",
-            imageURL: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
+            imageURL: firm.logoUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
             bio: "",
         };
 
@@ -176,7 +189,7 @@ function TenantPeopleContent() {
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 pb-32">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 pb-4">
                         {localTeam.length === 0 ? (
                             <div className="h-64 flex flex-col items-center justify-center text-center opacity-20 border-2 border-dashed border-white/10 rounded-3xl m-4">
                                 <Users size={48} className="mb-4" />
@@ -200,6 +213,24 @@ function TenantPeopleContent() {
                                 />
                             ))
                         )}
+                    </div>
+
+                    {/* Registry Controls Footer */}
+                    <div className="p-6 border-t border-white/10 bg-brand-gray-900/80 backdrop-blur-xl flex gap-4">
+                        <button
+                            onClick={handleTeamView}
+                            className={`flex-[1] flex items-center justify-center gap-3 h-14 rounded-2xl border font-black uppercase tracking-widest text-[10px] transition-all ${!focusedMemberId ? 'bg-white text-brand-dark border-white shadow-xl shadow-white/10' : 'bg-brand-dark border-white/10 text-white/40 hover:text-white hover:border-white/20'}`}
+                        >
+                            <Eye size={16} />
+                            Team View
+                        </button>
+                        <button
+                            onClick={handleSaveAll}
+                            className="flex-[2] flex items-center justify-center gap-3 h-14 rounded-2xl bg-brand-gold text-brand-dark font-black uppercase tracking-widest text-[10px] transition-all hover:shadow-xl hover:shadow-brand-gold/20 hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                            <Save size={16} />
+                            Save All Edits
+                        </button>
                     </div>
                 </div>
             </div>

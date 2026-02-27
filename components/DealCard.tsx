@@ -78,10 +78,6 @@ export default function DealCard({ deal, index, isListView = false, firm: propFi
                 ) : (
                     <div className="h-full w-full bg-brand-gray-800" />
                 )}
-
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[var(--firm-bg)] via-[var(--firm-bg)]/20 to-transparent" />
-
                 {/* Badges */}
                 <div className={`absolute left-6 ${isListView ? 'bottom-4' : 'top-6'} flex gap-2`}>
                     <span className={`glass px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--firm-text)] border border-white/20 backdrop-blur-md ${subRadiusClass}`}>

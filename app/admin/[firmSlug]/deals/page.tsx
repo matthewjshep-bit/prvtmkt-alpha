@@ -336,7 +336,7 @@ function TenantDealsContent() {
                             </div>
 
                             <div className="md:col-span-2 space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 ml-1">Project Narrative</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 ml-1">Investment Narrative</label>
                                 <textarea
                                     className="w-full h-32 rounded-xl border border-white/5 bg-brand-dark p-4 text-white placeholder:text-white/10 focus:border-brand-gold/50 focus:outline-none resize-none font-medium"
                                     value={newDeal.context || ""}
@@ -484,7 +484,7 @@ function TenantDealsContent() {
                         <tr className="border-b border-white/5 bg-white/2">
                             <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Media / File Upload</th>
                             <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Financial Metrics</th>
-                            <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Investment Overview</th>
+                            <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Investment Narrative</th>
                             <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Strategy & Structure</th>
                             <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Date Added</th>
                             <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Responsible Parties</th>
@@ -582,7 +582,7 @@ function TenantDealsContent() {
                                         <div className="space-y-4">
                                             <textarea
                                                 className="w-full bg-brand-dark/30 border border-white/5 rounded-xl p-4 text-sm text-foreground/70 placeholder:text-white/5 focus:border-brand-gold/30 focus:outline-none transition-all resize-none h-32 leading-relaxed"
-                                                placeholder="Enter project narrative..."
+                                                placeholder="Enter investment narrative..."
                                                 value={deal.investmentOverview || ""}
                                                 onChange={(e) => handleLocalUpdate(deal.id, { investmentOverview: e.target.value })}
                                             />

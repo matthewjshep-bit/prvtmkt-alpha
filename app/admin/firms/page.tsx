@@ -166,9 +166,9 @@ export default function AdminFirmsPage() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/40">Firm Bio & Mission</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/40">Firm Narrative</label>
                                         <textarea
-                                            placeholder="Enter firm description..."
+                                            placeholder="Enter firm narrative..."
                                             className="h-[136px] w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none resize-none"
                                             value={newFirm.bio}
                                             onChange={(e) => setNewFirm({ ...newFirm, bio: e.target.value })}
@@ -348,7 +348,7 @@ export default function AdminFirmsPage() {
                                                 className="h-40 w-full rounded-2xl border border-white/5 bg-brand-dark px-5 py-4 text-sm text-foreground/80 focus:border-brand-gold/50 focus:outline-none resize-none leading-relaxed"
                                                 value={firm.bio || ""}
                                                 onChange={(e) => updateFirm(firm.id, { bio: e.target.value })}
-                                                placeholder="Enter firm bio and mission statement..."
+                                                placeholder="Enter firm narrative and mission statement..."
                                             />
                                         </div>
 

@@ -321,10 +321,10 @@ export default function FirmSettingsPage() {
                                     </div>
                                 </div>
 
-                                {/* Bio Controls */}
+                                {/* Narrative Controls */}
                                 <div className="space-y-6">
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Biography Stylization</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Narrative Stylization</label>
                                         <p className="text-[8px] text-white/20 uppercase">Content readability & line heights</p>
                                     </div>
 
@@ -385,7 +385,7 @@ export default function FirmSettingsPage() {
                     </div>
                     <div className="p-10 space-y-8">
                         <div className="space-y-4">
-                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40 ml-1">Firm Biography (Rich-Text)</label>
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40 ml-1">Firm Narrative</label>
                             <RichTextEditor
                                 content={formData.bio}
                                 onChange={(content) => setFormData({ ...formData, bio: content })}

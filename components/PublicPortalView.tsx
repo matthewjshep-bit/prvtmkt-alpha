@@ -479,11 +479,11 @@ export default function PublicPortalView({
                                         </div>
                                         <div className="flex-1 space-y-6">
                                             <div>
-                                                <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-black mb-2">{focusedMember.name}</h1>
+                                                <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2" style={{ color: 'var(--firm-text)' }}>{focusedMember.name}</h1>
                                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                                    <p className="text-xl font-medium" style={{ color: 'var(--firm-primary)' }}>{focusedMember.role}</p>
+                                                    <p className="text-xl font-medium" style={{ color: 'var(--firm-text)', fontFamily: 'var(--firm-bio-font)' }}>{focusedMember.role}</p>
                                                     {firm && (
-                                                        <div className="flex items-center gap-1.5 text-xl font-medium opacity-40 text-black">
+                                                        <div className="flex items-center gap-1.5 text-xl font-medium opacity-40" style={{ color: 'var(--firm-text)' }}>
                                                             <Building2 size={20} />
                                                             {firm.name}
                                                         </div>
@@ -492,7 +492,8 @@ export default function PublicPortalView({
                                             </div>
 
                                             <div
-                                                className="max-w-2xl text-lg leading-relaxed text-black/70 prose prose-lg prose-black max-w-none font-inter"
+                                                className="max-w-2xl text-lg leading-relaxed prose prose-lg max-w-none opacity-80"
+                                                style={{ color: 'var(--firm-text)', fontFamily: 'var(--firm-bio-font)' }}
                                                 dangerouslySetInnerHTML={{ __html: focusedMember.bio?.replace(/&lt;/g, '<').replace(/&gt;/g, '>') || 'Principal professional with a specialization in high-value commercial real estate transactions and asset management.' }}
                                             />
 
@@ -525,9 +526,9 @@ export default function PublicPortalView({
                                                         {focusedMember.phoneNumber}
                                                     </a>
                                                 )}
-                                                <div className="flex items-center gap-3 px-6 py-3 rounded-xl bg-black/5 border border-black/5 text-sm font-bold">
-                                                    <Briefcase size={18} style={{ color: 'var(--firm-primary)' }} />
-                                                    <span className="opacity-60 text-black">{deals.filter(d => (d.teamMemberIds || []).includes(focusedMember.id)).length} Deals Completed</span>
+                                                <div className="flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/5 text-sm font-bold">
+                                                    <Briefcase size={18} style={{ color: 'var(--firm-text)' }} />
+                                                    <span className="opacity-60" style={{ color: 'var(--firm-text)' }}>{deals.filter(d => (d.teamMemberIds || []).includes(focusedMember.id)).length} Deals Completed</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -544,12 +545,12 @@ export default function PublicPortalView({
                                     )}
 
                                     {/* Track Record expansion */}
-                                    <div className="pt-12 border-t border-black/5">
+                                    <div className="pt-12 border-t border-white/5">
                                         <div className="mb-12">
-                                            <h2 className="text-4xl font-black tracking-tight text-black uppercase">
-                                                Track <span style={{ color: 'var(--firm-primary)' }}>Record</span>
+                                            <h2 className="text-4xl font-black tracking-tight uppercase" style={{ color: 'var(--firm-text)' }}>
+                                                Track <span style={{ opacity: 0.4 }}>Record</span>
                                             </h2>
-                                            <p className="max-w-md text-sm font-medium leading-relaxed text-black/40 mt-2">
+                                            <p className="max-w-md text-sm font-medium leading-relaxed mt-2 opacity-40" style={{ color: 'var(--firm-text)' }}>
                                                 Exclusive digital tombstones representing verified execution and high-performance asset management by this professional.
                                             </p>
                                         </div>
@@ -603,11 +604,12 @@ export default function PublicPortalView({
                                                 </div>
                                                 <div className="space-y-3 px-2 flex-1">
                                                     <div className="space-y-1">
-                                                        <h3 className="text-3xl font-black text-black leading-none">{member.name}</h3>
-                                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--firm-primary)]">{member.role}</p>
+                                                        <h3 className="text-3xl font-black leading-none" style={{ color: 'var(--firm-text)' }}>{member.name}</h3>
+                                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40" style={{ color: 'var(--firm-text)', fontFamily: 'var(--firm-bio-font)' }}>{member.role}</p>
                                                     </div>
                                                     <div
-                                                        className="mt-2 prose prose-sm prose-black max-w-none opacity-70"
+                                                        className="mt-2 prose prose-sm max-w-none opacity-60"
+                                                        style={{ color: 'var(--firm-text)', fontFamily: 'var(--firm-bio-font)' }}
                                                         dangerouslySetInnerHTML={{ __html: member.bio?.replace(/&lt;/g, '<').replace(/&gt;/g, '>') || "" }}
                                                     />
                                                 </div>

@@ -189,9 +189,9 @@ function AdminDealsContent() {
 
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Deal Overview (Narrative)</label>
+                                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Investment Narrative</label>
                                         <textarea
-                                            placeholder="General project narrative..."
+                                            placeholder="General investment narrative..."
                                             className="w-full h-32 rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white placeholder:text-white/10 focus:border-brand-gold/50 focus:outline-none resize-none"
                                             value={newDeal.context || ""}
                                             onChange={(e) => setNewDeal({ ...newDeal, context: e.target.value })}
@@ -442,9 +442,9 @@ function AdminDealsContent() {
 
                                     <div className="md:col-span-2 space-y-4">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Deal Overview (Narrative)</label>
+                                            <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Investment Narrative</label>
                                             <textarea
-                                                placeholder="General project narrative..."
+                                                placeholder="General investment narrative..."
                                                 className="w-full h-32 rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white focus:border-brand-gold/50 focus:outline-none resize-none"
                                                 value={editingDeal.context || ""}
                                                 onChange={(e) => setEditingDeal({ ...editingDeal, context: e.target.value })}

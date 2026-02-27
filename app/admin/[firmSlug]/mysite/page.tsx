@@ -379,9 +379,9 @@ export default function MySiteOverhaul() {
                                     </div>
                                 </div>
 
-                                {/* Bio */}
+                                {/* Narrative */}
                                 <div className="space-y-4">
-                                    <label className="text-[8px] font-black uppercase tracking-widest text-white/30">Biography Body</label>
+                                    <label className="text-[8px] font-black uppercase tracking-widest text-white/30">Narrative Body</label>
                                     <select
                                         className="w-full h-9 rounded-lg bg-brand-dark border border-white/5 px-2 text-[9px] font-bold text-white outline-none"
                                         value={formData.bioFontFamily}
@@ -428,7 +428,7 @@ export default function MySiteOverhaul() {
                         </div>
 
                         <div className="space-y-3">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-white/30 ml-1">Rich-Text Biography</label>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-white/30 ml-1">Firm Narrative</label>
                             <RichTextEditor
                                 content={formData.bio || ''}
                                 onChange={(content) => updateField('bio', content)}
