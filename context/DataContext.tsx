@@ -104,9 +104,9 @@ interface DataContextType {
     addDeal: (deal: Deal) => Promise<void>;
     deleteDeal: (id: string) => void;
     deleteFirm: (id: string) => void;
-    addUser: (user: User) => void;
-    updateUser: (id: string, updates: Partial<User>) => void;
-    deleteUser: (id: string) => void;
+    addUser: (user: User) => Promise<User | null>;
+    updateUser: (id: string, updates: Partial<User>) => Promise<boolean>;
+    deleteUser: (id: string) => Promise<void>;
     deleteTeamMember: (id: string) => void;
     getUserById: (id: string) => User | undefined;
     getUsersByFirmId: (firmId: string) => User[];
@@ -139,10 +139,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         const loadInitialData = async () => {
             try {
                 // Fetch basic data from Supabase
-                const [firmsRes, dealsRes, membersRes] = await Promise.all([
+                const [firmsRes, dealsRes, membersRes, usersRes] = await Promise.all([
                     fetch('/api/firms'),
                     fetch('/api/deals'),
-                    fetch('/api/members')
+                    fetch('/api/members'),
+                    fetch('/api/users')
                 ]);
 
                 if (firmsRes.ok) setFirms(await firmsRes.json());
@@ -155,11 +156,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 }
                 if (membersRes.ok) {
                     const data = await membersRes.json();
-                    // Normalize firmIds to support both legacy singular and modern plural patterns
                     setTeamMembers(data.map((m: any) => ({
                         ...m,
                         firmIds: m.firmIds || (m.firmId ? [m.firmId] : [])
                     })));
+                }
+                if (usersRes.ok) {
+                    setUsers(await usersRes.json());
                 }
 
                 // Load session if exists
@@ -331,34 +334,71 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     // New user helpers
-    const addUser = (user: User) => {
-        setUsers(prev => [user, ...prev]);
-        addActivity({
-            type: 'USER_ADDED',
-            title: `Added user ${user.email}`,
-            firmId: user.firmId
-        });
+    const addUser = async (user: User) => {
+        try {
+            const res = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(user),
+            });
+            if (res.ok) {
+                const savedUser = await res.json();
+                setUsers(prev => [savedUser, ...prev]);
+                addActivity({
+                    type: 'USER_ADDED',
+                    title: `Added user ${savedUser.email}`,
+                    firmId: savedUser.firmId
+                });
+                return savedUser;
+            }
+            return null;
+        } catch (error) {
+            console.error('Failed to add user:', error);
+            return null;
+        }
     };
 
     const getUserById = (id: string) => users.find(u => u.id === id);
     const getUsersByFirmId = (firmId: string) => users.filter(u => u.firmId === firmId);
 
-    const updateUser = (id: string, updates: Partial<User>) => {
-        setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } : u));
+    const updateUser = async (id: string, updates: Partial<User>) => {
+        try {
+            const res = await fetch(`/api/users/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates),
+            });
+            if (res.ok) {
+                const updatedUser = await res.json();
+                setUsers(prev => prev.map(u => u.id === id ? updatedUser : u));
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Failed to update user:', error);
+            return false;
+        }
     };
 
-    const deleteUser = (id: string) => {
-        const user = users.find(u => u.id === id);
-        setUsers(prev => prev.filter(u => u.id !== id));
-        if (user) {
-            addActivity({
-                type: 'USER_DELETED',
-                title: `Removed user: ${user.email}`,
-                firmId: user.firmId
-            });
-        }
-        if (currentUser?.id === id) {
-            logout();
+    const deleteUser = async (id: string) => {
+        try {
+            const user = users.find(u => u.id === id);
+            const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                setUsers(prev => prev.filter(u => u.id !== id));
+                if (user) {
+                    addActivity({
+                        type: 'USER_DELETED',
+                        title: `Removed user: ${user.email}`,
+                        firmId: user.firmId
+                    });
+                }
+                if (currentUser?.id === id) {
+                    logout();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to delete user:', error);
         }
     };
 

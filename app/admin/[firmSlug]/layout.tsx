@@ -59,7 +59,15 @@ export default function TenantAdminLayout({
 
     const navItems = [
         { label: "My Site", href: `/admin/${firmSlug}/mysite`, icon: <Globe size={18} /> },
-        { label: "Team Members", href: `/admin/${firmSlug}/people`, icon: <Users size={18} /> },
+        {
+            label: "Team Members",
+            href: `/admin/${firmSlug}/people`,
+            icon: <Users size={18} />,
+            subItems: [
+                { label: "Site Editor", href: `/admin/${firmSlug}/people/site-editor` },
+                { label: "Gallery Editor", href: `/admin/${firmSlug}/people/gallery-editor` },
+            ]
+        },
         { label: "Dashboard", href: `/admin/${firmSlug}`, icon: <LayoutDashboard size={18} /> },
         { label: "Firm Deals", href: `/admin/${firmSlug}/deals`, icon: <Briefcase size={18} /> },
         { label: "Settings", href: `/admin/${firmSlug}/settings`, icon: <Settings size={18} /> },
@@ -116,16 +124,36 @@ export default function TenantAdminLayout({
 
                             <nav className="space-y-1">
                                 {navItems.map((item) => {
-                                    const isActive = pathname === item.href;
+                                    const isActive = pathname === item.href || (item.subItems && pathname.startsWith(item.href));
+                                    const hasSubItems = item.subItems && item.subItems.length > 0;
+
                                     return (
-                                        <Link
-                                            key={item.label}
-                                            href={item.href}
-                                            className={`flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-bold transition-all ${isActive ? "bg-brand-gold text-brand-dark shadow-lg shadow-brand-gold/10" : "text-foreground/40 hover:bg-white/5 hover:text-white"}`}
-                                        >
-                                            {item.icon}
-                                            {item.label}
-                                        </Link>
+                                        <div key={item.label} className="flex flex-col gap-1">
+                                            <Link
+                                                href={item.subItems ? item.subItems[0].href : item.href}
+                                                className={`flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-bold transition-all ${isActive ? "bg-brand-gold text-brand-dark shadow-lg shadow-brand-gold/10" : "text-foreground/40 hover:bg-white/5 hover:text-white"}`}
+                                            >
+                                                {item.icon}
+                                                {item.label}
+                                            </Link>
+
+                                            {hasSubItems && isActive && (
+                                                <div className="ml-12 flex flex-col gap-1 mt-1 border-l border-white/5 pl-4">
+                                                    {item.subItems.map(subItem => {
+                                                        const isSubActive = pathname === subItem.href;
+                                                        return (
+                                                            <Link
+                                                                key={subItem.label}
+                                                                href={subItem.href}
+                                                                className={`py-2 text-xs font-bold transition-all ${isSubActive ? "text-brand-gold" : "text-foreground/40 hover:text-white"}`}
+                                                            >
+                                                                {subItem.label}
+                                                            </Link>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
                                     );
                                 })}
                             </nav>
