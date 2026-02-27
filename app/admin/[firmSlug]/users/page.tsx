@@ -29,7 +29,7 @@ export default function TenantUsersPage() {
 
     const firmUsers = users.filter(u => u.firmId === firm.id);
 
-    const handleInvite = (e: React.FormEvent) => {
+    const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault();
         const newUser = {
             id: `u-${Date.now()}`,
@@ -37,7 +37,7 @@ export default function TenantUsersPage() {
             firmId: firm.id,
             role: inviteRole as any
         };
-        addUser(newUser);
+        await addUser(newUser);
         setIsInviting(false);
         setInviteEmail("");
     };
@@ -51,10 +51,10 @@ export default function TenantUsersPage() {
                 </div>
                 <button
                     onClick={() => setIsInviting(true)}
-                    className="flex items-center gap-2 rounded-xl border border-brand-gold/30 px-6 py-3 text-sm font-bold text-brand-gold transition-all hover:bg-brand-gold hover:text-brand-dark"
+                    className="flex items-center gap-2 rounded-xl bg-brand-gold px-6 py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/20"
                 >
                     <UserPlus size={18} />
-                    Invite Member
+                    + Add User
                 </button>
             </div>
 
@@ -63,7 +63,7 @@ export default function TenantUsersPage() {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-dark/90 backdrop-blur-sm p-4">
                     <div className="w-full max-w-md rounded-3xl border border-white/10 bg-brand-gray-900 p-8 shadow-2xl animate-in zoom-in duration-300">
                         <div className="mb-6 flex items-center justify-between">
-                            <h3 className="text-2xl font-bold text-white">Invite <span className="text-brand-gold">Member</span></h3>
+                            <h3 className="text-2xl font-bold text-white">Provision <span className="text-brand-gold">User</span></h3>
                             <button onClick={() => setIsInviting(false)} className="rounded-full p-2 text-foreground/40 hover:bg-white/5 hover:text-white">
                                 <X size={20} />
                             </button>
@@ -98,8 +98,8 @@ export default function TenantUsersPage() {
                                 type="submit"
                                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-gold py-4 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/30"
                             >
-                                <Mail size={18} />
-                                Send Invitation
+                                <UserPlus size={18} />
+                                Provision Account
                             </button>
                         </form>
                     </div>
@@ -117,9 +117,9 @@ export default function TenantUsersPage() {
                             </button>
                         </div>
 
-                        <form onSubmit={(e) => {
+                        <form onSubmit={async (e) => {
                             e.preventDefault();
-                            updateUser(editingUser.id, {
+                            await updateUser(editingUser.id, {
                                 email: editingUser.email,
                                 role: editingUser.role,
                                 password: editingUser.password
@@ -225,9 +225,9 @@ export default function TenantUsersPage() {
                                                         <Shield size={18} />
                                                     </button>
                                                     <button
-                                                        onClick={() => {
+                                                        onClick={async () => {
                                                             if (confirm(`Are you sure you want to remove access for ${user.email}?`)) {
-                                                                deleteUser(user.id);
+                                                                await deleteUser(user.id);
                                                             }
                                                         }}
                                                         className="p-2 text-foreground/20 hover:text-red-500 transition-colors"
