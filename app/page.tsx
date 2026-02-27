@@ -110,14 +110,14 @@ export default function PlatformLandingPage() {
                   <Link
                     key={firm.id}
                     href={`/firms/${firm.slug || firm.id}`}
-                    className="group relative flex flex-col items-center justify-center overflow-hidden rounded-[2.5rem] border border-white/5 bg-brand-gray-900 p-12 transition-all hover:border-brand-gold/30 hover:bg-brand-gray-800 hover:shadow-2xl hover:shadow-brand-gold/10"
+                    className="group relative flex flex-col items-center justify-center overflow-hidden rounded-none border border-white/5 bg-brand-gray-900 p-12 transition-all hover:border-brand-gold/30 hover:bg-brand-gray-800 hover:shadow-2xl hover:shadow-brand-gold/10"
                   >
-                    <div className="mb-8 flex h-40 w-full items-center justify-center p-4">
+                    <div className="mb-8 flex h-56 w-full items-center justify-center p-2">
                       {firm.logoUrl ? (
                         <img
                           src={firm.logoUrl}
                           alt={firm.name}
-                          className="max-h-full max-w-full object-contain transition-all duration-500 group-hover:scale-110"
+                          className="max-h-full max-w-full object-contain transition-all duration-500 group-hover:scale-115"
                         />
                       ) : (
                         <div className="flex flex-col items-center gap-4 text-foreground/20 transition-all duration-500 group-hover:scale-110">
@@ -130,7 +130,7 @@ export default function PlatformLandingPage() {
                     </h3>
                   </Link>
                 ))}
-                <Link href="/admin/firms" className="flex flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed border-white/5 p-12 text-center transition-all hover:border-brand-gold/20 hover:bg-white/5">
+                <Link href="/admin/firms" className="flex flex-col items-center justify-center rounded-none border-2 border-dashed border-white/5 p-12 text-center transition-all hover:border-brand-gold/20 hover:bg-white/5">
                   <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-brand-gray-900">
                     <PlusCircle size={32} className="text-brand-gold" />
                   </div>
@@ -144,7 +144,7 @@ export default function PlatformLandingPage() {
                 {filteredMembers.map((member, index) => {
                   const firm = firms.find(f => f.id === member.firmId);
                   return (
-                    <div key={member.id} className="glass group overflow-hidden rounded-3xl border border-white/5 bg-brand-gray-900/30 transition-all hover:border-brand-gold/30 hover:bg-brand-gray-900/50 hover:shadow-2xl hover:shadow-brand-gold/5">
+                    <div key={member.id} className="glass group overflow-hidden rounded-none border border-white/5 bg-brand-gray-900/30 transition-all hover:border-brand-gold/30 hover:bg-brand-gray-900/50 hover:shadow-2xl hover:shadow-brand-gold/5">
                       <div className="aspect-[4/5] relative overflow-hidden">
                         <img src={member.imageURL} alt={member.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
                         <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-transparent to-transparent opacity-60" />
@@ -191,7 +191,7 @@ export default function PlatformLandingPage() {
                   {filteredDeals.map((deal) => {
                     const firm = firms.find(f => f.id === deal.firmId);
                     return (
-                      <Link key={deal.id} href={`/deals/${deal.id}`} className="glass group block overflow-hidden rounded-[2.5rem] border border-white/5 bg-brand-gray-900/30 transition-all hover:border-brand-gold/20">
+                      <Link key={deal.id} href={`/deals/${deal.id}`} className="glass group block overflow-hidden rounded-none border border-white/5 bg-brand-gray-900/30 transition-all hover:border-brand-gold/20">
                         <div className="aspect-video relative overflow-hidden">
                           <img src={deal.stillImageURL} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
                           <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/80 via-transparent to-transparent" />
