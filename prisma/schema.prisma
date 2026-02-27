@@ -51,17 +51,22 @@ model User {
 }
 
 model TeamMember {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  role      String
-  email     String?  @unique
-  imageURL  String?
-  firmId    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deals     Deal[]
-  firm      Firm     @relation(fields: [firmId], references: [id])
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  role         String
+  email        String?  @unique
+  imageURL     String?
+  linkedInUrl  String?
+  phoneNumber  String?
+  bio          String?
+  heroMediaUrl String?
+  firmIds      String[] @default([])
+  firmId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deals        Deal[]
+  firm         Firm     @relation(fields: [firmId], references: [id])
 }
 
 model Deal {

@@ -2,6 +2,8 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 
+// Force client reload after schema update - cmm3y0p97000008mf
+
 const prismaClientSingleton = () => {
     // We use DATABASE_URL (Transaction Mode / port 6543).
     const url = process.env.DATABASE_URL;

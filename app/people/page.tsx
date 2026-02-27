@@ -75,9 +75,10 @@ export default function ExplorePeoplePage() {
                                         <p className="text-xs font-bold text-brand-gold/60 uppercase tracking-widest mt-1">{member.role}</p>
                                     </div>
 
-                                    <p className="text-sm text-foreground/50 line-clamp-2 mb-6 h-10">
-                                        {member.bio}
-                                    </p>
+                                    <div
+                                        className="text-sm text-foreground/50 line-clamp-2 mb-6 h-10 prose prose-sm prose-invert max-w-none"
+                                        dangerouslySetInnerHTML={{ __html: member.bio?.replace(/&lt;/g, '<').replace(/&gt;/g, '>') || "" }}
+                                    />
 
                                     <div className="flex items-center gap-3">
                                         <Link

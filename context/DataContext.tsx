@@ -40,7 +40,7 @@ export interface TeamMember {
     name: string;
     slug: string;
     role: string;
-    email: string;
+    email?: string;
     phoneNumber?: string;
     linkedInUrl?: string;
     imageURL: string;
@@ -100,7 +100,7 @@ interface DataContextType {
     updateTeamMember: (id: string, updates: Partial<TeamMember>) => Promise<boolean>;
     updateDeal: (id: string, updates: Partial<Deal> | ((prev: Deal) => Partial<Deal>)) => Promise<boolean>;
     addFirm: (firm: Firm) => Promise<void>;
-    addTeamMember: (member: TeamMember) => Promise<void>;
+    addTeamMember: (member: TeamMember) => Promise<TeamMember | null>;
     addDeal: (deal: Deal) => Promise<void>;
     deleteDeal: (id: string) => void;
     deleteFirm: (id: string) => void;
@@ -321,9 +321,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                     title: `Added new team member: ${normalizedMember.name}`,
                     firmId: normalizedMember.firmId || ""
                 });
+                return normalizedMember;
             }
+            return null;
         } catch (error) {
             console.error('Failed to add team member:', error);
+            return null;
         }
     };
 
@@ -502,6 +505,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const deleteTeamMember = async (id: string) => {
         try {
+            console.log(`[DataContext] Attempting to delete team member: ${id}`);
             const member = teamMembers.find(m => m.id === id);
             const res = await fetch(`/api/members/${id}`, { method: 'DELETE' });
             if (res.ok) {
@@ -510,12 +514,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                     addActivity({
                         type: 'MEMBER_DELETED',
                         title: `Removed team member: ${member.name}`,
-                        firmId: member.firmIds[0] || member.firmId || ""
+                        firmId: (member.firmIds && member.firmIds.length > 0) ? member.firmIds[0] : (member.firmId || "")
                     });
                 }
+                console.log(`[DataContext] Successfully deleted team member: ${id}`);
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                console.error(`[DataContext] Delete failed: ${res.status}`, errData);
             }
         } catch (error) {
-            console.error('Failed to delete team member:', error);
+            console.error('[DataContext] Failed to delete team member:', error);
         }
     };
 

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import DealCard from "@/components/DealCard";
 import { motion, AnimatePresence } from "framer-motion";
-import { Filter, Search, LayoutGrid, Globe, Building2, UserPlus, FilePlus, ArrowLeft, Volume2, VolumeX } from "lucide-react";
+import { Filter, Search, LayoutGrid, Globe, Building2, UserPlus, FilePlus, ArrowLeft, Volume2, VolumeX, ArrowUpRight, Mail, Linkedin, Phone, Briefcase, Award } from "lucide-react";
 import Link from "next/link";
 import { Firm, Deal, TeamMember } from "@/context/DataContext";
 
@@ -15,6 +15,10 @@ interface PublicPortalViewProps {
     teamMembers: TeamMember[];
     isInitialized: boolean;
     isPreview?: boolean;
+    initialTab?: "DEALS" | "PEOPLE";
+    focusedMemberId?: string;
+    previewMode?: "GALLERY" | "PROFILE";
+    onMemberClick?: (id: string) => void;
 }
 
 export default function PublicPortalView({
@@ -22,15 +26,43 @@ export default function PublicPortalView({
     deals,
     teamMembers,
     isInitialized,
-    isPreview = false
+    isPreview = false,
+    initialTab,
+    focusedMemberId,
+    previewMode = "GALLERY",
+    onMemberClick
 }: PublicPortalViewProps) {
-    const [activeTab, setActiveTab] = useState("DEALS");
+    const [activeTab, setActiveTab] = useState(initialTab || "DEALS");
     const [viewMode, setViewMode] = useState<"GRID" | "LIST">("GRID");
     const [teamViewMode, setTeamViewMode] = useState<"GRID" | "LIST">("GRID");
     const [filter, setFilter] = useState("ALL");
     const [searchQuery, setSearchQuery] = useState("");
     const [isMuted, setIsMuted] = useState(true);
     const videoRef = useRef<HTMLVideoElement>(null);
+
+    const focusedMember = teamMembers.find(m => m.id === focusedMemberId);
+
+    useEffect(() => {
+        if (initialTab) {
+            setActiveTab(initialTab);
+        }
+    }, [initialTab]);
+
+    useEffect(() => {
+        if (focusedMemberId && activeTab === "PEOPLE") {
+            const element = document.getElementById(`member-${focusedMemberId}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }, [focusedMemberId, activeTab]);
+
+    useEffect(() => {
+        // Force PEOPLE tab if we have a focused member or are in PROFILE mode
+        if (previewMode === "PROFILE" || focusedMemberId) {
+            setActiveTab("PEOPLE");
+        }
+    }, [previewMode, focusedMemberId]);
 
     const toggleAudio = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -424,35 +456,164 @@ export default function PublicPortalView({
                             </div>
                         </div>
 
-                        {firmTeamMembers.length > 0 ? (
+                        {previewMode === "PROFILE" && focusedMember ? (
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <button
+                                    onClick={() => onMemberClick?.('')}
+                                    className="mb-8 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] opacity-40 hover:opacity-100 transition-all"
+                                    style={{ color: 'var(--firm-text)' }}
+                                >
+                                    <ArrowLeft size={16} />
+                                    {firm ? `Back to ${firm.name}` : 'Back to Team'}
+                                </button>
+
+                                <div className="space-y-12 pb-20">
+                                    <div className="flex flex-col md:flex-row gap-10 items-start">
+                                        <div className="relative shrink-0">
+                                            <div className={`h-48 w-48 overflow-hidden border-4 border-white shadow-2xl ${cardRadiusClass}`}>
+                                                <img src={focusedMember.imageURL || "/placeholder-user.jpg"} className="h-full w-full object-cover" />
+                                            </div>
+                                            <div className="absolute -bottom-4 -right-4 flex h-12 w-12 items-center justify-center rounded-xl shadow-xl" style={{ backgroundColor: 'var(--firm-primary)', color: 'var(--firm-bg)' }}>
+                                                <Award size={24} />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 space-y-6">
+                                            <div>
+                                                <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-black mb-2">{focusedMember.name}</h1>
+                                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                                    <p className="text-xl font-medium" style={{ color: 'var(--firm-primary)' }}>{focusedMember.role}</p>
+                                                    {firm && (
+                                                        <div className="flex items-center gap-1.5 text-xl font-medium opacity-40 text-black">
+                                                            <Building2 size={20} />
+                                                            {firm.name}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div
+                                                className="max-w-2xl text-lg leading-relaxed text-black/70 prose prose-lg prose-black max-w-none font-inter"
+                                                dangerouslySetInnerHTML={{ __html: focusedMember.bio?.replace(/&lt;/g, '<').replace(/&gt;/g, '>') || 'Principal professional with a specialization in high-value commercial real estate transactions and asset management.' }}
+                                            />
+
+                                            <div className="flex flex-wrap gap-4">
+                                                <a
+                                                    href={`mailto:${focusedMember.email}`}
+                                                    className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all hover:opacity-80"
+                                                    style={{ backgroundColor: 'var(--firm-primary)', color: 'var(--firm-bg)' }}
+                                                >
+                                                    <Mail size={18} />
+                                                    Contact Email
+                                                </a>
+                                                {focusedMember.linkedInUrl && (
+                                                    <a
+                                                        href={focusedMember.linkedInUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-2 px-6 py-3 rounded-xl bg-black/5 border border-black/5 text-black/60 text-sm font-bold hover:bg-black/10 transition-all"
+                                                    >
+                                                        <Linkedin size={18} />
+                                                        LinkedIn Profile
+                                                    </a>
+                                                )}
+                                                {focusedMember.phoneNumber && (
+                                                    <a
+                                                        href={`tel:${focusedMember.phoneNumber}`}
+                                                        className="flex items-center gap-2 px-6 py-3 rounded-xl bg-black/5 border border-black/5 text-black/60 text-sm font-bold hover:bg-black/10 transition-all"
+                                                    >
+                                                        <Phone size={18} />
+                                                        {focusedMember.phoneNumber}
+                                                    </a>
+                                                )}
+                                                <div className="flex items-center gap-3 px-6 py-3 rounded-xl bg-black/5 border border-black/5 text-sm font-bold">
+                                                    <Briefcase size={18} style={{ color: 'var(--firm-primary)' }} />
+                                                    <span className="opacity-60 text-black">{deals.filter(d => (d.teamMemberIds || []).includes(focusedMember.id)).length} Deals Completed</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {focusedMember.heroMediaUrl && (
+                                        <div className={`aspect-[21/9] w-full overflow-hidden border border-black/5 bg-black/5 shadow-2xl relative ${radiusClass}`}>
+                                            {isVideo(focusedMember.heroMediaUrl) ? (
+                                                <video src={focusedMember.heroMediaUrl} autoPlay loop muted playsInline className="h-full w-full object-cover" />
+                                            ) : (
+                                                <img src={focusedMember.heroMediaUrl} className="h-full w-full object-cover" />
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Track Record expansion */}
+                                    <div className="pt-12 border-t border-black/5">
+                                        <div className="mb-12">
+                                            <h2 className="text-4xl font-black tracking-tight text-black uppercase">
+                                                Track <span style={{ color: 'var(--firm-primary)' }}>Record</span>
+                                            </h2>
+                                            <p className="max-w-md text-sm font-medium leading-relaxed text-black/40 mt-2">
+                                                Exclusive digital tombstones representing verified execution and high-performance asset management by this professional.
+                                            </p>
+                                        </div>
+
+                                        <div className="grid gap-8 sm:grid-cols-2">
+                                            {deals.filter(d => (d.teamMemberIds || []).includes(focusedMember.id)).map((deal, idx) => (
+                                                <DealCard key={deal.id} deal={deal} index={idx} firm={firm} />
+                                            ))}
+                                            {deals.filter(d => (d.teamMemberIds || []).includes(focusedMember.id)).length === 0 && (
+                                                <div className="col-span-full py-12 border-2 border-dashed border-black/5 rounded-[2rem] flex flex-col items-center justify-center opacity-30 text-black">
+                                                    <Briefcase size={32} className="mb-3" />
+                                                    <p className="text-xs font-black uppercase tracking-widest">No active track record</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        ) : firmTeamMembers.length > 0 ? (
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className={teamViewMode === "GRID" ? "grid gap-10 sm:grid-cols-2 lg:grid-cols-3" : "flex flex-col gap-8"}
                             >
                                 {firmTeamMembers.map((member) => (
-                                    <Link
+                                    <div
                                         key={member.id}
-                                        href={`/team/${member.slug}`}
-                                        className={`group overflow-hidden border border-black/5 bg-white/50 p-6 transition-all hover:scale-[1.02] hover:shadow-2xl flex ${radiusClass} ${teamViewMode === "GRID" ? "flex-col aspect-[4/5] w-full" : "flex-row items-center gap-10"}`}
+                                        id={`member-${member.id}`}
+                                        className={`transition-all duration-500 ${focusedMemberId === member.id ? 'ring-4 ring-brand-gold ring-offset-8 ring-offset-[var(--firm-bg)] rounded-[2.5rem]' : ''}`}
                                     >
-                                        <div className={`${teamViewMode === "GRID" ? "aspect-[4/5] w-full" : "h-40 w-40 shrink-0"} overflow-hidden shadow-md border-4 border-white ${cardRadiusClass}`}>
-                                            <img
-                                                src={member.imageURL}
-                                                alt={member.name}
-                                                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                            />
+                                        <div
+                                            onClick={(e) => {
+                                                if (isPreview) {
+                                                    e.preventDefault();
+                                                    onMemberClick?.(member.id);
+                                                }
+                                            }}
+                                            className="cursor-pointer h-full"
+                                        >
+                                            <Link
+                                                href={isPreview ? "#" : `/team/${member.slug}`}
+                                                className={`group overflow-hidden border border-black/5 bg-white/50 p-6 transition-all hover:scale-[1.02] hover:shadow-2xl flex ${radiusClass} ${teamViewMode === "GRID" ? "flex-col aspect-[4/5] w-full" : "flex-row items-center gap-10"}`}
+                                            >
+                                                <div className={`${teamViewMode === "GRID" ? "aspect-[4/5] w-full" : "h-40 w-40 shrink-0"} overflow-hidden shadow-md border-4 border-white ${cardRadiusClass}`}>
+                                                    <img
+                                                        src={member.imageURL}
+                                                        alt={member.name}
+                                                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                    />
+                                                </div>
+                                                <div className="space-y-3 px-2 flex-1">
+                                                    <div className="space-y-1">
+                                                        <h3 className="text-3xl font-black text-black leading-none">{member.name}</h3>
+                                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--firm-primary)]">{member.role}</p>
+                                                    </div>
+                                                    <div
+                                                        className="mt-2 prose prose-sm prose-black max-w-none opacity-70"
+                                                        dangerouslySetInnerHTML={{ __html: member.bio?.replace(/&lt;/g, '<').replace(/&gt;/g, '>') || "" }}
+                                                    />
+                                                </div>
+                                            </Link>
                                         </div>
-                                        <div className="space-y-3 px-2 flex-1">
-                                            <div className="space-y-1">
-                                                <h3 className="text-3xl font-black text-black leading-none">{member.name}</h3>
-                                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--firm-primary)]">{member.role}</p>
-                                            </div>
-                                            <p className={`text-sm font-bold leading-relaxed text-black/60 ${teamViewMode === "GRID" ? "line-clamp-3" : "line-clamp-4 max-w-2xl"}`}>
-                                                {member.bio}
-                                            </p>
-                                        </div>
-                                    </Link>
+                                    </div>
                                 ))}
                             </motion.div>
                         ) : (

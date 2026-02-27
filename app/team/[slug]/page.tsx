@@ -164,9 +164,10 @@ export default function TeamMemberPage({
                             </div>
                         </div>
 
-                        <p className="mb-8 max-w-2xl text-lg leading-relaxed opacity-70">
-                            {member.bio || `Principal professional with a specialization in high-value commercial real estate transactions and asset management.`}
-                        </p>
+                        <div
+                            className="mb-8 max-w-2xl text-lg leading-relaxed opacity-70 prose prose-lg prose-invert max-w-none"
+                            dangerouslySetInnerHTML={{ __html: member.bio?.replace(/&lt;/g, '<').replace(/&gt;/g, '>') || "Principal professional with a specialization in high-value commercial real estate transactions and asset management." }}
+                        />
 
                         {member.heroMediaUrl && (
                             <div className="mb-10 overflow-hidden rounded-[2.5rem] bg-black/5 border border-black/5 shadow-2xl relative">
