@@ -27,21 +27,24 @@ export async function PUT(
     const { id } = await params;
     try {
         const body = await req.json();
+
+        // Build update object only with provided fields to avoid wiping data
+        const updateData: any = {};
+        if (body.name !== undefined) updateData.name = body.name;
+        if (body.slug !== undefined) updateData.slug = body.slug;
+        if (body.role !== undefined) updateData.role = body.role;
+        if (body.email !== undefined) updateData.email = body.email || null;
+        if (body.imageURL !== undefined) updateData.imageURL = body.imageURL;
+        if (body.linkedInUrl !== undefined) updateData.linkedInUrl = body.linkedInUrl;
+        if (body.phoneNumber !== undefined) updateData.phoneNumber = body.phoneNumber;
+        if (body.bio !== undefined) updateData.bio = body.bio;
+        if (body.heroMediaUrl !== undefined) updateData.heroMediaUrl = body.heroMediaUrl;
+        if (body.firmIds !== undefined) updateData.firmIds = body.firmIds;
+        if (body.firmId !== undefined) updateData.firmId = body.firmId;
+
         const member = await prisma.teamMember.update({
             where: { id },
-            data: {
-                name: body.name,
-                slug: body.slug,
-                role: body.role,
-                email: body.email || null,
-                imageURL: body.imageURL,
-                linkedInUrl: body.linkedInUrl,
-                phoneNumber: body.phoneNumber,
-                bio: body.bio,
-                heroMediaUrl: body.heroMediaUrl,
-                firmIds: body.firmIds || [],
-                firmId: body.firmId,
-            },
+            data: updateData,
         });
         return NextResponse.json(member);
     } catch (error: any) {

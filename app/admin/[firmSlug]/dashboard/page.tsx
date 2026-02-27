@@ -12,7 +12,8 @@ import {
     Settings,
     LayoutDashboard,
     Shield,
-    Building2
+    Building2,
+    Trash2
 } from "lucide-react";
 
 export default function TenantDashboard() {
@@ -127,19 +128,35 @@ export default function TenantDashboard() {
 
                     <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                         {firmActivities.length > 0 ? (
-                            firmActivities.map((activity) => (
-                                <div key={activity.id} className="relative flex gap-4 pb-6 last:pb-0 before:absolute before:left-[19.5px] before:top-10 before:bottom-0 before:w-px before:bg-white/5 last:before:hidden">
-                                    <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-gray-900 border border-white/10 group-hover:border-brand-gold/30 transition-colors">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-brand-gold/40" />
+                            firmActivities.map((activity) => {
+                                let Icon = LayoutDashboard;
+                                let iconColor = "text-brand-gold/40";
+
+                                if (activity.type.includes('ADDED') || activity.type === 'USER_IMPERSONATED') {
+                                    Icon = Plus;
+                                    iconColor = "text-green-500/60";
+                                } else if (activity.type.includes('UPDATED')) {
+                                    Icon = Settings;
+                                    iconColor = "text-brand-gold/60";
+                                } else if (activity.type.includes('DELETED') || activity.type === 'IMPERSONATION_STOPPED') {
+                                    Icon = Trash2;
+                                    iconColor = "text-red-500/60";
+                                }
+
+                                return (
+                                    <div key={activity.id} className="relative flex gap-4 pb-6 last:pb-0 before:absolute before:left-[19.5px] before:top-10 before:bottom-0 before:w-px before:bg-white/5 last:before:hidden">
+                                        <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-gray-900 border border-white/10 group-hover:border-brand-gold/30 transition-all">
+                                            <Icon size={14} className={iconColor} />
+                                        </div>
+                                        <div className="flex flex-col pt-2">
+                                            <p className="text-sm font-bold text-white leading-tight">{activity.title}</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-foreground/30 mt-1.5">
+                                                {new Date(activity.timestamp).toLocaleDateString()} @ {new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col pt-2">
-                                        <p className="text-sm font-bold text-white">{activity.title}</p>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-foreground/30 mt-1">
-                                            {new Date(activity.timestamp).toLocaleDateString()} @ {new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))
+                                );
+                            })
                         ) : (
                             <div className="flex h-64 flex-col items-center justify-center text-center">
                                 <div className="mb-4 rounded-full bg-brand-gray-900 p-4 border border-white/5">

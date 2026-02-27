@@ -4,11 +4,11 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useData } from "@/context/DataContext";
-import { LayoutDashboard, Users, PlusCircle, Globe, ArrowLeft, Briefcase } from "lucide-react";
+import { LayoutDashboard, Users, PlusCircle, Globe, ArrowLeft, Briefcase, Ghost } from "lucide-react";
 
 export default function Navbar() {
     const pathname = usePathname();
-    const { firms, currentUser, logout } = useData();
+    const { firms, currentUser, logout, isImpersonating, stopImpersonation } = useData();
 
     const isWhiteLabelPath = pathname?.startsWith("/firms/");
     const isTenantAdminPath = pathname?.startsWith("/admin/") && pathname.split("/").length > 2 && pathname.split("/")[2] !== "firms" && pathname.split("/")[2] !== "deals" && pathname.split("/")[2] !== "people";
@@ -56,63 +56,81 @@ export default function Navbar() {
 
     // Default Agency Navbar
     return (
-        <nav className="fixed top-0 z-50 w-full border-b border-white/5 bg-brand-dark/80 backdrop-blur-md">
-            <div className="container mx-auto flex h-20 items-center justify-between px-6">
-                <Link href="/" className="flex items-center group">
-                    <div className="relative h-20 w-80 overflow-hidden transition-transform duration-500 group-hover:scale-105 flex items-center justify-center">
-                        <img
-                            src="/logo.svg"
-                            alt="PRVT MKT Logo"
-                            className="h-full w-full object-contain scale-[1.3] brightness-200"
-                        />
+        <>
+            {isImpersonating && (
+                <div className="fixed top-0 z-[60] flex w-full items-center justify-center bg-brand-gold py-1.5 px-6">
+                    <div className="flex items-center gap-3">
+                        <Ghost size={14} className="text-brand-dark animate-pulse" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-dark">
+                            Active Session Impersonation: <span className="underline decoration-2">{currentUser?.email}</span>
+                        </span>
+                        <button
+                            onClick={stopImpersonation}
+                            className="ml-4 rounded-full bg-brand-dark px-3 py-1 text-[9px] font-black uppercase tracking-widest text-brand-gold hover:bg-black transition-colors"
+                        >
+                            Stop Impersonation
+                        </button>
                     </div>
-                </Link>
-
-                <div className="hidden items-center gap-8 md:flex">
-                    {currentUser?.role === 'SYSTEM_ADMIN' && (
-                        <NavLink href="/admin" icon={<LayoutDashboard size={18} />} label="Platform Admin" />
-                    )}
-                    {currentUser?.role === 'FIRM_ADMIN' && currentUser.firmId && (
-                        <NavLink
-                            href={`/admin/${firms.find(f => f.id === currentUser.firmId)?.slug || ''}`}
-                            icon={<LayoutDashboard size={18} />}
-                            label="Firm Admin"
-                        />
-                    )}
                 </div>
+            )}
+            <nav className={`fixed ${isImpersonating ? 'top-8' : 'top-0'} z-50 w-full border-b border-white/5 bg-brand-dark/80 backdrop-blur-md`}>
+                <div className="container mx-auto flex h-20 items-center justify-between px-6">
+                    <Link href="/" className="flex items-center group">
+                        <div className="relative h-20 w-80 overflow-hidden transition-transform duration-500 group-hover:scale-105 flex items-center justify-center">
+                            <img
+                                src="/logo.svg"
+                                alt="PRVT MKT Logo"
+                                className="h-full w-full object-contain scale-[1.3] brightness-200"
+                            />
+                        </div>
+                    </Link>
 
-                <div className="flex items-center gap-4">
-                    <div className="hidden h-10 w-px bg-white/10 sm:block" />
-                    {currentUser ? (
-                        <div className="flex items-center gap-4">
-                            <span className="text-xs font-bold text-foreground/40">{currentUser.email}</span>
-                            <button
-                                onClick={logout}
-                                className="rounded-full border border-white/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-foreground/60 transition-all hover:bg-white/5 hover:text-white"
-                            >
-                                Sign Out
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-3">
-                            <Link
-                                href="/auth/login"
-                                className="flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-white hover:text-brand-dark"
-                            >
-                                <Users size={16} />
-                                Login
-                            </Link>
-                            <Link
-                                href="/auth/signup"
-                                className="rounded-full bg-white/5 px-4 py-2 text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-white/10"
-                            >
-                                Sign Up
-                            </Link>
-                        </div>
-                    )}
+                    <div className="hidden items-center gap-8 md:flex">
+                        {currentUser?.role === 'SYSTEM_ADMIN' && (
+                            <NavLink href="/admin" icon={<LayoutDashboard size={18} />} label="Platform Admin" />
+                        )}
+                        {currentUser?.role === 'FIRM_ADMIN' && currentUser.firmId && (
+                            <NavLink
+                                href={`/admin/${firms.find(f => f.id === currentUser.firmId)?.slug || ''}`}
+                                icon={<LayoutDashboard size={18} />}
+                                label="Firm Admin"
+                            />
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <div className="hidden h-10 w-px bg-white/10 sm:block" />
+                        {currentUser ? (
+                            <div className="flex items-center gap-4">
+                                <span className="text-xs font-bold text-foreground/40">{currentUser.email}</span>
+                                <button
+                                    onClick={logout}
+                                    className="rounded-full border border-white/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-foreground/60 transition-all hover:bg-white/5 hover:text-white"
+                                >
+                                    Sign Out
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-3">
+                                <Link
+                                    href="/auth/login"
+                                    className="flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-white hover:text-brand-dark"
+                                >
+                                    <Users size={16} />
+                                    Login
+                                </Link>
+                                <Link
+                                    href="/auth/signup"
+                                    className="rounded-full bg-white/5 px-4 py-2 text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-white/10"
+                                >
+                                    Sign Up
+                                </Link>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
-        </nav>
+            </nav>
+        </>
     );
 }
 

@@ -64,8 +64,8 @@ export default function TenantAdminLayout({
             href: `/admin/${firmSlug}/people`,
             icon: <Users size={18} />,
             subItems: [
+                { label: "Team Members", href: `/admin/${firmSlug}/people/gallery-editor` },
                 { label: "Site Editor", href: `/admin/${firmSlug}/people/site-editor` },
-                { label: "Gallery Editor", href: `/admin/${firmSlug}/people/gallery-editor` },
             ]
         },
         { label: "Dashboard", href: `/admin/${firmSlug}/dashboard`, icon: <LayoutDashboard size={18} /> },

@@ -7,36 +7,46 @@ datasource db {
 }
 
 model Firm {
-  id                 String       @id @default(cuid())
-  name               String
-  slug               String       @unique
-  logoUrl            String?
-  primaryColor       String?      @default("#ffffff")
-  physicalAddress    String?
-  linkedInUrl        String?
-  googleReviewsUrl   String?
-  bio                String?
-  heroMediaUrl       String?
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-  accentColor        String?      @default("#151515")
-  backgroundColor    String?      @default("#0a0a0a")
-  fontColor          String?      @default("#ffffff")
-  showAgencyBranding Boolean      @default(true)
-  logoScale          Float        @default(100.0)
-  borderRadius       String       @default("rounded")
-  isColorLinked      Boolean      @default(false)
-  isFontLinked       Boolean      @default(false)
-  firmNameFontFamily String       @default("Inter")
-  firmNameFontWeight String       @default("900")
-  firmNameFontSize   Int          @default(72)
-  firmNameFontColor  String       @default("#000000")
-  bioFontFamily      String       @default("Inter")
-  bioFontSize        Int          @default(18)
-  bioFontColor       String       @default("#000000")
-  deals              Deal[]
-  teamMembers        TeamMember[]
-  users              User[]
+  id                      String        @id @default(cuid())
+  name                    String
+  slug                    String        @unique
+  logoUrl                 String?
+  primaryColor            String?       @default("#ffffff")
+  physicalAddress         String?
+  linkedInUrl             String?
+  googleReviewsUrl        String?
+  bio                     String?
+  heroMediaUrl            String?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  accentColor             String?       @default("#151515")
+  backgroundColor         String?       @default("#0a0a0a")
+  fontColor               String?       @default("#ffffff")
+  showAgencyBranding      Boolean       @default(true)
+  logoScale               Float         @default(100.0)
+  borderRadius            String        @default("rounded")
+  bioFontFamily           String        @default("Inter")
+  bioFontSize             Int           @default(18)
+  firmNameFontFamily      String        @default("Inter")
+  firmNameFontSize        Int           @default(72)
+  firmNameFontWeight      String        @default("900")
+  isColorLinked           Boolean       @default(false)
+  isFontLinked            Boolean       @default(false)
+  bioFontColor            String        @default("#000000")
+  firmNameFontColor       String        @default("#000000")
+  memberCardBgColor       String        @default("rgba(255, 255, 255, 0.5)")
+  memberPhotoSpacing      Int           @default(12)
+  showMemberNarrative     Boolean       @default(true)
+  isMemberCardColorLinked Boolean       @default(false)
+  cardShadowIntensity     Float         @default(0.0)
+  portfolioListStyle      String        @default("TRADITIONAL")
+  showSearchBar           Boolean       @default(true)
+  teamListStyle           String        @default("TRADITIONAL")
+  viewLayoutMode          String        @default("BOTH")
+  activityLogs            ActivityLog[]
+  deals                   Deal[]
+  teamMembers             TeamMember[]
+  users                   User[]
 }
 
 model User {
@@ -57,43 +67,56 @@ model TeamMember {
   role         String
   email        String?  @unique
   imageURL     String?
-  linkedInUrl  String?
-  phoneNumber  String?
-  bio          String?
-  heroMediaUrl String?
-  firmIds      String[] @default([])
   firmId       String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  bio          String?
+  firmIds      String[] @default([])
+  heroMediaUrl String?
+  linkedInUrl  String?
+  phoneNumber  String?
+  sortOrder    Int      @default(0)
   deals        Deal[]
   firm         Firm     @relation(fields: [firmId], references: [id])
 }
 
 model Deal {
-  id                String      @id @default(cuid())
-  address           String
-  assetType         AssetType
-  strategy          Strategy
-  purchaseAmount    Float?
-  financedAmount    Float?
-  rehabAmount       Float?
-  arv               Float?
-  stillImageURL     String?
-  generatedVideoURL String?
-  isPublic          Boolean     @default(false)
-  capRate           Float?
-  sqFt              Float?
+  id                 String      @id @default(cuid())
+  address            String
+  assetType          AssetType
+  strategy           Strategy
+  purchaseAmount     Float?
+  financedAmount     Float?
+  stillImageURL      String?
+  generatedVideoURL  String?
+  isPublic           Boolean     @default(false)
+  capRate            Float?
+  sqFt               Float?
+  firmId             String
+  teamMemberId       String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  arv                Float?
+  context            String?
+  financingType      String?
+  images             String[]    @default([])
   investmentOverview String?
-  images            String[]    @default([])
-  financingType     String?
-  teamMemberIds     String[]    @default([])
-  context           String?
-  firmId            String
-  teamMemberId      String?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  firm              Firm        @relation(fields: [firmId], references: [id])
-  teamMember        TeamMember? @relation(fields: [teamMemberId], references: [id])
+  rehabAmount        Float?
+  teamMemberIds      String[]    @default([])
+  firm               Firm        @relation(fields: [firmId], references: [id])
+  teamMember         TeamMember? @relation(fields: [teamMemberId], references: [id])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  type      String
+  title     String
+  timestamp DateTime @default(now())
+  firmId    String?
+  dealId    String?
+  userId    String?
+  memberId  String?
+  firm      Firm?    @relation(fields: [firmId], references: [id])
 }
 
 enum UserRole {

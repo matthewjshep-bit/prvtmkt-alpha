@@ -38,7 +38,7 @@ function TenantPeopleContent() {
     // One-Way Sync: Only populate localTeam once on load or firm change
     useEffect(() => {
         if (isInitialized && firm && !isLoadedOnce) {
-            const firmTeam = teamMembers.filter(m => (m.firmIds || []).includes(firm.id));
+            const firmTeam = teamMembers.filter((m) => m.firmId === firm.id || (m.firmIds || []).includes(firm.id));
             setLocalTeam(firmTeam);
 
             // Set initial focus if none exists
@@ -59,6 +59,22 @@ function TenantPeopleContent() {
 
     const handleUpdateLocal = (id: string, updates: Partial<TeamMember>) => {
         setLocalTeam(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+    };
+
+    const handleMoveMember = (id: string, direction: 'up' | 'down') => {
+        setLocalTeam(prev => {
+            const index = prev.findIndex(m => m.id === id);
+            if (index === -1) return prev;
+            if (direction === 'up' && index === 0) return prev;
+            if (direction === 'down' && index === prev.length - 1) return prev;
+
+            const newTeam = [...prev];
+            const targetIndex = direction === 'up' ? index - 1 : index + 1;
+            [newTeam[index], newTeam[targetIndex]] = [newTeam[targetIndex], newTeam[index]];
+
+            // Update order/sortOrder for all members to match the new array order
+            return newTeam.map((m, i) => ({ ...m, order: i, sortOrder: i }));
+        });
     };
 
     const handleSave = async (member: TeamMember) => {
@@ -98,6 +114,7 @@ function TenantPeopleContent() {
             role: "Role / Title",
             imageURL: firm.logoUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
             bio: "",
+            order: localTeam.length,
         };
 
         // Add to local state immediately for visual feedback
@@ -111,11 +128,20 @@ function TenantPeopleContent() {
                 // Update local ID to real ID to maintain focus
                 setLocalTeam(prev => prev.map(m => m.id === newId ? savedMember : m));
                 setFocusedMemberId(savedMember.id);
+            } else {
+                console.error("Failed to onboard member: addTeamMember returned null");
+                alert("Critical Registry Error: Failed to initialize database record. Please check server connectivity.");
+                // Revert local state if failed
+                setLocalTeam(prev => prev.filter(m => m.id !== newId));
+                setFocusedMemberId(null);
+                setPreviewMode("GALLERY");
             }
         } catch (error) {
-            console.error("Failed to onboard member:", error);
+            console.error("Failed to onboard member exception:", error);
             // Revert local state if failed
             setLocalTeam(prev => prev.filter(m => m.id !== newId));
+            setFocusedMemberId(null);
+            setPreviewMode("GALLERY");
         } finally {
             setIsAddingPerson(false);
         }
@@ -196,7 +222,7 @@ function TenantPeopleContent() {
                                 <p className="text-sm font-bold uppercase tracking-widest">No members registered</p>
                             </div>
                         ) : (
-                            localTeam.map((member) => (
+                            localTeam.map((member, index) => (
                                 <MemberEditorCard
                                     key={member.id}
                                     member={member}
@@ -207,9 +233,13 @@ function TenantPeopleContent() {
                                         setPreviewMode("PROFILE");
                                     }}
                                     onUpdate={(updates) => handleUpdateLocal(member.id, updates)}
+                                    onMove={(dir) => handleMoveMember(member.id, dir)}
                                     onSave={() => handleSave(member)}
                                     onDelete={() => handleMemberDelete(member.id)}
                                     saveStatus={saveStatus[member.id] || 'idle'}
+                                    currentUser={currentUser}
+                                    isFirst={index === 0}
+                                    isLast={index === localTeam.length - 1}
                                 />
                             ))
                         )}
@@ -245,9 +275,13 @@ interface MemberEditorCardProps {
     isFocused: boolean;
     onFocus: () => void;
     onUpdate: (updates: Partial<TeamMember>) => void;
+    onMove: (direction: 'up' | 'down') => void;
     onSave: () => void;
     onDelete: () => void;
     saveStatus: 'idle' | 'saving' | 'saved';
+    currentUser: any;
+    isFirst: boolean;
+    isLast: boolean;
 }
 
 function MemberEditorCard({
@@ -256,14 +290,19 @@ function MemberEditorCard({
     isFocused,
     onFocus,
     onUpdate,
+    onMove,
     onSave,
     onDelete,
-    saveStatus
+    saveStatus,
+    currentUser,
+    isFirst,
+    isLast
 }: MemberEditorCardProps) {
     const [isExpanded, setIsExpanded] = useState(isFocused);
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const heroInputRef = useRef<HTMLInputElement>(null);
+    const isSystemAdmin = currentUser?.role === 'SYSTEM_ADMIN';
 
     useEffect(() => {
         if (isFocused) setIsExpanded(true);
@@ -333,7 +372,24 @@ function MemberEditorCard({
                         </div>
                     </div>
 
-                    <div className="flex flex-col items-center gap-4 pt-4 shrink-0">
+                    <div className="flex flex-col gap-2 pt-2 shrink-0">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onMove('up'); }}
+                            disabled={isFirst}
+                            className={`h-8 w-8 flex items-center justify-center rounded-lg border border-white/5 transition-all ${isFirst ? 'opacity-20 cursor-not-allowed' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'}`}
+                        >
+                            <ChevronUp size={16} />
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onMove('down'); }}
+                            disabled={isLast}
+                            className={`h-8 w-8 flex items-center justify-center rounded-lg border border-white/5 transition-all ${isLast ? 'opacity-20 cursor-not-allowed' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'}`}
+                        >
+                            <ChevronDown size={16} />
+                        </button>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-2 pt-2 shrink-0">
                         <div className="h-6 flex items-center justify-center">
                             {saveStatus === 'saved' && <Check size={18} className="text-green-500" />}
                             {saveStatus === 'saving' && <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-gold/30 border-t-brand-gold" />}
@@ -404,7 +460,7 @@ function MemberEditorCard({
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-2">
                                 <Building2 size={12} />
-                                Associated Firms
+                                {isSystemAdmin ? 'Associated Firms' : 'Firm'}
                             </div>
                             <div className="flex flex-wrap gap-2 p-4 rounded-2xl bg-black/20 border border-white/5">
                                 {(member.firmIds || []).map(fId => {
@@ -412,30 +468,34 @@ function MemberEditorCard({
                                     return (
                                         <div key={fId} className="flex items-center gap-2 rounded-lg bg-brand-gold/10 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-brand-gold border border-brand-gold/20">
                                             {f?.name}
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); onUpdate({ firmIds: (member.firmIds || []).filter(id => id !== fId) }); }}
-                                                className="hover:text-white transition-colors"
-                                            >
-                                                <X size={10} />
-                                            </button>
+                                            {isSystemAdmin && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onUpdate({ firmIds: (member.firmIds || []).filter(id => id !== fId) }); }}
+                                                    className="hover:text-white transition-colors"
+                                                >
+                                                    <X size={10} />
+                                                </button>
+                                            )}
                                         </div>
                                     );
                                 })}
-                                <select
-                                    className="bg-transparent border-none text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white outline-none cursor-pointer w-[120px]"
-                                    value=""
-                                    onChange={(e) => {
-                                        const id = e.target.value;
-                                        if (id && !(member.firmIds || []).includes(id)) {
-                                            onUpdate({ firmIds: [...(member.firmIds || []), id] });
-                                        }
-                                    }}
-                                >
-                                    <option value="" disabled>+ Link Firm</option>
-                                    {firms.filter(f => !(member.firmIds || []).includes(f.id)).map(f => (
-                                        <option key={f.id} value={f.id} className="bg-brand-dark">{f.name}</option>
-                                    ))}
-                                </select>
+                                {isSystemAdmin && (
+                                    <select
+                                        className="bg-transparent border-none text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white outline-none cursor-pointer w-[120px]"
+                                        value=""
+                                        onChange={(e) => {
+                                            const id = e.target.value;
+                                            if (id && !(member.firmIds || []).includes(id)) {
+                                                onUpdate({ firmIds: [...(member.firmIds || []), id] });
+                                            }
+                                        }}
+                                    >
+                                        <option value="" disabled>+ Link Firm</option>
+                                        {firms.filter(f => !(member.firmIds || []).includes(f.id)).map(f => (
+                                            <option key={f.id} value={f.id} className="bg-brand-dark">{f.name}</option>
+                                        ))}
+                                    </select>
+                                )}
                             </div>
                         </div>
 

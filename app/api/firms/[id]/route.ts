@@ -33,51 +33,75 @@ export async function PUT(
     try {
         const body = await req.json();
         console.log(`[Firm API] PUT Request for ID: ${id}`);
-        console.log(`[Firm API] Payload:`, JSON.stringify(body, null, 2));
+        // For debugging in this environment
+        try {
+            const fs = require('fs');
+            fs.appendFileSync('/tmp/firm_put_payload.log', `\n--- ${new Date().toISOString()} ---\nID: ${id}\nPayload: ${JSON.stringify(body, null, 2)}\n`);
+        } catch (e) { }
+
+        const updateData: any = {};
+        const fields = [
+            'name', 'slug', 'logoUrl', 'primaryColor', 'backgroundColor', 'fontColor',
+            'accentColor', 'showAgencyBranding', 'bio', 'heroMediaUrl', 'physicalAddress',
+            'linkedInUrl', 'googleReviewsUrl', 'logoScale', 'borderRadius', 'isColorLinked',
+            'isFontLinked', 'firmNameFontFamily', 'firmNameFontWeight', 'firmNameFontSize',
+            'firmNameFontColor', 'bioFontFamily', 'bioFontSize', 'bioFontColor',
+            'memberCardBgColor', 'memberPhotoSpacing', 'showMemberNarrative', 'isMemberCardColorLinked',
+            'showSearchBar', 'cardShadowIntensity', 'viewLayoutMode', 'portfolioListStyle', 'teamListStyle'
+        ];
+
+        const intFields = ['bioFontSize', 'firmNameFontSize', 'memberPhotoSpacing'];
+        const floatFields = ['logoScale', 'cardShadowIntensity'];
+        const booleanFields = ['showAgencyBranding', 'isColorLinked', 'isFontLinked', 'showMemberNarrative', 'isMemberCardColorLinked', 'showSearchBar'];
+
+        fields.forEach(field => {
+            if (body[field] !== undefined && body[field] !== null) {
+                if (intFields.includes(field)) {
+                    const val = parseInt(String(body[field]));
+                    if (!isNaN(val)) {
+                        updateData[field] = val;
+                    }
+                } else if (floatFields.includes(field)) {
+                    const val = parseFloat(String(body[field]));
+                    if (!isNaN(val)) {
+                        updateData[field] = val;
+                    }
+                } else if (booleanFields.includes(field)) {
+                    updateData[field] = Boolean(body[field]);
+                } else {
+                    updateData[field] = body[field];
+                }
+            }
+        });
+
+        console.log(`[Firm API] Updating firm ${id} with fields:`, Object.keys(updateData));
 
         const firm = await prisma.firm.update({
             where: { id },
-            data: {
-                name: body.name,
-                slug: body.slug,
-                logoUrl: body.logoUrl,
-                primaryColor: body.primaryColor,
-                backgroundColor: body.backgroundColor,
-                fontColor: body.fontColor,
-                accentColor: body.accentColor,
-                showAgencyBranding: body.showAgencyBranding,
-                bio: body.bio,
-                heroMediaUrl: body.heroMediaUrl,
-                physicalAddress: body.physicalAddress,
-                linkedInUrl: body.linkedInUrl,
-                googleReviewsUrl: body.googleReviewsUrl,
-                logoScale: body.logoScale,
-                borderRadius: body.borderRadius,
-                isColorLinked: body.isColorLinked,
-                isFontLinked: body.isFontLinked,
-                firmNameFontFamily: body.firmNameFontFamily,
-                firmNameFontWeight: body.firmNameFontWeight,
-                firmNameFontSize: body.firmNameFontSize,
-                firmNameFontColor: body.firmNameFontColor,
-                bioFontFamily: body.bioFontFamily,
-                bioFontSize: body.bioFontSize,
-                bioFontColor: body.bioFontColor,
-            },
+            data: updateData,
         });
 
         // Trigger cache invalidation for global style propagation
-        revalidatePath(`/firms/${firm.slug}`);
-        revalidatePath(`/admin/${firm.slug}/mysite`);
-        revalidatePath('/'); // For global dashboards if applicable
+        try {
+            revalidatePath(`/firms/${firm.slug}`);
+            revalidatePath(`/admin/${firm.slug}/mysite`);
+        } catch (revalidateError) {
+            console.error('[Firm API] Revalidation Error (ignoring):', revalidateError);
+        }
 
         return NextResponse.json(firm);
     } catch (error: any) {
         console.error('[Firm API] PUT Error:', error);
+
+        // Handle specific Prisma errors
+        if (error.code === 'P2002') {
+            return NextResponse.json({ error: 'Unique constraint failed (likely the slug)' }, { status: 400 });
+        }
+
         return NextResponse.json({
-            error: error.message,
-            stack: error.stack,
-            cause: error.cause,
-            code: error.code // Prisma error codes
+            error: error.message || 'Unknown database error',
+            details: error.meta || error.clientVersion || 'No additional details',
+            code: error.code
         }, { status: 500 });
     }
 }

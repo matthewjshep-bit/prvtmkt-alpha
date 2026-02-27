@@ -24,9 +24,10 @@ interface DealCardProps {
     index: number;
     isListView?: boolean;
     firm?: any;
+    isReversed?: boolean;
 }
 
-export default function DealCard({ deal, index, isListView = false, firm: propFirm }: DealCardProps) {
+export default function DealCard({ deal, index, isListView = false, firm: propFirm, isReversed = false }: DealCardProps) {
     const { teamMembers, firms } = useData();
     const firm = propFirm || firms.find(f => f.id === deal.firmId);
     const members = (deal.teamMemberIds || []).map(mId => teamMembers.find(m => m.id === mId)).filter(Boolean);
@@ -55,7 +56,7 @@ export default function DealCard({ deal, index, isListView = false, firm: propFi
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
             style={themeStyles}
-            className={`group relative overflow-hidden border border-white/5 bg-[var(--firm-bg)] transition-all hover:border-[var(--firm-primary)]/30 hover:shadow-2xl flex ${radiusClass} ${isListView ? 'w-full flex-row items-center p-8 gap-10' : 'flex-col'}`}
+            className={`group relative overflow-hidden border border-white/5 bg-[var(--firm-bg)] transition-all hover:border-[var(--firm-primary)]/30 hover:shadow-2xl flex ${radiusClass} ${isListView ? `w-full ${isReversed ? 'flex-row-reverse text-right' : 'flex-row'} items-center p-8 gap-10` : 'flex-col'}`}
         >
             <Link href={`/deals/${deal.id}`} className="absolute inset-0 z-20" />
             {/* Image Container */}
@@ -79,7 +80,7 @@ export default function DealCard({ deal, index, isListView = false, firm: propFi
                     <div className="h-full w-full bg-brand-gray-800" />
                 )}
                 {/* Badges */}
-                <div className={`absolute left-6 ${isListView ? 'bottom-4' : 'top-6'} flex gap-2`}>
+                <div className={`absolute ${isReversed ? 'right-6' : 'left-6'} ${isListView ? 'bottom-4' : 'top-6'} flex gap-2`}>
                     <span className={`glass px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--firm-text)] border border-white/20 backdrop-blur-md ${subRadiusClass}`}>
                         {deal.assetType.replace("_", " ")}
                     </span>
@@ -92,10 +93,10 @@ export default function DealCard({ deal, index, isListView = false, firm: propFi
             </div>
 
             {/* Content area */}
-            <div className={`flex flex-1 ${isListView ? 'flex-row items-center gap-10' : 'flex-col p-10 pt-8'}`}>
+            <div className={`flex flex-1 ${isListView ? `flex-row items-center gap-10 ${isReversed ? 'justify-end' : ''}` : 'flex-col p-10 pt-8'}`}>
                 {/* 1. Address & Strategy (Left/Top) */}
                 <div className={`${isListView ? 'w-1/4' : 'mb-8'}`}>
-                    <div className="flex items-start gap-3">
+                    <div className={`flex items-start gap-3 ${isReversed ? 'flex-row-reverse' : ''}`}>
                         <MapPin size={isListView ? 18 : 20} className="text-[var(--firm-text)] shrink-0 mt-1" />
                         <div>
                             <h3 className={`${isListView ? 'text-lg' : 'text-xl'} font-black tracking-tight text-[var(--firm-text)] leading-tight`}>{deal.address}</h3>
@@ -105,7 +106,7 @@ export default function DealCard({ deal, index, isListView = false, firm: propFi
                 </div>
 
                 {/* 2. Metrics (Center) */}
-                <div className={`flex-1 ${isListView ? 'flex gap-8 justify-around px-8 border-x border-white/5' : 'grid grid-cols-2 gap-6'}`}>
+                <div className={`flex-1 ${isListView ? `flex gap-8 justify-around px-8 border-x border-white/5 ${isReversed ? 'flex-row-reverse' : ''}` : 'grid grid-cols-2 gap-6'}`}>
                     {hasPurchase && (
                         <div className="space-y-1">
                             <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--firm-text)]/30">Purchase</p>
@@ -129,17 +130,17 @@ export default function DealCard({ deal, index, isListView = false, firm: propFi
                 </div>
 
                 {/* 3. Transaction Lead & Button (Right/Bottom) */}
-                <div className={`${isListView ? 'flex items-center gap-10 w-1/3 justify-end' : 'mt-8 pt-8 border-t border-white/5 space-y-8'}`}>
+                <div className={`${isListView ? `flex items-center gap-10 w-1/3 ${isReversed ? 'justify-start mr-auto' : 'justify-end'}` : 'mt-8 pt-8 border-t border-white/5 space-y-8'}`}>
                     {/* Lead */}
                     <div className="space-y-1 min-w-[160px]">
                         <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--firm-text)]/30">Transaction lead</p>
-                        <div className="flex items-center gap-3">
+                        <div className={`flex items-center gap-3 ${isReversed ? 'flex-row-reverse' : ''}`}>
                             {members.length > 0 ? (
                                 <Link
                                     href={`/team/${members[0]?.slug || members[0]?.id}`}
-                                    className="flex items-center gap-3 transition-all hover:opacity-70"
+                                    className={`flex items-center gap-3 transition-all hover:opacity-70 ${isReversed ? 'flex-row-reverse text-right' : ''}`}
                                 >
-                                    <div className="flex -space-x-2 overflow-hidden">
+                                    <div className={`flex -space-x-2 overflow-hidden ${isReversed ? 'flex-row-reverse space-x-reverse' : ''}`}>
                                         {members.slice(0, 2).map((m: any) => (
                                             <img
                                                 key={m.id}
@@ -159,7 +160,7 @@ export default function DealCard({ deal, index, isListView = false, firm: propFi
                                     </div>
                                 </Link>
                             ) : (
-                                <span className="text-xs italic text-[var(--firm-text)]/20">Unassigned</span>
+                                <span className={`text-xs italic text-[var(--firm-text)]/20 ${isReversed ? 'text-right block w-full' : ''}`}>Unassigned</span>
                             )}
                         </div>
                     </div>

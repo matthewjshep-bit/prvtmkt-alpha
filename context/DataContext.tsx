@@ -30,6 +30,15 @@ export interface Firm {
     bioFontFamily?: string;
     bioFontSize?: number;
     bioFontColor?: string;
+    memberCardBgColor?: string;
+    showMemberNarrative?: boolean;
+    memberPhotoSpacing?: number;
+    isMemberCardColorLinked?: boolean;
+    showSearchBar?: boolean;
+    cardShadowIntensity?: number;
+    viewLayoutMode?: 'BOTH' | 'LIST' | 'GRID';
+    portfolioListStyle?: 'TRADITIONAL' | 'ALTERNATING';
+    teamListStyle?: 'TRADITIONAL' | 'ALTERNATING';
 }
 
 export interface TeamMember {
@@ -46,6 +55,7 @@ export interface TeamMember {
     imageURL: string;
     bio: string;
     heroMediaUrl?: string;
+    order: number;
 }
 
 // Enhanced User interface for multi‑tenant authentication
@@ -84,7 +94,12 @@ export interface Deal {
 
 interface Activity {
     id: string;
-    type: 'DEAL_ADDED' | 'DEAL_DELETED' | 'FIRM_ADDED' | 'FIRM_DELETED' | 'MEMBER_ADDED' | 'MEMBER_DELETED' | 'USER_ADDED' | 'USER_DELETED';
+    type:
+    | 'DEAL_ADDED' | 'DEAL_UPDATED' | 'DEAL_DELETED'
+    | 'FIRM_ADDED' | 'FIRM_UPDATED' | 'FIRM_DELETED'
+    | 'MEMBER_ADDED' | 'MEMBER_UPDATED' | 'MEMBER_DELETED'
+    | 'USER_ADDED' | 'USER_UPDATED' | 'USER_DELETED'
+    | 'USER_IMPERSONATED' | 'IMPERSONATION_STOPPED';
     title: string;
     timestamp: string;
     firmId?: string;
@@ -97,10 +112,11 @@ interface DataContextType {
     teamMembers: TeamMember[];
     users: User[];
     updateFirm: (id: string, updates: Partial<Firm>) => Promise<boolean | string>;
+    addTeamMember: (member: TeamMember) => Promise<TeamMember | null>;
     updateTeamMember: (id: string, updates: Partial<TeamMember>) => Promise<boolean>;
+    reorderTeamMembers: (reorderedMembers: TeamMember[]) => Promise<boolean | string>;
     updateDeal: (id: string, updates: Partial<Deal> | ((prev: Deal) => Partial<Deal>)) => Promise<boolean>;
     addFirm: (firm: Firm) => Promise<void>;
-    addTeamMember: (member: TeamMember) => Promise<TeamMember | null>;
     addDeal: (deal: Deal) => Promise<void>;
     deleteDeal: (id: string) => void;
     deleteFirm: (id: string) => void;
@@ -121,6 +137,9 @@ interface DataContextType {
     activities: Activity[];
     addActivity: (activity: Omit<Activity, 'id' | 'timestamp'>) => void;
     isInitialized: boolean;
+    impersonateUser: (user: User) => void;
+    stopImpersonation: () => void;
+    isImpersonating: boolean;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -131,6 +150,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [originalAdminId, setOriginalAdminId] = useState<string | null>(null);
     const [activities, setActivities] = useState<Activity[]>([]);
     const [isInitialized, setIsInitialized] = useState(false);
 
@@ -139,11 +159,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         const loadInitialData = async () => {
             try {
                 // Fetch basic data from Supabase
-                const [firmsRes, dealsRes, membersRes, usersRes] = await Promise.all([
+                const [firmsRes, dealsRes, membersRes, usersRes, activitiesRes] = await Promise.all([
                     fetch('/api/firms'),
                     fetch('/api/deals'),
                     fetch('/api/members'),
-                    fetch('/api/users')
+                    fetch('/api/users'),
+                    fetch('/api/activities')
                 ]);
 
                 if (firmsRes.ok) setFirms(await firmsRes.json());
@@ -154,20 +175,54 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                         teamMemberIds: d.teamMemberIds || (d.teamMemberId ? [d.teamMemberId] : [])
                     })));
                 }
+                if (activitiesRes.ok) {
+                    setActivities(await activitiesRes.json());
+                }
                 if (membersRes.ok) {
                     const data = await membersRes.json();
-                    setTeamMembers(data.map((m: any) => ({
-                        ...m,
-                        firmIds: m.firmIds || (m.firmId ? [m.firmId] : [])
-                    })));
+                    const normalizedMembers = data.map((m: any) => {
+                        // Crucial: Handle scalar array empty vs null for fallbacks
+                        const currentFirmIds = m.firmIds || [];
+                        const fallbackFirmId = m.firmId || "";
+                        const finalFirmIds = currentFirmIds.length > 0
+                            ? currentFirmIds
+                            : (fallbackFirmId ? [fallbackFirmId] : []);
+
+                        return {
+                            ...m,
+                            order: m.sortOrder ?? 0,
+                            firmIds: finalFirmIds,
+                            firmId: fallbackFirmId || (finalFirmIds.length > 0 ? finalFirmIds[0] : "")
+                        };
+                    });
+
+                    const sortedMembers = normalizedMembers.sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+                    setTeamMembers(sortedMembers);
                 }
                 if (usersRes.ok) {
-                    setUsers(await usersRes.json());
-                }
+                    const fetchedUsers = await usersRes.json();
+                    setUsers(fetchedUsers);
 
-                // Load session if exists
-                const savedSession = await storage.getItem<User>('prvtmkt_session');
-                if (savedSession) setCurrentUser(savedSession);
+                    // Sync session with the latest data from server
+                    const savedSession = await storage.getItem<User>('prvtmkt_session');
+                    if (savedSession) {
+                        const updatedUser = fetchedUsers.find((u: User) => u.id === savedSession.id);
+                        if (updatedUser) {
+                            setCurrentUser(updatedUser);
+                            storage.setItem('prvtmkt_session', updatedUser);
+                        } else {
+                            // If the user was deleted on the server, log them out
+                            setCurrentUser(null);
+                            storage.removeItem('prvtmkt_session');
+                        }
+                    }
+
+                    // Check for active impersonation
+                    const savedOriginalId = await storage.getItem<string>('prvtmkt_original_admin_id');
+                    if (savedOriginalId) {
+                        setOriginalAdminId(savedOriginalId);
+                    }
+                }
             } catch (error) {
                 console.error("Storage: Failed to initialize data from Supabase.", error);
             } finally {
@@ -247,6 +302,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             if (res.ok) {
                 const updatedFirm = await res.json();
                 setFirms(prev => prev.map(f => f.id === id ? updatedFirm : f));
+                addActivity({
+                    type: 'FIRM_UPDATED',
+                    title: `Updated firm settings: ${updatedFirm.name}`,
+                    firmId: id
+                });
                 return true;
             } else {
                 const errorData = await res.json();
@@ -261,6 +321,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const updateTeamMember = async (id: string, updates: Partial<TeamMember>) => {
         try {
+            console.log(`[DataContext] updateTeamMember called for ID: ${id}`, updates);
             const res = await fetch(`/api/members/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -268,16 +329,42 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             });
             if (res.ok) {
                 const updatedMember = await res.json();
+                console.log(`[DataContext] API returned updated member:`, updatedMember);
+
+                // Normalization with robust fallback logic
+                const serverFirmIds = updatedMember.firmIds || [];
+                const serverFirmId = updatedMember.firmId || "";
+                const normalizedFirmIds = serverFirmIds.length > 0
+                    ? serverFirmIds
+                    : (serverFirmId ? [serverFirmId] : []);
+                const normalizedFirmId = serverFirmId || (normalizedFirmIds.length > 0 ? normalizedFirmIds[0] : "");
+
                 const normalizedMember = {
                     ...updatedMember,
-                    firmIds: updatedMember.firmIds || (updatedMember.firmId ? [updatedMember.firmId] : [])
+                    order: updatedMember.sortOrder ?? 0,
+                    firmIds: normalizedFirmIds,
+                    firmId: normalizedFirmId
                 };
-                setTeamMembers(prev => prev.map(m => m.id === id ? normalizedMember : m));
+
+                setTeamMembers(prev => {
+                    const newState = prev.map(m => m.id === id ? normalizedMember : m);
+                    console.log(`[DataContext] Updated teamMembers state. Length: ${newState.length}`);
+                    return newState;
+                });
+
+                addActivity({
+                    type: 'MEMBER_UPDATED',
+                    title: `Updated team member: ${normalizedMember.name}`,
+                    firmId: normalizedMember.firmId || ""
+                });
                 return true;
+            } else {
+                const error = await res.json();
+                console.error(`[DataContext] updateTeamMember API Error:`, error);
+                return false;
             }
-            return false;
         } catch (error) {
-            console.error('Failed to update team member:', error);
+            console.error('[DataContext] Failed to update team member:', error);
             return false;
         }
     };
@@ -307,28 +394,51 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const addTeamMember = async (member: TeamMember) => {
         try {
+            console.log(`[DataContext] addTeamMember triggered with payload:`, JSON.stringify(member, null, 2));
             const res = await fetch('/api/members', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(member),
             });
+
+            console.log(`[DataContext] API Response Status: ${res.status}`);
+
             if (res.ok) {
                 const savedMember = await res.json();
+                console.log(`[DataContext] API returned saved member:`, savedMember);
+
+                // Normalization with robust fallback logic
+                const serverFirmIds = savedMember.firmIds || [];
+                const serverFirmId = savedMember.firmId || "";
+                const normalizedFirmIds = serverFirmIds.length > 0
+                    ? serverFirmIds
+                    : (serverFirmId ? [serverFirmId] : []);
+                const normalizedFirmId = serverFirmId || (normalizedFirmIds.length > 0 ? normalizedFirmIds[0] : "");
+
                 const normalizedMember = {
                     ...savedMember,
-                    firmIds: savedMember.firmIds || (savedMember.firmId ? [savedMember.firmId] : [])
+                    order: savedMember.sortOrder ?? 0,
+                    firmIds: normalizedFirmIds,
+                    firmId: normalizedFirmId
                 };
+
                 setTeamMembers(prev => [normalizedMember, ...prev]);
+                console.log(`[DataContext] State updated. Added: ${normalizedMember.name}`);
+
                 addActivity({
                     type: 'MEMBER_ADDED',
                     title: `Added new team member: ${normalizedMember.name}`,
                     firmId: normalizedMember.firmId || ""
                 });
                 return normalizedMember;
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                console.error(`[DataContext] API Add Failed: ${res.status}`, errorData);
+                localStorage.setItem('last_add_member_error', errorData.error || `Server Error (${res.status})`);
+                return null;
             }
-            return null;
         } catch (error) {
-            console.error('Failed to add team member:', error);
+            console.error('[DataContext] Failed to add team member exception:', error);
             return null;
         }
     };
@@ -371,6 +481,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             if (res.ok) {
                 const updatedUser = await res.json();
                 setUsers(prev => prev.map(u => u.id === id ? updatedUser : u));
+                addActivity({
+                    type: 'USER_UPDATED',
+                    title: `Updated user info: ${updatedUser.email}`,
+                    firmId: updatedUser.firmId
+                });
+
+                // Synchronize currentUser if the edited user is the one logged in
+                if (currentUser?.id === id) {
+                    setCurrentUser(updatedUser);
+                    storage.setItem('prvtmkt_session', updatedUser);
+                }
                 return true;
             }
             return false;
@@ -399,6 +520,44 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             }
         } catch (error) {
             console.error('Failed to delete user:', error);
+        }
+    };
+
+    const impersonateUser = async (user: User) => {
+        if (currentUser?.role !== 'SYSTEM_ADMIN' && !originalAdminId) return;
+
+        // If not already impersonating, save the original admin ID
+        if (!originalAdminId) {
+            setOriginalAdminId(currentUser?.id || null);
+            storage.setItem('prvtmkt_original_admin_id', currentUser?.id);
+        }
+
+        setCurrentUser(user);
+        storage.setItem('prvtmkt_session', user);
+
+        addActivity({
+            type: 'USER_IMPERSONATED',
+            title: `System Admin is now impersonating ${user.email}`,
+            firmId: user.firmId
+        });
+    };
+
+    const stopImpersonation = async () => {
+        const adminId = originalAdminId || await storage.getItem<string>('prvtmkt_original_admin_id');
+        if (!adminId) return;
+
+        const adminUser = users.find(u => u.id === adminId);
+        if (adminUser) {
+            setCurrentUser(adminUser);
+            storage.setItem('prvtmkt_session', adminUser);
+            setOriginalAdminId(null);
+            storage.removeItem('prvtmkt_original_admin_id');
+
+            addActivity({
+                type: 'IMPERSONATION_STOPPED',
+                title: `System Admin stopped impersonation of ${currentUser?.email}`,
+                firmId: adminUser.firmId
+            });
         }
     };
 
@@ -467,6 +626,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 firmId: newFirmId
             });
 
+            addActivity({
+                type: 'USER_ADDED',
+                title: `Admin user created for firm: ${userData.email}`,
+                firmId: newFirmId
+            });
+
             return { user: newUser, firm: newFirm };
         } catch (error) {
             console.error("Signup failed:", error);
@@ -493,17 +658,27 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             if (res.ok) {
                 const updatedDeal = await res.json();
                 setDeals(prev => prev.map(d => d.id === id ? updatedDeal : d));
+                addActivity({
+                    type: 'DEAL_UPDATED',
+                    title: `Updated deal: ${updatedDeal.address}`,
+                    dealId: id,
+                    firmId: updatedDeal.firmId
+                });
+                console.log('[DataContext] Deal updated successfully:', updatedDeal);
                 return true;
             }
+            const errorData = await res.json().catch(() => ({ message: 'Unknown error' }));
+            console.error(`[DataContext] Failed to update deal ${id}:`, res.status, errorData);
             return false;
         } catch (error) {
-            console.error('Failed to update deal:', error);
+            console.error(`[DataContext] Failed to update deal ${id}:`, error);
             return false;
         }
     };
 
     const deleteDeal = async (id: string) => {
         try {
+            console.log(`[DataContext] Attempting to delete deal: ${id}`);
             const deal = deals.find(d => d.id === id);
             const res = await fetch(`/api/deals/${id}`, { method: 'DELETE' });
             if (res.ok) {
@@ -515,14 +690,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                         firmId: deal.firmId
                     });
                 }
+                console.log(`[DataContext] Deal ${id} deleted successfully.`);
+            } else {
+                const errorData = await res.json().catch(() => ({ message: 'Unknown error' }));
+                console.error(`[DataContext] Failed to delete deal ${id}:`, res.status, errorData);
             }
         } catch (error) {
-            console.error('Failed to delete deal:', error);
+            console.error(`[DataContext] Failed to delete deal ${id}:`, error);
         }
     };
 
     const deleteFirm = async (id: string) => {
         try {
+            console.log(`[DataContext] Attempting to delete firm: ${id}`);
             const firm = firms.find(f => f.id === id);
             const res = await fetch(`/api/firms/${id}`, { method: 'DELETE' });
             if (res.ok) {
@@ -537,9 +717,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 // Cascading: These would ideally be handled by the server but we update local state for immediate feedback
                 setDeals(prev => prev.map(d => d.firmId === id ? { ...d, firmId: "" } : d));
                 setTeamMembers(prev => prev.map(m => m.firmId === id ? { ...m, firmId: "" } : m));
+                console.log(`[DataContext] Firm ${id} deleted successfully.`);
+            } else {
+                const errorData = await res.json().catch(() => ({ message: 'Unknown error' }));
+                console.error(`[DataContext] Failed to delete firm ${id}:`, res.status, errorData);
             }
         } catch (error) {
-            console.error('Failed to delete firm:', error);
+            console.error(`[DataContext] Failed to delete firm ${id}:`, error);
+        }
+    };
+    const reorderTeamMembers = async (reorderedMembers: TeamMember[]): Promise<boolean | string> => {
+        const originalMembers = [...teamMembers];
+        setTeamMembers(reorderedMembers);
+        try {
+            const response = await fetch('/api/members/reorder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ members: reorderedMembers.map(m => ({ id: m.id, order: m.order })) }),
+            });
+            if (!response.ok) throw new Error('Failed to persist order');
+            return true;
+        } catch (error: any) {
+            setTeamMembers(originalMembers);
+            return error.message || 'Ordering failed';
         }
     };
 
@@ -567,13 +767,34 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const addActivity = (activity: Omit<Activity, 'id' | 'timestamp'>) => {
-        const newActivity: Activity = {
-            ...activity,
-            id: `act-${Date.now()}`,
-            timestamp: new Date().toISOString()
-        };
-        setActivities(prev => [newActivity, ...prev]);
+    const addActivity = async (activity: Omit<Activity, 'id' | 'timestamp'>) => {
+        try {
+            const res = await fetch('/api/activities', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(activity),
+            });
+            if (res.ok) {
+                const savedActivity = await res.json();
+                setActivities(prev => [savedActivity, ...prev]);
+            } else {
+                // Fallback for local experience if server fails
+                const localActivity: Activity = {
+                    ...activity,
+                    id: `act-${Date.now()}`,
+                    timestamp: new Date().toISOString()
+                };
+                setActivities(prev => [localActivity, ...prev]);
+            }
+        } catch (error) {
+            console.error('Failed to save activity:', error);
+            const localActivity: Activity = {
+                ...activity,
+                id: `act-${Date.now()}`,
+                timestamp: new Date().toISOString()
+            };
+            setActivities(prev => [localActivity, ...prev]);
+        }
     };
 
     return (
@@ -602,8 +823,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             logout,
             activities,
             addActivity,
+            reorderTeamMembers,
             deleteTeamMember,
-            isInitialized
+            isInitialized,
+            impersonateUser,
+            stopImpersonation,
+            isImpersonating: !!originalAdminId
         }}>
             {children}
         </DataContext.Provider>

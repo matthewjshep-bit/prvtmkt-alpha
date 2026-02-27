@@ -48,6 +48,11 @@ export async function POST(req: Request) {
                 bioFontFamily: body.bioFontFamily,
                 bioFontSize: body.bioFontSize,
                 bioFontColor: body.bioFontColor,
+                showSearchBar: body.showSearchBar,
+                cardShadowIntensity: body.cardShadowIntensity,
+                viewLayoutMode: body.viewLayoutMode,
+                portfolioListStyle: body.portfolioListStyle,
+                teamListStyle: body.teamListStyle,
             },
         });
         return NextResponse.json(firm);

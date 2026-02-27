@@ -33,12 +33,27 @@ export default function PublicPortalView({
     onMemberClick
 }: PublicPortalViewProps) {
     const [activeTab, setActiveTab] = useState(initialTab || "DEALS");
-    const [viewMode, setViewMode] = useState<"GRID" | "LIST">("GRID");
-    const [teamViewMode, setTeamViewMode] = useState<"GRID" | "LIST">("GRID");
+
+    // Initialize view modes based on firm settings
+    const initialViewMode = firm.viewLayoutMode === 'LIST' ? 'LIST' : 'GRID';
+    const [viewMode, setViewMode] = useState<"GRID" | "LIST">(initialViewMode);
+    const [teamViewMode, setTeamViewMode] = useState<"GRID" | "LIST">(initialViewMode);
+
     const [filter, setFilter] = useState("ALL");
     const [searchQuery, setSearchQuery] = useState("");
     const [isMuted, setIsMuted] = useState(true);
     const videoRef = useRef<HTMLVideoElement>(null);
+
+    // Update view modes if firm settings change
+    useEffect(() => {
+        if (firm.viewLayoutMode === 'LIST') {
+            setViewMode('LIST');
+            setTeamViewMode('LIST');
+        } else if (firm.viewLayoutMode === 'GRID') {
+            setViewMode('GRID');
+            setTeamViewMode('GRID');
+        }
+    }, [firm.viewLayoutMode]);
 
     const focusedMember = teamMembers.find(m => m.id === focusedMemberId);
 
@@ -78,7 +93,9 @@ export default function PublicPortalView({
         }
     };
 
-    const firmTeamMembers = teamMembers.filter((m) => (m.firmIds || []).includes(firm.id));
+    const firmTeamMembers = teamMembers
+        .filter((m) => m.firmId === firm.id || (m.firmIds || []).includes(firm.id))
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
 
     const filteredDeals = deals.filter((deal) => {
         const isFirmDeal = deal.firmId === firm.id;
@@ -100,6 +117,9 @@ export default function PublicPortalView({
         '--firm-bio-font': firm.bioFontFamily || 'Inter',
         '--firm-bio-size': `${firm.bioFontSize || 18}px`,
         '--firm-bio-color': firm.bioFontColor || 'rgba(0,0,0,0.6)',
+        '--member-card-bg': firm.memberCardBgColor || 'rgba(255, 255, 255, 0.5)',
+        '--member-photo-spacing': `${firm.memberPhotoSpacing || 12}px`,
+        '--card-shadow': `0 20px 50px rgba(0,0,0,${(firm.cardShadowIntensity || 0) * 0.5})`,
     } as React.CSSProperties;
 
     const radiusClass = firm.borderRadius === 'square' ? 'rounded-none' : 'rounded-[2.5rem]';
@@ -289,16 +309,23 @@ export default function PublicPortalView({
                 {/* Distinct Search & Navigation Area (Soft-Rectangular) */}
                 <div className={`mb-16 p-4 pr-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden ${radiusClass}`} style={{ backgroundColor: 'var(--firm-secondary)' }}>
                     <div className="flex flex-1 items-center gap-4 w-full">
-                        <div className="relative flex-1 group">
-                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-black/30 group-focus-within:text-black transition-colors" size={20} />
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                className={`h-16 w-full bg-white/50 border border-black/5 pl-14 pr-6 text-lg font-bold text-black outline-none transition-all focus:bg-white focus:border-black/10 placeholder:text-black/20 ${subRadiusClass}`}
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
+                        {firm.showSearchBar !== false ? (
+                            <div className="relative flex-1 group">
+                                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-black/30 group-focus-within:text-black transition-colors" size={20} />
+                                <input
+                                    type="text"
+                                    placeholder="Search..."
+                                    className={`h-16 w-full bg-white/50 border border-black/5 pl-14 pr-6 text-lg font-bold text-black outline-none transition-all focus:bg-white focus:border-black/10 placeholder:text-black/20 ${subRadiusClass}`}
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex items-center gap-4">
+                                <div className="h-1.5 w-1.5 rounded-full bg-black/10" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-black/20">Market Registry</span>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -365,22 +392,24 @@ export default function PublicPortalView({
                                             </span>
                                         </div>
 
-                                        <div className={`flex h-12 items-center bg-black/5 p-1.5 border border-black/5 ${subRadiusClass}`}>
-                                            <button
-                                                onClick={() => setViewMode("GRID")}
-                                                className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${viewMode === "GRID" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
-                                                title="Grid View"
-                                            >
-                                                <LayoutGrid size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => setViewMode("LIST")}
-                                                className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${viewMode === "LIST" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
-                                                title="List View"
-                                            >
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
-                                            </button>
-                                        </div>
+                                        {(firm.viewLayoutMode === 'BOTH' || !firm.viewLayoutMode) && (
+                                            <div className={`flex h-12 items-center bg-black/5 p-1.5 border border-black/5 ${subRadiusClass}`}>
+                                                <button
+                                                    onClick={() => setViewMode("GRID")}
+                                                    className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${viewMode === "GRID" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                                    title="Grid View"
+                                                >
+                                                    <LayoutGrid size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setViewMode("LIST")}
+                                                    className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${viewMode === "LIST" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                                    title="List View"
+                                                >
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -389,11 +418,26 @@ export default function PublicPortalView({
                                     className={viewMode === "GRID" ? "grid gap-12 sm:grid-cols-2 lg:grid-cols-2" : "flex flex-col gap-10"}
                                 >
                                     <AnimatePresence mode="popLayout">
-                                        {filteredDeals.map((deal, index) => (
-                                            <div key={deal.id} className={viewMode === "LIST" ? "w-full" : ""}>
-                                                <DealCard deal={deal} index={index} isListView={viewMode === "LIST"} firm={firm} />
-                                            </div>
-                                        ))}
+                                        {filteredDeals.map((deal, index) => {
+                                            const isAlternating = firm.portfolioListStyle === 'ALTERNATING' && viewMode === 'LIST';
+                                            const isReversed = isAlternating && index % 2 !== 0;
+
+                                            return (
+                                                <div
+                                                    key={deal.id}
+                                                    className={`${viewMode === "LIST" ? "w-full" : ""} ${isReversed ? "deal-card-reversed" : ""}`}
+                                                    style={{ boxShadow: 'var(--card-shadow)' }}
+                                                >
+                                                    <DealCard
+                                                        deal={deal}
+                                                        index={index}
+                                                        isListView={viewMode === "LIST"}
+                                                        firm={firm}
+                                                        isReversed={isReversed}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
                                     </AnimatePresence>
                                 </motion.div>
 
@@ -437,22 +481,24 @@ export default function PublicPortalView({
                                     </span>
                                 </div>
 
-                                <div className={`flex h-12 items-center bg-black/5 p-1.5 border border-black/5 ${subRadiusClass}`}>
-                                    <button
-                                        onClick={() => setTeamViewMode("GRID")}
-                                        className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${teamViewMode === "GRID" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
-                                        title="Grid View"
-                                    >
-                                        <LayoutGrid size={16} />
-                                    </button>
-                                    <button
-                                        onClick={() => setTeamViewMode("LIST")}
-                                        className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${teamViewMode === "LIST" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
-                                        title="List View"
-                                    >
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
-                                    </button>
-                                </div>
+                                {(firm.viewLayoutMode === 'BOTH' || !firm.viewLayoutMode) && (
+                                    <div className={`flex h-12 items-center bg-black/5 p-1.5 border border-black/5 ${subRadiusClass}`}>
+                                        <button
+                                            onClick={() => setTeamViewMode("GRID")}
+                                            className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${teamViewMode === "GRID" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                            title="Grid View"
+                                        >
+                                            <LayoutGrid size={16} />
+                                        </button>
+                                        <button
+                                            onClick={() => setTeamViewMode("LIST")}
+                                            className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${teamViewMode === "LIST" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                            title="List View"
+                                        >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -576,47 +622,62 @@ export default function PublicPortalView({
                                 animate={{ opacity: 1, y: 0 }}
                                 className={teamViewMode === "GRID" ? "grid gap-10 sm:grid-cols-2 lg:grid-cols-3" : "flex flex-col gap-8"}
                             >
-                                {firmTeamMembers.map((member) => (
-                                    <div
-                                        key={member.id}
-                                        id={`member-${member.id}`}
-                                        className={`transition-all duration-500 ${focusedMemberId === member.id ? 'ring-4 ring-brand-gold ring-offset-8 ring-offset-[var(--firm-bg)] rounded-[2.5rem]' : ''}`}
-                                    >
+                                {firmTeamMembers.map((member, index) => {
+                                    const isAlternating = firm.teamListStyle === 'ALTERNATING' && teamViewMode === 'LIST';
+                                    const isReversed = isAlternating && index % 2 !== 0;
+
+                                    return (
                                         <div
-                                            onClick={(e) => {
-                                                if (isPreview) {
-                                                    e.preventDefault();
-                                                    onMemberClick?.(member.id);
-                                                }
-                                            }}
-                                            className="cursor-pointer h-full"
+                                            key={member.id}
+                                            id={`member-${member.id}`}
+                                            className={`transition-all duration-500 ${focusedMemberId === member.id ? 'ring-4 ring-brand-gold ring-offset-8 ring-offset-[var(--firm-bg)] rounded-[2.5rem]' : ''}`}
+                                            style={{ boxShadow: 'var(--card-shadow)', borderRadius: firm.borderRadius === 'square' ? '0' : '2.5rem' }}
                                         >
-                                            <Link
-                                                href={isPreview ? "#" : `/team/${member.slug}`}
-                                                className={`group overflow-hidden border border-black/5 bg-white/50 p-6 transition-all hover:scale-[1.02] hover:shadow-2xl flex ${radiusClass} ${teamViewMode === "GRID" ? "flex-col aspect-[4/5] w-full" : "flex-row items-center gap-10"}`}
+                                            <div
+                                                onClick={(e) => {
+                                                    if (isPreview) {
+                                                        e.preventDefault();
+                                                        onMemberClick?.(member.id);
+                                                    }
+                                                }}
+                                                className="cursor-pointer h-full"
                                             >
-                                                <div className={`${teamViewMode === "GRID" ? "aspect-[4/5] w-full" : "h-40 w-40 shrink-0"} overflow-hidden shadow-md border-4 border-white ${cardRadiusClass}`}>
-                                                    <img
-                                                        src={member.imageURL}
-                                                        alt={member.name}
-                                                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                                    />
-                                                </div>
-                                                <div className="space-y-3 px-2 flex-1">
-                                                    <div className="space-y-1">
-                                                        <h3 className="text-3xl font-black leading-none" style={{ color: 'var(--firm-text)' }}>{member.name}</h3>
-                                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40" style={{ color: 'var(--firm-text)', fontFamily: 'var(--firm-bio-font)' }}>{member.role}</p>
-                                                    </div>
+                                                <Link
+                                                    href={isPreview ? "#" : `/team/${member.slug}`}
+                                                    className={`group overflow-hidden border border-black/5 p-6 transition-all hover:scale-[1.02] hover:shadow-2xl flex ${radiusClass} ${teamViewMode === "GRID" ? "flex-col aspect-[4/5] w-full" : `flex-row items-center ${isReversed ? "flex-row-reverse text-right" : ""}`}`}
+                                                    style={{
+                                                        backgroundColor: 'var(--member-card-bg)',
+                                                        gap: teamViewMode === "LIST" ? 'var(--member-photo-spacing)' : '0'
+                                                    }}
+                                                >
                                                     <div
-                                                        className="mt-2 prose prose-sm max-w-none opacity-60"
-                                                        style={{ color: 'var(--firm-text)', fontFamily: 'var(--firm-bio-font)' }}
-                                                        dangerouslySetInnerHTML={{ __html: member.bio?.replace(/&lt;/g, '<').replace(/&gt;/g, '>') || "" }}
-                                                    />
-                                                </div>
-                                            </Link>
+                                                        className={`${teamViewMode === "GRID" ? "aspect-[4/5] w-full" : "h-40 w-40 shrink-0"} overflow-hidden shadow-md border-4 border-white ${cardRadiusClass}`}
+                                                        style={{ marginBottom: teamViewMode === "GRID" ? 'var(--member-photo-spacing)' : '0' }}
+                                                    >
+                                                        <img
+                                                            src={member.imageURL}
+                                                            alt={member.name}
+                                                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                        />
+                                                    </div>
+                                                    <div className={`space-y-3 px-2 flex-1 ${isReversed ? "flex flex-col items-end" : ""}`}>
+                                                        <div className="space-y-1">
+                                                            <h3 className="text-3xl font-black leading-none" style={{ color: 'var(--firm-text)' }}>{member.name}</h3>
+                                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40" style={{ color: 'var(--firm-text)', fontFamily: 'var(--firm-bio-font)' }}>{member.role}</p>
+                                                        </div>
+                                                        {firm.showMemberNarrative !== false && (
+                                                            <div
+                                                                className={`mt-2 prose prose-sm max-w-none opacity-60 line-clamp-3 ${isReversed ? "text-right" : ""}`}
+                                                                style={{ color: 'var(--firm-text)', fontFamily: 'var(--firm-bio-font)' }}
+                                                                dangerouslySetInnerHTML={{ __html: member.bio?.replace(/&lt;/g, '<').replace(/&gt;/g, '>') || "" }}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                </Link>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </motion.div>
                         ) : (
                             <div className={`flex flex-col items-center justify-center border-2 border-dashed border-white/10 bg-white/5 p-24 text-center ${radiusClass}`}>

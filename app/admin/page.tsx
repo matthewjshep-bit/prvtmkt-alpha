@@ -16,12 +16,28 @@ import {
     UserPlus,
     Fingerprint,
     Shield,
-    Trash2
+    Trash2,
+    Ghost
 } from "lucide-react";
 
 export default function AdminDashboard() {
     const data = useData();
-    const { firms, deals, teamMembers, addFirm, activities, deleteUser, updateUser, currentUser } = data;
+    const { firms, deals, teamMembers, addFirm, activities, deleteUser, updateUser, currentUser, impersonateUser } = data;
+
+    // Access Control: Only SYSTEM_ADMIN can access global admin dashboard
+    if (currentUser && currentUser.role !== 'SYSTEM_ADMIN') {
+        return (
+            <div className="flex min-h-screen flex-col items-center justify-center bg-brand-dark px-6">
+                <div className="text-center">
+                    <h1 className="text-6xl font-black text-white italic">ACCESS <span className="text-red-500">DENIED</span></h1>
+                    <p className="mt-4 text-foreground/50 uppercase tracking-[0.2em] font-bold">Unauthorized Privilege Escalation Attempt Detected</p>
+                    <Link href="/" className="mt-12 inline-block rounded-full border border-white/20 px-8 py-3 text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-white hover:text-brand-dark">
+                        Return to Safety
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     // Debug log
     if (typeof window !== 'undefined' && !addFirm) {
@@ -46,7 +62,8 @@ export default function AdminDashboard() {
         e.preventDefault();
         updateUser(editingUser.id, {
             email: editingUser.email,
-            password: editingUser.password
+            password: editingUser.password,
+            firmId: editingUser.firmId
         });
         setIsEditingUser(false);
         setEditingUser(null);
@@ -314,6 +331,14 @@ export default function AdminDashboard() {
                                             <td className="py-4 px-4 text-right">
                                                 <div className="flex justify-end gap-2">
                                                     <button
+                                                        onClick={() => impersonateUser(user)}
+                                                        disabled={currentUser?.id === user.id}
+                                                        className={`p-2 transition-colors ${currentUser?.id === user.id ? 'text-white/5 cursor-not-allowed' : 'text-foreground/20 hover:text-brand-gold'}`}
+                                                        title="Impersonate User"
+                                                    >
+                                                        <Ghost size={16} />
+                                                    </button>
+                                                    <button
                                                         onClick={() => {
                                                             setEditingUser({ ...user });
                                                             setIsEditingUser(true);
@@ -457,6 +482,22 @@ export default function AdminDashboard() {
                                         placeholder="Enter new password..."
                                         onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
                                     />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Primary Firm Association</label>
+                                    <select
+                                        required
+                                        className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white outline-none focus:border-brand-gold/50 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207L10%2012L15%207%22%20stroke%3D%22%23666666%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px_20px] bg-[right_16px_center] bg-no-repeat"
+                                        value={editingUser.firmId || ""}
+                                        onChange={(e) => setEditingUser({ ...editingUser, firmId: e.target.value })}
+                                    >
+                                        <option value="">Select a Firm...</option>
+                                        <option value="system">System (No Association)</option>
+                                        {firms.map(f => (
+                                            <option key={f.id} value={f.id}>{f.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 <button

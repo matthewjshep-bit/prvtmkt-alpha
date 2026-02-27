@@ -248,6 +248,9 @@ export default function MySiteOverhaul() {
                                             if (formData.isColorLinked) {
                                                 updateField('accentColor', newColor);
                                             }
+                                            if (formData.isMemberCardColorLinked) {
+                                                updateField('memberCardBgColor', newColor);
+                                            }
                                         }}
                                     />
                                     <span className="text-[10px] font-mono text-white/40">{formData.backgroundColor || '#0a0a0a'}</span>
@@ -265,6 +268,9 @@ export default function MySiteOverhaul() {
                                             updateField('accentColor', newColor);
                                             if (formData.isColorLinked) {
                                                 updateField('backgroundColor', newColor);
+                                            }
+                                            if (formData.isMemberCardColorLinked) {
+                                                updateField('memberCardBgColor', newColor);
                                             }
                                         }}
                                     />
@@ -413,6 +419,184 @@ export default function MySiteOverhaul() {
                                                 value={formData.bioFontColor || '#000000'}
                                                 onChange={(e) => updateField('bioFontColor', e.target.value)}
                                             />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Layout Section */}
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Layout</h3>
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* Team Card Customization */}
+                            <div className="space-y-4 p-6 rounded-2xl bg-white/[0.02] border border-white/5">
+                                <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-brand-gold flex items-center gap-2">
+                                    <Settings2 size={14} />
+                                    Team Member Cards
+                                </h4>
+
+                                <div className="space-y-4 pt-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-[8px] font-black uppercase tracking-widest text-white/30">Card Background Hue</label>
+                                            <button
+                                                onClick={() => {
+                                                    const nextLinked = !formData.isMemberCardColorLinked;
+                                                    updateField('isMemberCardColorLinked', nextLinked);
+                                                    if (nextLinked) {
+                                                        updateField('memberCardBgColor', formData.backgroundColor);
+                                                    }
+                                                }}
+                                                className={`transition-all ${formData.isMemberCardColorLinked ? 'text-brand-gold' : 'text-white/20'}`}
+                                            >
+                                                {formData.isMemberCardColorLinked ? <LinkIcon size={10} /> : <Unlink size={10} />}
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="color"
+                                                className="h-6 w-6 rounded border-none bg-transparent cursor-pointer"
+                                                value={formData.memberCardBgColor || '#FFFFFF'}
+                                                onChange={(e) => {
+                                                    const newColor = e.target.value;
+                                                    updateField('memberCardBgColor', newColor);
+                                                    if (formData.isMemberCardColorLinked) {
+                                                        updateField('backgroundColor', newColor);
+                                                        if (formData.isColorLinked) {
+                                                            updateField('accentColor', newColor);
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                            <span className="text-[10px] font-mono text-white/40 uppercase">{formData.memberCardBgColor || '#FFFFFF'}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[8px] font-black uppercase tracking-widest text-white/30">Photo / Identity Spacing</label>
+                                            <span className="text-[9px] font-mono text-brand-gold">{formData.memberPhotoSpacing || 12}px</span>
+                                        </div>
+                                        <input
+                                            type="range" min="0" max="64" step="4"
+                                            className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-gold"
+                                            value={formData.memberPhotoSpacing || 12}
+                                            onChange={(e) => updateField('memberPhotoSpacing', parseInt(e.target.value))}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-2">
+                                        <div className="space-y-1">
+                                            <label className="text-[8px] font-black uppercase tracking-widest text-white/30">Show Narrative</label>
+                                            <p className="text-[7px] text-white/10 font-bold uppercase tracking-widest">Display Bio on Card</p>
+                                        </div>
+                                        <button
+                                            onClick={() => updateField('showMemberNarrative', !formData.showMemberNarrative)}
+                                            className={`w-12 h-6 rounded-full transition-all relative flex items-center px-1 ${formData.showMemberNarrative !== false ? 'bg-brand-gold' : 'bg-white/10'}`}
+                                        >
+                                            <div className={`h-4 w-4 rounded-full bg-white shadow-sm transition-all transform ${formData.showMemberNarrative !== false ? 'translate-x-6' : 'translate-x-0'}`} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Global Layout Extras */}
+                            <div className="space-y-4 p-6 rounded-2xl bg-white/[0.02] border border-white/5">
+                                <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-brand-gold flex items-center gap-2">
+                                    <Settings2 size={14} />
+                                    Global Layout Controls
+                                </h4>
+
+                                <div className="space-y-6 pt-2">
+                                    {/* Search Bar Toggle */}
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-1">
+                                            <label className="text-[8px] font-black uppercase tracking-widest text-white/30">Search Bar</label>
+                                            <p className="text-[7px] text-white/10 font-bold uppercase tracking-widest">Enable site-wide search</p>
+                                        </div>
+                                        <button
+                                            onClick={() => updateField('showSearchBar', formData.showSearchBar !== false ? false : true)}
+                                            className={`w-10 h-5 rounded-full transition-all relative flex items-center px-1 ${formData.showSearchBar !== false ? 'bg-brand-gold' : 'bg-white/10'}`}
+                                        >
+                                            <div className={`h-3 w-3 rounded-full bg-white shadow-sm transition-all transform ${formData.showSearchBar !== false ? 'translate-x-5' : 'translate-x-0'}`} />
+                                        </button>
+                                    </div>
+
+                                    {/* Card Shading Intensity */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[8px] font-black uppercase tracking-widest text-white/30">Global Card Shading</label>
+                                            <span className="text-[9px] font-mono text-brand-gold">{Math.round((formData.cardShadowIntensity || 0) * 100)}%</span>
+                                        </div>
+                                        <input
+                                            type="range" min="0" max="1" step="0.05"
+                                            className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-gold"
+                                            value={formData.cardShadowIntensity || 0}
+                                            onChange={(e) => updateField('cardShadowIntensity', parseFloat(e.target.value))}
+                                        />
+                                    </div>
+
+                                    {/* View Layout Mode (Toggle) */}
+                                    <div className="space-y-3">
+                                        <label className="text-[8px] font-black uppercase tracking-widest text-white/30">Grid/List Visibility</label>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {[
+                                                { id: 'BOTH', label: 'Show Both' },
+                                                { id: 'GRID', label: 'Grid Only' },
+                                                { id: 'LIST', label: 'List Only' }
+                                            ].map((mode) => (
+                                                <button
+                                                    key={mode.id}
+                                                    onClick={() => updateField('viewLayoutMode', mode.id)}
+                                                    className={`py-2 px-1 rounded-lg text-[7px] font-black uppercase tracking-widest transition-all border ${formData.viewLayoutMode === mode.id ? 'bg-brand-gold text-brand-dark border-brand-gold' : 'bg-white/5 text-white/40 border-white/5'}`}
+                                                >
+                                                    {mode.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Portfolio List Style */}
+                                    <div className="space-y-3">
+                                        <label className="text-[8px] font-black uppercase tracking-widest text-white/30">Portfolio List Logic</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {[
+                                                { id: 'TRADITIONAL', label: 'Traditional' },
+                                                { id: 'ALTERNATING', label: 'Alternating' }
+                                            ].map((style) => (
+                                                <button
+                                                    key={style.id}
+                                                    onClick={() => updateField('portfolioListStyle', style.id)}
+                                                    className={`py-2 px-1 rounded-lg text-[7px] font-black uppercase tracking-widest transition-all border ${formData.portfolioListStyle === style.id ? 'bg-brand-gold text-brand-dark border-brand-gold' : 'bg-white/5 text-white/40 border-white/5'}`}
+                                                >
+                                                    {style.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Team List Style */}
+                                    <div className="space-y-3">
+                                        <label className="text-[8px] font-black uppercase tracking-widest text-white/30">Team List Logic</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {[
+                                                { id: 'TRADITIONAL', label: 'Traditional' },
+                                                { id: 'ALTERNATING', label: 'Alternating' }
+                                            ].map((style) => (
+                                                <button
+                                                    key={style.id}
+                                                    onClick={() => updateField('teamListStyle', style.id)}
+                                                    className={`py-2 px-1 rounded-lg text-[7px] font-black uppercase tracking-widest transition-all border ${formData.teamListStyle === style.id ? 'bg-brand-gold text-brand-dark border-brand-gold' : 'bg-white/5 text-white/40 border-white/5'}`}
+                                                >
+                                                    {style.label}
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>

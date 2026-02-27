@@ -27,29 +27,21 @@ export async function PUT(
     const { id } = await params;
     try {
         const body = await req.json();
+        const updateData: any = {};
+        const fields = [
+            'address', 'assetType', 'strategy', 'purchaseAmount', 'financedAmount',
+            'rehabAmount', 'arv', 'stillImageURL', 'generatedVideoURL', 'isPublic',
+            'capRate', 'sqFt', 'investmentOverview', 'images', 'financingType',
+            'teamMemberIds', 'context', 'firmId', 'teamMemberId'
+        ];
+
+        fields.forEach(field => {
+            if (body[field] !== undefined) updateData[field] = body[field];
+        });
+
         const deal = await prisma.deal.update({
             where: { id },
-            data: {
-                address: body.address,
-                assetType: body.assetType,
-                strategy: body.strategy,
-                purchaseAmount: body.purchaseAmount,
-                financedAmount: body.financedAmount,
-                rehabAmount: body.rehabAmount,
-                arv: body.arv,
-                stillImageURL: body.stillImageURL,
-                generatedVideoURL: body.generatedVideoURL,
-                isPublic: body.isPublic,
-                capRate: body.capRate,
-                sqFt: body.sqFt,
-                investmentOverview: body.investmentOverview,
-                images: body.images,
-                financingType: body.financingType,
-                teamMemberIds: body.teamMemberIds,
-                context: body.context,
-                firmId: body.firmId,
-                teamMemberId: body.teamMemberId,
-            },
+            data: updateData,
         });
         return NextResponse.json(deal);
     } catch (error: any) {

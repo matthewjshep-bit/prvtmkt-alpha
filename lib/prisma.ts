@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 
-// Force client reload after schema update - cmm3y0p97000008mf
+// Force client reload after schema update - cmm3y0p97000008mf-rev2
 
 const prismaClientSingleton = () => {
     // We use DATABASE_URL (Transaction Mode / port 6543).
@@ -13,6 +13,7 @@ const prismaClientSingleton = () => {
         ? url.replace(/sslmode=[^&]+/, 'sslmode=no-verify')
         : `${url}${url?.includes('?') ? '&' : '?'}sslmode=no-verify`;
 
+    console.log('[Prisma] Initializing new PrismaClient instance v3');
     const pool = new pg.Pool({
         connectionString,
         ssl: {
@@ -26,11 +27,11 @@ const prismaClientSingleton = () => {
 type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>;
 
 const globalForPrisma = globalThis as unknown as {
-    prisma: PrismaClientSingleton | undefined;
+    prisma_v3: PrismaClientSingleton | undefined;
 };
 
-const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
+const prisma = globalForPrisma.prisma_v3 ?? prismaClientSingleton();
 
 export default prisma;
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma_v3 = prisma;
