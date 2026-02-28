@@ -14,7 +14,7 @@ import {
 import { useParams as useNextParams } from "next/navigation";
 
 export default function TenantUsersPage() {
-    const { firms, users, currentUser, addUser, deleteUser, updateUser } = useData();
+    const { firms, users, teamMembers, currentUser, addUser, deleteUser, updateUser, updateTeamMember } = useData();
     const params = useNextParams();
     const firmSlug = params.firmSlug as string;
 
@@ -23,11 +23,13 @@ export default function TenantUsersPage() {
     const [editingUser, setEditingUser] = useState<any>(null);
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState<"FIRM_ADMIN" | "USER">("USER");
+    const [savingId, setSavingId] = useState<string | null>(null);
 
     const firm = firms.find(f => f.slug === firmSlug);
     if (!firm) return null;
 
     const firmUsers = users.filter(u => u.firmId === firm.id);
+    const firmTeam = teamMembers.filter(m => (m.firmIds || []).includes(firm.id));
 
     const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -179,6 +181,7 @@ export default function TenantUsersPage() {
                         <tr className="border-b border-white/5 bg-white/2">
                             <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">User Identity</th>
                             <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Registry Role</th>
+                            <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Linked Profile</th>
                             <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Status</th>
                             <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30 text-right">Actions</th>
                         </tr>
@@ -203,6 +206,77 @@ export default function TenantUsersPage() {
                                             <Shield size={12} className="text-brand-gold" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-brand-gold">{user.role}</span>
                                         </div>
+                                    </td>
+                                    <td className="px-10 py-8">
+                                        {(() => {
+                                            const linkedMember = teamMembers.find(m => m.userId === user.id);
+                                            const isProcessing = savingId === user.id;
+
+                                            return (
+                                                <div className="flex items-center min-h-[40px]">
+                                                    {isProcessing ? (
+                                                        <div className="flex items-center gap-2 text-[10px] font-bold text-brand-gold animate-pulse">
+                                                            <div className="h-4 w-4 rounded-full border-2 border-brand-gold border-t-transparent animate-spin" />
+                                                            Saving Registry...
+                                                        </div>
+                                                    ) : linkedMember ? (
+                                                        <div className="flex items-center gap-3 animate-in fade-in slide-in-from-left-2 duration-300">
+                                                            <div className="h-8 w-8 rounded-lg overflow-hidden border border-brand-gold/20 shrink-0 shadow-lg shadow-black/20">
+                                                                <img src={linkedMember.imageURL || ""} className="h-full w-full object-cover" alt={linkedMember.name} />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="text-[10px] font-bold text-white truncate max-w-[100px]">{linkedMember.name}</p>
+                                                                <button
+                                                                    onClick={async (e) => {
+                                                                        e.stopPropagation();
+                                                                        setSavingId(user.id);
+                                                                        const success = await updateTeamMember(linkedMember.id, { userId: null });
+                                                                        if (!success) {
+                                                                            const errMsg = localStorage.getItem('last_update_member_error');
+                                                                            alert(errMsg || "Failed to unlink profile. Please ensure you have administrative rights.");
+                                                                        }
+                                                                        setSavingId(null);
+                                                                    }}
+                                                                    className="text-[8px] font-black uppercase tracking-[0.1em] text-red-500/60 hover:text-red-400 transition-colors flex items-center gap-1"
+                                                                >
+                                                                    Unlink Profile
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <select
+                                                            className="bg-transparent border border-white/5 rounded-lg px-2 py-1 text-[10px] font-bold text-brand-gold/40 hover:text-brand-gold hover:border-brand-gold/20 outline-none cursor-pointer max-w-[140px] transition-all disabled:opacity-50"
+                                                            value=""
+                                                            disabled={isProcessing}
+                                                            onChange={async (e) => {
+                                                                const memberId = e.target.value;
+                                                                if (memberId) {
+                                                                    console.log(`[UI] Attempting to link User ${user.id} to Member ${memberId}`);
+                                                                    setSavingId(user.id);
+                                                                    const success = await updateTeamMember(memberId, { userId: user.id });
+                                                                    if (!success) {
+                                                                        const errMsg = localStorage.getItem('last_update_member_error');
+                                                                        alert(`Registry Error: ${errMsg || "Database rejected connection. Likely this identity is tied elsewhere."}`);
+                                                                    }
+                                                                    setSavingId(null);
+                                                                }
+                                                            }}
+                                                        >
+                                                            <option value="" disabled className="bg-brand-gray-900">+ Associate Profile</option>
+                                                            {firmTeam
+                                                                .filter(m => !m.userId && m.name.toLowerCase().trim() !== "new team member")
+                                                                .map(m => (
+                                                                    <option key={m.id} value={m.id} className="bg-brand-gray-900">{m.name}</option>
+                                                                ))
+                                                            }
+                                                            {firmTeam.filter(m => !m.userId && m.name.toLowerCase().trim() !== "new team member").length === 0 && (
+                                                                <option disabled className="bg-brand-gray-900 opacity-50 underline">No members available</option>
+                                                            )}
+                                                        </select>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
                                     </td>
                                     <td className="px-10 py-8">
                                         <div className="flex items-center gap-2">

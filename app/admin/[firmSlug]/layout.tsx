@@ -57,22 +57,27 @@ export default function TenantAdminLayout({
         );
     }
 
-    const navItems = [
-        { label: "My Site", href: `/admin/${firmSlug}/mysite`, icon: <Globe size={18} /> },
-        {
-            label: "Team Members",
-            href: `/admin/${firmSlug}/people`,
-            icon: <Users size={18} />,
-            subItems: [
-                { label: "Team Members", href: `/admin/${firmSlug}/people/gallery-editor` },
-                { label: "Site Editor", href: `/admin/${firmSlug}/people/site-editor` },
-            ]
-        },
-        { label: "Dashboard", href: `/admin/${firmSlug}/dashboard`, icon: <LayoutDashboard size={18} /> },
-        { label: "Authorized Users", href: `/admin/${firmSlug}/users`, icon: <Shield size={18} /> },
-        { label: "Firm Deals", href: `/admin/${firmSlug}/deals`, icon: <Briefcase size={18} /> },
-        { label: "Settings", href: `/admin/${firmSlug}/settings`, icon: <Settings size={18} /> },
-    ];
+    const navItems = currentUser.role === "USER"
+        ? [
+            { label: "My Profile", href: `/admin/${firmSlug}/profile`, icon: <UserCircle size={18} /> },
+            { label: "Firm Site", href: `/firms/${firmSlug}`, icon: <Globe size={18} /> },
+        ]
+        : [
+            { label: "My Site", href: `/admin/${firmSlug}/mysite`, icon: <Globe size={18} /> },
+            {
+                label: "Team Members",
+                href: `/admin/${firmSlug}/people`,
+                icon: <Users size={18} />,
+                subItems: [
+                    { label: "Team Members", href: `/admin/${firmSlug}/people/gallery-editor` },
+                    { label: "Site Editor", href: `/admin/${firmSlug}/people/site-editor` },
+                ]
+            },
+            { label: "Dashboard", href: `/admin/${firmSlug}/dashboard`, icon: <LayoutDashboard size={18} /> },
+            { label: "Authorized Users", href: `/admin/${firmSlug}/users`, icon: <Shield size={18} /> },
+            { label: "Firm Deals", href: `/admin/${firmSlug}/deals`, icon: <Briefcase size={18} /> },
+            { label: "Settings", href: `/admin/${firmSlug}/settings`, icon: <Settings size={18} /> },
+        ];
 
     return (
         <div className="min-h-screen bg-brand-dark flex">
@@ -110,7 +115,7 @@ export default function TenantAdminLayout({
                                             {firm.name}
                                         </span>
                                         <span className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest mt-0.5">
-                                            Firm Admin
+                                            {currentUser.role === "USER" ? "Standard User" : "Firm Admin"}
                                         </span>
                                     </div>
                                 </Link>
@@ -168,7 +173,7 @@ export default function TenantAdminLayout({
                             </div>
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-xs font-bold text-white truncate">{currentUser.email}</p>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold/60">{currentUser.role}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold/60">{currentUser.role === "USER" ? "Standard User" : currentUser.role.replace("_", " ")}</p>
                             </div>
                         </div>
                         <button

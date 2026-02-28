@@ -27,6 +27,7 @@ export async function POST(req: Request) {
                 dealId: body.dealId || null,
                 userId: body.userId || null,
                 memberId: body.memberId || null,
+                performedByEmail: body.performedByEmail || null,
             },
         });
         return NextResponse.json(activity);

@@ -50,14 +50,15 @@ model Firm {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  role      UserRole @default(USER)
-  firmId    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  firm      Firm     @relation(fields: [firmId], references: [id])
+  id                  String      @id @default(cuid())
+  email               String      @unique
+  password            String
+  role                UserRole    @default(USER)
+  firmId              String
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  firm                Firm        @relation(fields: [firmId], references: [id])
+  professionalProfile TeamMember?
 }
 
 model TeamMember {
@@ -77,6 +78,8 @@ model TeamMember {
   phoneNumber  String?
   sortOrder    Int      @default(0)
   deals        Deal[]
+  userId       String?  @unique
+  user         User?    @relation(fields: [userId], references: [id])
   firm         Firm     @relation(fields: [firmId], references: [id])
 }
 

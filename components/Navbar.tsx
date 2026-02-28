@@ -96,6 +96,13 @@ export default function Navbar() {
                                 label="Firm Admin"
                             />
                         )}
+                        {currentUser?.role === 'USER' && currentUser.firmId && (
+                            <NavLink
+                                href={`/admin/${firms.find(f => f.id === currentUser.firmId)?.slug || firms.find(f => f.id === currentUser.firmId)?.id || ''}/profile`}
+                                icon={<Users size={18} />}
+                                label="My Profile"
+                            />
+                        )}
                     </div>
 
                     <div className="flex items-center gap-4">

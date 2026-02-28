@@ -23,7 +23,7 @@ export default function SiteEditorPage() {
 }
 
 function TenantPeopleContent() {
-    const { firms, teamMembers, updateTeamMember, addTeamMember, deleteTeamMember, currentUser, isInitialized, deals } = useData();
+    const { firms, teamMembers, updateTeamMember, addTeamMember, deleteTeamMember, currentUser, isInitialized, deals, users } = useData();
     const params = useParams();
     const firmSlug = params.firmSlug as string;
     const firm = firms.find(f => f.slug === firmSlug);
@@ -238,6 +238,7 @@ function TenantPeopleContent() {
                                     onDelete={() => handleMemberDelete(member.id)}
                                     saveStatus={saveStatus[member.id] || 'idle'}
                                     currentUser={currentUser}
+                                    users={users}
                                     isFirst={index === 0}
                                     isLast={index === localTeam.length - 1}
                                 />
@@ -280,6 +281,7 @@ interface MemberEditorCardProps {
     onDelete: () => void;
     saveStatus: 'idle' | 'saving' | 'saved';
     currentUser: any;
+    users: any[];
     isFirst: boolean;
     isLast: boolean;
 }
@@ -295,6 +297,7 @@ function MemberEditorCard({
     onDelete,
     saveStatus,
     currentUser,
+    users,
     isFirst,
     isLast
 }: MemberEditorCardProps) {
@@ -453,6 +456,27 @@ function MemberEditorCard({
                                         className="w-full h-12 bg-black/40 border border-white/5 rounded-xl pl-12 pr-4 text-xs font-bold text-white outline-none focus:border-brand-gold/40 transition-all"
                                     />
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Identity Connection Section */}
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-2">
+                                <Users size={12} />
+                                Platform Identity Connection
+                            </div>
+                            <div className="flex items-center gap-3 rounded-2xl bg-black/20 border border-white/5 px-4 h-12">
+                                <Users size={14} className="text-white/20" />
+                                <select
+                                    className="bg-transparent outline-none w-full text-xs font-bold text-white cursor-pointer"
+                                    value={member.userId || ""}
+                                    onChange={(e) => onUpdate({ userId: e.target.value || null })}
+                                >
+                                    <option value="" className="bg-brand-gray-900">None (Standalone Profile)</option>
+                                    {(users || []).map(u => (
+                                        <option key={u.id} value={u.id} className="bg-brand-gray-900">{u.email} ({u.role})</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
 

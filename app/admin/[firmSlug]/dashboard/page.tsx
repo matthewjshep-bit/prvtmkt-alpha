@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 export default function TenantDashboard() {
-    const { firms, deals, teamMembers, activities } = useData();
+    const { firms, deals, teamMembers, activities, users } = useData();
     const params = useParams();
     const firmSlug = params.firmSlug as string;
 
@@ -27,12 +27,13 @@ export default function TenantDashboard() {
 
     const firmDeals = deals.filter(d => d.firmId === firm.id);
     const firmTeam = teamMembers.filter(m => (m.firmIds || []).includes(firm.id));
+    const firmUsers = users.filter(u => u.firmId === firm.id);
     const firmActivities = activities.filter(a => a.firmId === firm.id).slice(0, 10);
 
     const stats = [
         { label: "Deals", value: firmDeals.length, icon: <Briefcase size={20} className="text-brand-gold" />, href: `/admin/${firmSlug}/deals` },
         { label: "Team Members", value: firmTeam.length, icon: <Users size={20} className="text-brand-gold" />, href: `/admin/${firmSlug}/people` },
-        { label: "Authorized Users", value: 1, icon: <Shield size={20} className="text-brand-gold" />, href: `/admin/${firmSlug}/users` },
+        { label: "Authorized Users", value: firmUsers.length, icon: <Shield size={20} className="text-brand-gold" />, href: `/admin/${firmSlug}/users` },
     ];
 
     return (
@@ -94,13 +95,6 @@ export default function TenantDashboard() {
 
                         <div className="grid grid-cols-2 gap-6 pt-6 border-t border-white/5">
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-foreground/30 mb-1">Primary Brand Color</p>
-                                <div className="flex items-center gap-2">
-                                    <div className="h-4 w-4 rounded-full" style={{ backgroundColor: firm.primaryColor || '#ffffff' }} />
-                                    <span className="text-sm font-bold text-white uppercase">{firm.primaryColor || '#ffffff'}</span>
-                                </div>
-                            </div>
-                            <div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-foreground/30 mb-1">Status</p>
                                 <div className="flex items-center gap-2">
                                     <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
@@ -148,8 +142,15 @@ export default function TenantDashboard() {
                                         <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-gray-900 border border-white/10 group-hover:border-brand-gold/30 transition-all">
                                             <Icon size={14} className={iconColor} />
                                         </div>
-                                        <div className="flex flex-col pt-2">
-                                            <p className="text-sm font-bold text-white leading-tight">{activity.title}</p>
+                                        <div className="flex flex-col pt-2 flex-1">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <p className="text-sm font-bold text-white leading-tight">{activity.title}</p>
+                                                {activity.performedByEmail && (
+                                                    <span className="text-[9px] font-black text-brand-gold/40 truncate max-w-[120px]">
+                                                        BY: {activity.performedByEmail.split('@')[0]}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="text-[10px] font-black uppercase tracking-widest text-foreground/30 mt-1.5">
                                                 {new Date(activity.timestamp).toLocaleDateString()} @ {new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </p>

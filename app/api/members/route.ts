@@ -30,6 +30,7 @@ export async function POST(req: Request) {
                 firmIds: body.firmIds || [],
                 firmId: body.firmId,
                 sortOrder: body.sortOrder || body.order || 0,
+                userId: body.userId || null,
             } as any,
         });
 

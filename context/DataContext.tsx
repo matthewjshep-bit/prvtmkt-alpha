@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { MOCK_FIRMS, MOCK_DEALS, MOCK_TEAM_MEMBERS } from '@/lib/mock-data';
 import { storage } from '@/lib/storage';
 
@@ -45,7 +46,7 @@ export interface TeamMember {
     id: string;
     firmId: string;
     firmIds: string[];
-    userId?: string; // Link to a System User for self-editing
+    userId?: string | null; // Link to a System User for self-editing
     name: string;
     slug: string;
     role: string;
@@ -99,11 +100,14 @@ interface Activity {
     | 'FIRM_ADDED' | 'FIRM_UPDATED' | 'FIRM_DELETED'
     | 'MEMBER_ADDED' | 'MEMBER_UPDATED' | 'MEMBER_DELETED'
     | 'USER_ADDED' | 'USER_UPDATED' | 'USER_DELETED'
-    | 'USER_IMPERSONATED' | 'IMPERSONATION_STOPPED';
+    | 'USER_IMPERSONATED' | 'IMPERSONATION_STOPPED'
+    | 'FIRM_SETTINGS_UPDATED'; // Added for clarity
     title: string;
     timestamp: string;
     firmId?: string;
     dealId?: string;
+    userId?: string;
+    performedByEmail?: string;
 }
 
 interface DataContextType {
@@ -151,6 +155,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const [users, setUsers] = useState<User[]>([]);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [originalAdminId, setOriginalAdminId] = useState<string | null>(null);
+    const router = useRouter();
     const [activities, setActivities] = useState<Activity[]>([]);
     const [isInitialized, setIsInitialized] = useState(false);
 
@@ -321,15 +326,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const updateTeamMember = async (id: string, updates: Partial<TeamMember>) => {
         try {
-            console.log(`[DataContext] updateTeamMember called for ID: ${id}`, updates);
+            console.log(`[DataContext] updateTeamMember START for ID: ${id}`, updates);
             const res = await fetch(`/api/members/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates),
             });
+            console.log(`[DataContext] API Response Status: ${res.status}`);
+
             if (res.ok) {
                 const updatedMember = await res.json();
-                console.log(`[DataContext] API returned updated member:`, updatedMember);
+                console.log(`[DataContext] API returned updated member. Processing...`);
 
                 // Normalization with robust fallback logic
                 const serverFirmIds = updatedMember.firmIds || [];
@@ -348,23 +355,28 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
                 setTeamMembers(prev => {
                     const newState = prev.map(m => m.id === id ? normalizedMember : m);
-                    console.log(`[DataContext] Updated teamMembers state. Length: ${newState.length}`);
+                    console.log(`[DataContext] State updated successfully.`);
                     return newState;
                 });
 
+                // No await here on purpose - fire and forget
                 addActivity({
                     type: 'MEMBER_UPDATED',
                     title: `Updated team member: ${normalizedMember.name}`,
                     firmId: normalizedMember.firmId || ""
                 });
+
+                console.log(`[DataContext] updateTeamMember COMPLETE.`);
                 return true;
             } else {
-                const error = await res.json();
+                const error = await res.json().catch(() => ({}));
                 console.error(`[DataContext] updateTeamMember API Error:`, error);
+                localStorage.setItem('last_update_member_error', error.error || `Server Error (${res.status})`);
                 return false;
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('[DataContext] Failed to update team member:', error);
+            localStorage.setItem('last_update_member_error', error.message || 'Connection Error');
             return false;
         }
     };
@@ -540,6 +552,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             title: `System Admin is now impersonating ${user.email}`,
             firmId: user.firmId
         });
+
+        // Determine Redirect Path
+        const firm = firms.find(f => f.id === user.firmId);
+        if (user.role === 'FIRM_ADMIN' && firm) {
+            router.push(`/admin/${firm.slug}`);
+        } else if (user.role === 'USER' && firm) {
+            router.push(`/admin/${firm.slug}/profile`);
+        } else {
+            router.push('/admin');
+        }
     };
 
     const stopImpersonation = async () => {
@@ -558,6 +580,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 title: `System Admin stopped impersonation of ${currentUser?.email}`,
                 firmId: adminUser.firmId
             });
+
+            router.push('/admin');
         }
     };
 
@@ -769,10 +793,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const addActivity = async (activity: Omit<Activity, 'id' | 'timestamp'>) => {
         try {
+            // Automatically inject current user info
+            const activityWithUser = {
+                ...activity,
+                userId: activity.userId || currentUser?.id,
+                performedByEmail: activity.performedByEmail || currentUser?.email
+            };
+
             const res = await fetch('/api/activities', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(activity),
+                body: JSON.stringify(activityWithUser),
             });
             if (res.ok) {
                 const savedActivity = await res.json();
@@ -780,7 +811,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             } else {
                 // Fallback for local experience if server fails
                 const localActivity: Activity = {
-                    ...activity,
+                    ...activityWithUser,
                     id: `act-${Date.now()}`,
                     timestamp: new Date().toISOString()
                 };
@@ -791,7 +822,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             const localActivity: Activity = {
                 ...activity,
                 id: `act-${Date.now()}`,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                userId: currentUser?.id,
+                performedByEmail: currentUser?.email
             };
             setActivities(prev => [localActivity, ...prev]);
         }

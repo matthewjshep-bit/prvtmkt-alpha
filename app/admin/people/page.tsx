@@ -16,7 +16,7 @@ export default function AdminPeoplePage() {
 }
 
 function AdminPeopleContent() {
-    const { firms, teamMembers, updateTeamMember, addTeamMember } = useData();
+    const { firms, teamMembers, updateTeamMember, addTeamMember, users } = useData();
     const [saveStatus, setSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
     const [isAddingPerson, setIsAddingPerson] = useState(false);
     const [firmFilter, setFirmFilter] = useState("ALL");
@@ -29,7 +29,8 @@ function AdminPeopleContent() {
         linkedInUrl: "",
         imageURL: firms[0]?.logoUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
         bio: "",
-        heroMediaUrl: ""
+        heroMediaUrl: "",
+        userId: ""
     });
 
     const searchParams = useSearchParams();
@@ -60,7 +61,8 @@ function AdminPeopleContent() {
             linkedInUrl: "",
             imageURL: firms[0]?.logoUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
             bio: "",
-            heroMediaUrl: ""
+            heroMediaUrl: "",
+            userId: ""
         });
     };
 
@@ -224,6 +226,20 @@ function AdminPeopleContent() {
                                         value={newPerson.bio}
                                         onChange={(e) => setNewPerson({ ...newPerson, bio: e.target.value })}
                                     />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Platform Identity (System User)</label>
+                                    <select
+                                        className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white outline-none focus:border-brand-gold/50 cursor-pointer"
+                                        value={newPerson.userId || ""}
+                                        onChange={(e) => setNewPerson({ ...newPerson, userId: e.target.value })}
+                                    >
+                                        <option value="">None (Standalone Profile)</option>
+                                        {users.map(u => (
+                                            <option key={u.id} value={u.id}>{u.email} ({u.role})</option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 <div className="space-y-1.5">
@@ -484,6 +500,22 @@ function AdminPeopleContent() {
                                                     }
                                                 }}
                                             />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5 px-3">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-brand-gold/60">Platform Identity Connection</span>
+                                            <div className="flex items-center gap-3 rounded-xl border border-brand-gold/20 bg-brand-gold/5 px-3 py-2 text-sm text-foreground/60 focus-within:border-brand-gold/50 transition-all">
+                                                <Users size={16} className="text-brand-gold/50" />
+                                                <select
+                                                    className="bg-transparent outline-none w-full text-white cursor-pointer"
+                                                    value={member.userId || ""}
+                                                    onChange={(e) => updateTeamMember(member.id, { userId: e.target.value || null })}
+                                                >
+                                                    <option value="" className="bg-brand-gray-900">None (Standalone Profile)</option>
+                                                    {users.map(u => (
+                                                        <option key={u.id} value={u.id} className="bg-brand-gray-900">{u.email} ({u.role})</option>
+                                                    ))}
+                                                </select>
+                                            </div>
                                         </div>
                                         <div className="flex flex-col gap-1.5 px-3">
                                             <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">Portfolio Hero (Video/Banner)</span>
