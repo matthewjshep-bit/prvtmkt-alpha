@@ -6,14 +6,14 @@ async function main() {
     try {
         const firms = await prisma.firm.findMany();
         console.log('--- FIRM TOMBSTONE SETTINGS (DB) ---');
-        firms.forEach(f => {
+        firms.forEach((f: any) => {
             console.log(`[FIRM] ${f.name} (${f.id})`);
             console.log(`  Tombstone Layout: ${JSON.stringify(f.tombstoneLayout)}`);
             console.log(`  Padding: ${f.tombstonePadding}`);
             console.log(`  Max Width: ${f.tombstoneMaxWidth}`);
             console.log(`  Colors: ${f.tombstoneInfoBgColor}, ${f.tombstoneMetricsBgColor}, ${f.tombstoneMediaBgColor}, ${f.tombstoneNarrativeBgColor}`);
         });
-    } catch (e) {
+    } catch (e: any) {
         console.error('Prisma query failed:', e.message);
     }
 }
