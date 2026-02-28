@@ -50,6 +50,25 @@ export default function TeamMemberPage({
     const memberDeals = member ? deals.filter((d) => (d.teamMemberIds || []).includes(member.id)) : [];
     const firm = member ? firms.find(f => (member.firmIds || []).includes(f.id)) : undefined;
 
+    useEffect(() => {
+        if (!firm) return;
+        const fontsToLoad = new Set<string>();
+        if (firm.firmNameFontFamily && firm.firmNameFontFamily !== 'Inter') fontsToLoad.add(firm.firmNameFontFamily);
+        if (firm.bioFontFamily && firm.bioFontFamily !== 'Inter') fontsToLoad.add(firm.bioFontFamily);
+
+        if (fontsToLoad.size > 0) {
+            const linkId = 'dynamic-fonts';
+            let link = document.getElementById(linkId) as HTMLLinkElement;
+            if (!link) {
+                link = document.createElement('link');
+                link.id = linkId;
+                link.rel = 'stylesheet';
+                document.head.appendChild(link);
+            }
+            link.href = `https://fonts.googleapis.com/css2?family=${Array.from(fontsToLoad).map(f => `${f.replace(/ /g, '+')}:wght@300;400;600;700;900`).join('&family=')}&display=swap`;
+        }
+    }, [firm?.firmNameFontFamily, firm?.bioFontFamily]);
+
     // Hook definitions (must be top-level)
     const availableAssetTypes = useMemo(() => {
         if (!member) return [];
@@ -95,28 +114,9 @@ export default function TeamMemberPage({
     const themeStyles = {
         '--firm-bg': firm?.backgroundColor || '#0a0a0a',
         '--firm-text': firm?.fontColor || '#ffffff',
-        '--firm-primary': firm?.primaryColor || '#ffffff',
+        '--firm-primary': firm?.accentColor || '#ffffff',
         '--firm-secondary': firm?.accentColor || '#f5f5f5',
     } as React.CSSProperties;
-
-    useEffect(() => {
-        if (!firm) return;
-        const fontsToLoad = new Set<string>();
-        if (firm.firmNameFontFamily && firm.firmNameFontFamily !== 'Inter') fontsToLoad.add(firm.firmNameFontFamily);
-        if (firm.bioFontFamily && firm.bioFontFamily !== 'Inter') fontsToLoad.add(firm.bioFontFamily);
-
-        if (fontsToLoad.size > 0) {
-            const linkId = 'dynamic-fonts';
-            let link = document.getElementById(linkId) as HTMLLinkElement;
-            if (!link) {
-                link = document.createElement('link');
-                link.id = linkId;
-                link.rel = 'stylesheet';
-                document.head.appendChild(link);
-            }
-            link.href = `https://fonts.googleapis.com/css2?family=${Array.from(fontsToLoad).map(f => `${f.replace(/ /g, '+')}:wght@300;400;600;700;900`).join('&family=')}&display=swap`;
-        }
-    }, [firm?.firmNameFontFamily, firm?.bioFontFamily]);
 
     return (
         <div

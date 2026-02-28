@@ -17,33 +17,8 @@ export default function DealPage({
     const [currentIndex, setCurrentIndex] = useState(0);
 
     const deal = deals.find((d) => d.id === id);
-
-    if (!deal) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-brand-dark text-white">
-                <div className="text-center">
-                    <h2 className="text-2xl font-bold mb-4">Deal Not Found</h2>
-                    <Link href="/" className="text-white hover:underline">Return to Portfolio</Link>
-                </div>
-            </div>
-        );
-    }
-
-    const members = (deal.teamMemberIds || []).map(mId => teamMembers.find(m => m.id === mId)).filter(Boolean);
-    const firm = firms.find(f => f.id === deal.firmId);
-
-    // Prioritize generated video in the gallery
-    const allImages = [
-        ...(deal.generatedVideoURL ? [deal.generatedVideoURL] : []),
-        ...(deal.images && deal.images.length > 0 ? deal.images : [deal.stillImageURL])
-    ].filter(Boolean);
-
-    const themeStyles = {
-        '--firm-bg': firm?.backgroundColor || '#0a0a0a',
-        '--firm-text': firm?.fontColor || '#ffffff',
-        '--firm-primary': firm?.primaryColor || '#ffffff',
-        '--firm-secondary': firm?.accentColor || '#f5f5f5',
-    } as React.CSSProperties;
+    const firm = firms.find(f => f.id === deal?.firmId);
+    const members = (deal?.teamMemberIds || []).map(mId => teamMembers.find(m => m.id === mId)).filter(Boolean);
 
     useEffect(() => {
         if (!firm) return;
@@ -63,6 +38,30 @@ export default function DealPage({
             link.href = `https://fonts.googleapis.com/css2?family=${Array.from(fontsToLoad).map(f => `${f.replace(/ /g, '+')}:wght@300;400;600;700;900`).join('&family=')}&display=swap`;
         }
     }, [firm?.firmNameFontFamily, firm?.bioFontFamily]);
+
+    if (!deal) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-brand-dark text-white">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold mb-4">Deal Not Found</h2>
+                    <Link href="/" className="text-white hover:underline">Return to Portfolio</Link>
+                </div>
+            </div>
+        );
+    }
+
+    // Prioritize generated video in the gallery
+    const allImages = [
+        ...(deal.generatedVideoURL ? [deal.generatedVideoURL] : []),
+        ...(deal.images && deal.images.length > 0 ? deal.images : [deal.stillImageURL])
+    ].filter(Boolean);
+
+    const themeStyles = {
+        '--firm-bg': firm?.backgroundColor || '#0a0a0a',
+        '--firm-text': firm?.fontColor || '#ffffff',
+        '--firm-primary': firm?.primaryColor || '#ffffff',
+        '--firm-secondary': firm?.accentColor || '#f5f5f5',
+    } as React.CSSProperties;
 
     const radiusClass = firm?.borderRadius === 'square' ? 'rounded-none' : 'rounded-[3rem]';
     const subRadiusClass = firm?.borderRadius === 'square' ? 'rounded-none' : 'rounded-2xl';
