@@ -359,6 +359,28 @@ export default function TenantUsersPage() {
                                             {currentUser?.id !== user.id && (
                                                 <>
                                                     <button
+                                                        onClick={async () => {
+                                                            setSavingId(`invite-${user.id}`);
+                                                            try {
+                                                                const invitation = await createInvitation(user.email, user.role as any, firm.id);
+                                                                if (invitation) {
+                                                                    alert(`Invitation sent to ${user.email}`);
+                                                                } else {
+                                                                    alert("Failed to send invitation. Please check API settings.");
+                                                                }
+                                                            } catch (err) {
+                                                                alert("Error sending invitation.");
+                                                            } finally {
+                                                                setSavingId(null);
+                                                            }
+                                                        }}
+                                                        disabled={savingId === `invite-${user.id}`}
+                                                        className={`p-2 transition-colors ${savingId === `invite-${user.id}` ? 'text-brand-gold animate-pulse' : 'text-foreground/20 hover:text-brand-gold'}`}
+                                                        title="Send Invitation Email"
+                                                    >
+                                                        {savingId === `invite-${user.id}` ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} />}
+                                                    </button>
+                                                    <button
                                                         onClick={() => {
                                                             setEditingUser({ ...user });
                                                             setIsEditing(true);
