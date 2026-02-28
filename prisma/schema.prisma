@@ -47,19 +47,36 @@ model Firm {
   deals                   Deal[]
   teamMembers             TeamMember[]
   users                   User[]
+  invitations             Invitation[]
+}
+
+model Invitation {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  role      UserRole @default(USER)
+  firmId    String
+  firm      Firm     @relation(fields: [firmId], references: [id])
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 }
 
 model User {
   id                  String      @id @default(cuid())
+  name                String?
   email               String      @unique
   password            String
   role                UserRole    @default(USER)
+  resetToken          String?     @unique
+  resetTokenExpires   DateTime?
   firmId              String
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
   firm                Firm        @relation(fields: [firmId], references: [id])
   professionalProfile TeamMember?
 }
+
 
 model TeamMember {
   id           String   @id @default(cuid())

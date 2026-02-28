@@ -115,7 +115,7 @@ export default function TenantAdminLayout({
                                             {firm.name}
                                         </span>
                                         <span className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest mt-0.5">
-                                            {currentUser.role === "USER" ? "Standard User" : "Firm Admin"}
+                                            Standard User
                                         </span>
                                     </div>
                                 </Link>
@@ -173,7 +173,7 @@ export default function TenantAdminLayout({
                             </div>
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-xs font-bold text-white truncate">{currentUser.email}</p>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold/60">{currentUser.role === "USER" ? "Standard User" : currentUser.role.replace("_", " ")}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold/60">Standard User</p>
                             </div>
                         </div>
                         <button

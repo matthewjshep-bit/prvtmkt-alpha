@@ -62,6 +62,7 @@ export interface TeamMember {
 // Enhanced User interface for multi‑tenant authentication
 export interface User {
     id: string;
+    name?: string;
     email: string;
     password?: string; // Hashed in production
     firmId?: string; // the firm this user belongs to
@@ -107,7 +108,20 @@ interface Activity {
     firmId?: string;
     dealId?: string;
     userId?: string;
+    memberId?: string;
     performedByEmail?: string;
+}
+
+export interface Invitation {
+    id: string;
+    email: string;
+    token: string;
+    role: "FIRM_ADMIN" | "USER" | "SYSTEM_ADMIN";
+    firmId: string;
+    isUsed: boolean;
+    createdAt: string;
+    expiresAt: string;
+    firm?: Firm;
 }
 
 interface DataContextType {
@@ -135,7 +149,7 @@ interface DataContextType {
     currentUser: User | null;
     isAuthenticated: boolean;
     login: (email: string, password: string) => Promise<User | null>;
-    signup: (userData: Omit<User, 'id'>, firmData: Omit<Firm, 'id'>) => Promise<{ user: User; firm: Firm } | null>;
+    signup: (userData: Partial<User>, firmData: Partial<Firm>, inviteToken?: string) => Promise<{ user: User; firm: Firm } | null>;
     logout: () => void;
 
     activities: Activity[];
@@ -144,6 +158,8 @@ interface DataContextType {
     impersonateUser: (user: User) => void;
     stopImpersonation: () => void;
     isImpersonating: boolean;
+    createInvitation: (email: string, role: "FIRM_ADMIN" | "USER", firmId: string) => Promise<Invitation | null>;
+    getInvitationByToken: (token: string) => Promise<Invitation | null>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -619,46 +635,171 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         return null;
     };
 
-    const signup = async (userData: Omit<User, 'id'>, firmData: Omit<Firm, 'id'>) => {
+    const signup = async (userData: Partial<User>, firmData: Partial<Firm>, inviteToken?: string) => {
         try {
-            // 1. Create Firm
-            const newFirmId = `f-${Date.now()}`;
-            const newFirm: Firm = {
-                ...firmData,
-                id: newFirmId,
-                slug: firmData.slug || firmData.name.toLowerCase().replace(/\s+/g, '-'),
-            };
+            console.log('[DataContext] Initiating signup for:', userData.email);
+            let firmToUse: Firm | undefined;
+            let roleToUse: "FIRM_ADMIN" | "USER" | "SYSTEM_ADMIN" = "FIRM_ADMIN";
 
-            // 2. Create User linked to Firm
-            const newUserId = `u-${Date.now()}`;
-            const newUser: User = {
-                ...userData,
-                id: newUserId,
-                firmId: newFirmId,
-                role: "FIRM_ADMIN" // First user of a firm is an admin
-            };
+            if (inviteToken) {
+                const invite = await getInvitationByToken(inviteToken);
+                if (!invite) throw new Error("Invalid or expired invitation");
 
-            setFirms(prev => [newFirm, ...prev]);
-            setUsers(prev => [newUser, ...prev]);
+                // Prioritize the firm object attached to the invitation
+                firmToUse = invite.firm || firms.find(f => f.id === invite.firmId);
+                roleToUse = invite.role;
+
+                if (!firmToUse) throw new Error("Invitation firm not found in system");
+            }
+
+            if (!firmToUse) {
+                // 1. Create Firm via API
+                const res = await fetch('/api/firms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ...firmData,
+                        slug: firmData.slug || (firmData.name ? firmData.name.toLowerCase().replace(/\s+/g, '-') : `firm-${Date.now()}`)
+                    }),
+                });
+                if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.error || "Failed to create firm");
+                }
+                firmToUse = await res.json();
+                setFirms(prev => [firmToUse!, ...prev]);
+
+                await addActivity({
+                    type: 'FIRM_ADDED',
+                    title: `New firm registered: ${firmToUse!.name}`,
+                    firmId: firmToUse!.id
+                });
+            }
+
+            if (!firmToUse) throw new Error("Could not determine firm");
+
+            // 2. Check if user already exists in DB to avoid 500
+            const existingUser = users.find(u => u.email.toLowerCase() === userData.email?.toLowerCase());
+            if (existingUser) {
+                throw new Error("This email is already registered. Please try logging in.");
+            }
+
+            // 3. Create User linked to Firm via API
+            const userRes = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: userData.name || userData.email?.split('@')[0],
+                    email: userData.email,
+                    password: userData.password,
+                    firmId: firmToUse.id,
+                    role: roleToUse
+                }),
+            });
+            if (!userRes.ok) {
+                const error = await userRes.json();
+                throw new Error(error.error || "Failed to create user account (it may already exist)");
+            }
+            const newUser = await userRes.json();
+
+            // Critical: Double-check we have an ID
+            if (!newUser.id) {
+                console.error("[DataContext] API returned user without ID!", newUser);
+                throw new Error("Created user has no ID");
+            }
+
+            setUsers(prev => {
+                const filtered = prev.filter(u => u.id !== newUser.id);
+                return [newUser, ...filtered];
+            });
+
+            // 4. Mark invitation as used
+            if (inviteToken) {
+                await fetch(`/api/invitations?token=${inviteToken}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ isUsed: true })
+                }).catch(err => console.error("Failed to mark invitation as used:", err));
+            }
+
+            // 5. If standard user, automatically create corresponding TeamMember via API
+            if (newUser.role === "USER") {
+                const memberRes = await fetch('/api/members', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: newUser.name || newUser.email.split('@')[0],
+                        role: "Team Member",
+                        email: newUser.email,
+                        firmId: firmToUse.id,
+                        firmIds: [firmToUse.id],
+                        userId: newUser.id,
+                        bio: "Professional profile currently under development.",
+                        order: 0
+                    }),
+                });
+                if (memberRes.ok) {
+                    const newMember = await memberRes.json();
+                    setTeamMembers(prev => [...prev, newMember]);
+
+                    await addActivity({
+                        type: 'MEMBER_ADDED',
+                        title: `Automatic profile created for: ${newMember.name}`,
+                        firmId: firmToUse.id,
+                        memberId: newMember.id,
+                        userId: newUser.id
+                    });
+                }
+            }
+
+            // 6. Set as current user
             setCurrentUser(newUser);
-
             await storage.setItem('prvtmkt_session', newUser);
 
-            addActivity({
-                type: 'FIRM_ADDED',
-                title: `New firm registered: ${newFirm.name}`,
-                firmId: newFirmId
-            });
-
-            addActivity({
+            // 7. Log User Added activity
+            await addActivity({
                 type: 'USER_ADDED',
-                title: `Admin user created for firm: ${userData.email}`,
-                firmId: newFirmId
+                title: `User account created: ${userData.email}`,
+                firmId: firmToUse.id,
+                userId: newUser.id,
+                performedByEmail: userData.email // Explicitly set to avoid hijacking if admin is logged in
             });
 
-            return { user: newUser, firm: newFirm };
+            console.log('[DataContext] Signup completed successfully for:', newUser.email);
+            return { user: newUser, firm: firmToUse };
+        } catch (error: any) {
+            console.error("[DataContext] Signup failed:", error);
+            throw error; // Rethrow to allow UI to catch it
+        }
+    };
+
+
+    const createInvitation = async (email: string, role: "FIRM_ADMIN" | "USER", firmId: string) => {
+        try {
+            const res = await fetch('/api/invitations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, role, firmId }),
+            });
+            if (res.ok) {
+                return await res.json();
+            }
+            return null;
         } catch (error) {
-            console.error("Signup failed:", error);
+            console.error('Failed to create invitation:', error);
+            return null;
+        }
+    };
+
+    const getInvitationByToken = async (token: string) => {
+        try {
+            const res = await fetch(`/api/invitations?token=${token}`);
+            if (res.ok) {
+                return await res.json();
+            }
+            return null;
+        } catch (error) {
+            console.error('Failed to get invitation:', error);
             return null;
         }
     };
@@ -861,7 +1002,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             isInitialized,
             impersonateUser,
             stopImpersonation,
-            isImpersonating: !!originalAdminId
+            isImpersonating: !!originalAdminId,
+            createInvitation,
+            getInvitationByToken
         }}>
             {children}
         </DataContext.Provider>

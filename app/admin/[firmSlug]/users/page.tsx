@@ -9,12 +9,15 @@ import {
     Shield,
     X,
     Check,
-    Trash2
+    Trash2,
+    Copy,
+    ExternalLink,
+    Loader2
 } from "lucide-react";
 import { useParams as useNextParams } from "next/navigation";
 
 export default function TenantUsersPage() {
-    const { firms, users, teamMembers, currentUser, addUser, deleteUser, updateUser, updateTeamMember } = useData();
+    const { firms, users, teamMembers, currentUser, deleteUser, updateUser, updateTeamMember, createInvitation } = useData();
     const params = useNextParams();
     const firmSlug = params.firmSlug as string;
 
@@ -24,6 +27,9 @@ export default function TenantUsersPage() {
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState<"FIRM_ADMIN" | "USER">("USER");
     const [savingId, setSavingId] = useState<string | null>(null);
+    const [isInviteSent, setIsInviteSent] = useState(false);
+    const [inviteLink, setInviteLink] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     const firm = firms.find(f => f.slug === firmSlug);
     if (!firm) return null;
@@ -33,15 +39,19 @@ export default function TenantUsersPage() {
 
     const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault();
-        const newUser = {
-            id: `u-${Date.now()}`,
-            email: inviteEmail,
-            firmId: firm.id,
-            role: inviteRole as any
-        };
-        await addUser(newUser);
-        setIsInviting(false);
-        setInviteEmail("");
+        setIsLoading(true);
+        try {
+            const invitation = await createInvitation(inviteEmail, inviteRole, firm.id);
+            if (invitation) {
+                const link = `${window.location.origin}/auth/signup?token=${invitation.token}`;
+                setInviteLink(link);
+                setIsInviteSent(true);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -52,11 +62,15 @@ export default function TenantUsersPage() {
                     <p className="mt-2 text-foreground/40 font-medium">Directory of accounts with administrative access to {firm.name}.</p>
                 </div>
                 <button
-                    onClick={() => setIsInviting(true)}
+                    onClick={() => {
+                        setIsInviting(true);
+                        setIsInviteSent(false);
+                        setInviteEmail("");
+                    }}
                     className="flex items-center gap-2 rounded-xl bg-brand-gold px-6 py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/20"
                 >
-                    <UserPlus size={18} />
-                    + Add User
+                    <Mail size={18} />
+                    Invite Member
                 </button>
             </div>
 
@@ -65,45 +79,101 @@ export default function TenantUsersPage() {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-dark/90 backdrop-blur-sm p-4">
                     <div className="w-full max-w-md rounded-3xl border border-white/10 bg-brand-gray-900 p-8 shadow-2xl animate-in zoom-in duration-300">
                         <div className="mb-6 flex items-center justify-between">
-                            <h3 className="text-2xl font-bold text-white">Provision <span className="text-brand-gold">User</span></h3>
-                            <button onClick={() => setIsInviting(false)} className="rounded-full p-2 text-foreground/40 hover:bg-white/5 hover:text-white">
+                            <h3 className="text-2xl font-bold text-white">
+                                {isInviteSent ? "Invite " : "Send "}
+                                <span className="text-brand-gold">{isInviteSent ? "Sent" : "Invite"}</span>
+                            </h3>
+                            <button
+                                onClick={() => {
+                                    setIsInviting(false);
+                                    setIsInviteSent(false);
+                                }}
+                                className="rounded-full p-2 text-foreground/40 hover:bg-white/5 hover:text-white"
+                            >
                                 <X size={20} />
                             </button>
                         </div>
 
-                        <form onSubmit={handleInvite} className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Email Address</label>
-                                <input
-                                    required
-                                    type="email"
-                                    className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white outline-none focus:border-brand-gold/50"
-                                    placeholder="colleague@firm.com"
-                                    value={inviteEmail}
-                                    onChange={(e) => setInviteEmail(e.target.value)}
-                                />
-                            </div>
+                        {!isInviteSent ? (
+                            <form onSubmit={handleInvite} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40">Team Member Email</label>
+                                    <div className="relative group">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/20 group-focus-within:text-brand-gold" size={18} />
+                                        <input
+                                            required
+                                            type="email"
+                                            className="w-full h-14 rounded-xl border border-white/5 bg-brand-dark pl-12 pr-4 text-white outline-none focus:border-brand-gold/50 transition-all font-bold"
+                                            placeholder="alex@company.com"
+                                            value={inviteEmail}
+                                            onChange={(e) => setInviteEmail(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
 
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Access Level</label>
-                                <select
-                                    className="w-full rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white outline-none focus:border-brand-gold/50 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207L10%2012L15%207%22%20stroke%3D%22%23666666%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px_20px] bg-[right_16px_center] bg-no-repeat"
-                                    value={inviteRole}
-                                    onChange={(e) => setInviteRole(e.target.value as any)}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40">Acess Permissions</label>
+                                    <select
+                                        className="w-full h-14 rounded-xl border border-white/5 bg-brand-dark px-4 py-3 text-white outline-none focus:border-brand-gold/50 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207L10%2012L15%207%22%20stroke%3D%22%23666666%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px_20px] bg-[right:16px_center] bg-no-repeat font-bold"
+                                        value={inviteRole}
+                                        onChange={(e) => setInviteRole(e.target.value as any)}
+                                    >
+                                        <option value="USER">Standard User (Profile Only)</option>
+                                        <option value="FIRM_ADMIN">Firm Admin (Full Site)</option>
+                                    </select>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={isLoading || !inviteEmail}
+                                    className="w-full h-14 flex items-center justify-center gap-3 rounded-xl bg-brand-gold text-brand-dark font-black uppercase tracking-widest text-xs transition-all hover:shadow-lg hover:scale-[1.02] disabled:opacity-50"
                                 >
-                                    <option value="USER">Standard User</option>
-                                    <option value="FIRM_ADMIN">Firm Admin</option>
-                                </select>
-                            </div>
+                                    {isLoading ? (
+                                        <Loader2 className="animate-spin" size={18} />
+                                    ) : (
+                                        <>
+                                            <Mail size={18} />
+                                            Send Secure Invite
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        ) : (
+                            <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
+                                <div className="p-6 rounded-2xl bg-brand-gold/5 border border-brand-gold/20 text-center">
+                                    <p className="text-sm font-medium text-white mb-1">Invitation generated for</p>
+                                    <p className="text-lg font-bold text-brand-gold">{inviteEmail}</p>
+                                </div>
 
-                            <button
-                                type="submit"
-                                className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-gold py-4 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/30"
-                            >
-                                <UserPlus size={18} />
-                                Provision Account
-                            </button>
-                        </form>
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 ml-1">Copy Invitation Link</label>
+                                    <div className="flex gap-2">
+                                        <div className="flex-1 h-12 rounded-xl border border-white/5 bg-brand-dark px-4 flex items-center overflow-hidden">
+                                            <span className="text-[10px] font-medium text-foreground/40 truncate">{inviteLink}</span>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(inviteLink);
+                                                alert("Link copied to clipboard!");
+                                            }}
+                                            className="h-12 w-12 flex items-center justify-center rounded-xl bg-white/5 text-white hover:bg-brand-gold hover:text-brand-dark transition-all"
+                                        >
+                                            <Copy size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => {
+                                        setIsInviting(false);
+                                        setIsInviteSent(false);
+                                    }}
+                                    className="w-full h-14 rounded-xl border border-white/10 bg-brand-gray-900 text-white font-black uppercase tracking-widest text-xs hover:bg-white/5 transition-all"
+                                >
+                                    Dismiss and Return
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

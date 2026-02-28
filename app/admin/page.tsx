@@ -22,7 +22,7 @@ import {
 
 export default function AdminDashboard() {
     const data = useData();
-    const { firms, deals, teamMembers, addFirm, activities, deleteUser, updateUser, currentUser, impersonateUser } = data;
+    const { firms, deals, teamMembers, addFirm, activities, addUser, deleteUser, updateUser, currentUser, impersonateUser } = data;
 
     // Access Control: Only SYSTEM_ADMIN can access global admin dashboard
     if (currentUser && currentUser.role !== 'SYSTEM_ADMIN') {

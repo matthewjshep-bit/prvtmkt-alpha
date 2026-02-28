@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useData } from "@/context/DataContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     UserPlus,
@@ -14,22 +15,45 @@ import {
     Mail,
     Lock,
     AtSign,
-    Palette
+    Palette,
+    User
 } from "lucide-react";
 
 export default function SignupPage() {
-    const { signup } = useData();
+    const { signup, getInvitationByToken } = useData();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const token = searchParams.get("token");
     const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
+        fullName: "",
         email: "",
         password: "",
         firmName: "",
         firmSlug: "",
-        primaryColor: "#ffffff"
+        primaryColor: "#000000"
     });
+    const [invitation, setInvitation] = useState<any>(null);
+
+    useEffect(() => {
+        if (token) {
+            getInvitationByToken(token).then(inv => {
+                const invite = inv as any;
+                if (invite && invite.firm) {
+                    setInvitation(invite);
+                    setFormData(prev => ({
+                        ...prev,
+                        email: invite.email,
+                        firmName: invite.firm.name,
+                        firmSlug: invite.firm.slug
+                    }));
+                }
+            });
+        }
+    }, [token]);
 
     const updateFormData = (fields: Partial<typeof formData>) => {
         setFormData(prev => ({ ...prev, ...fields }));
@@ -37,19 +61,27 @@ export default function SignupPage() {
 
     const handleSignup = async () => {
         setIsLoading(true);
+        setError(null);
         try {
             const result = await signup(
-                { email: formData.email, password: formData.password, firmId: "", role: "FIRM_ADMIN" },
-                { name: formData.firmName, slug: formData.firmSlug, primaryColor: formData.primaryColor, logoUrl: "" }
+                { name: formData.fullName, email: formData.email, password: formData.password },
+                { name: formData.firmName, slug: formData.firmSlug, primaryColor: formData.primaryColor },
+                token || undefined
             );
             if (result) {
                 setStep(3);
                 setTimeout(() => {
-                    router.push(`/admin/${result.firm.slug || result.firm.id}`);
+                    const target = result.user.role === 'USER'
+                        ? `/admin/${result.firm.slug}/profile`
+                        : `/admin/${result.firm.slug}/mysite`;
+                    router.push(target);
                 }, 2000);
+            } else {
+                setError("Registration failed. This email might already be registered or the link is invalid.");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            setError(err.message || "An unexpected error occurred during registration.");
         } finally {
             setIsLoading(false);
         }
@@ -60,16 +92,20 @@ export default function SignupPage() {
             <div className="w-full max-w-xl">
                 {/* Progress Bar */}
                 <div className="mb-12 flex items-center justify-between px-2">
-                    {[1, 2, 3].map((s) => (
-                        <div key={s} className="flex flex-1 items-center last:flex-none">
-                            <div className={`flex h-10 w-10 items-center justify-center rounded-xl font-bold transition-all ${step >= s ? "bg-brand-gold text-brand-dark" : "bg-brand-gray-900 text-foreground/20 border border-white/5"}`}>
-                                {step > s ? <CheckCircle2 size={20} /> : s}
+                    {[1, 2, 3].map((s) => {
+                        // Skip Step 2 if invited
+                        if (invitation && s === 2) return null;
+                        return (
+                            <div key={s} className="flex flex-1 items-center last:flex-none">
+                                <div className={`flex h-10 w-10 items-center justify-center rounded-xl font-bold transition-all ${step >= s ? "bg-brand-gold text-brand-dark" : "bg-brand-gray-900 text-foreground/20 border border-white/5"}`}>
+                                    {step > s ? <CheckCircle2 size={20} /> : s}
+                                </div>
+                                {s < 3 && !(invitation && s === 1) && (
+                                    <div className={`h-1 flex-1 mx-4 rounded-full transition-all ${step > s ? "bg-brand-gold" : "bg-brand-gray-900"}`} />
+                                )}
                             </div>
-                            {s < 3 && (
-                                <div className={`h-1 flex-1 mx-4 rounded-full transition-all ${step > s ? "bg-brand-gold" : "bg-brand-gray-900"}`} />
-                            )}
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -82,48 +118,90 @@ export default function SignupPage() {
                             className="space-y-8"
                         >
                             <div className="text-center">
-                                <h1 className="text-4xl font-bold text-white mb-2">Create <span className="text-brand-gold">Account</span></h1>
-                                <p className="text-foreground/40 italic">Create your administrative identity.</p>
+                                <h1 className="text-4xl font-bold text-white mb-2">
+                                    {invitation ? "Join " : "Create "}
+                                    <span className="text-brand-gold">{invitation ? invitation.firm.name : "Account"}</span>
+                                </h1>
+                                <p className="text-foreground/40 italic">
+                                    {invitation
+                                        ? `Accept your invitation to join the team as a ${invitation.role === 'USER' ? 'Standard User' : 'Admin'}.`
+                                        : "Create your administrative identity."}
+                                </p>
                             </div>
 
                             <div className="glass rounded-[2rem] p-10 border border-white/5 shadow-2xl space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40 ml-1">Professional Email</label>
-                                    <div className="relative group">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/20 group-focus-within:text-brand-gold transition-colors" size={18} />
-                                        <input
-                                            required
-                                            type="email"
-                                            className="w-full h-14 rounded-xl border border-white/5 bg-brand-gray-900 pl-12 pr-4 text-white outline-none focus:border-brand-gold/50 transition-all font-bold"
-                                            placeholder="alex@company.com"
-                                            value={formData.email}
-                                            onChange={(e) => updateFormData({ email: e.target.value })}
-                                        />
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 ml-4">Full Identity Name</label>
+                                        <div className="relative group">
+                                            <User className="absolute left-6 top-1/2 -translate-y-1/2 text-foreground/20 group-focus-within:text-brand-gold transition-colors" size={20} />
+                                            <input
+                                                required
+                                                type="text"
+                                                className="w-full h-16 rounded-[1.25rem] border border-white/5 bg-brand-gray-900/50 pl-16 pr-6 text-white outline-none focus:border-brand-gold/50 transition-all font-bold placeholder:text-foreground/10"
+                                                placeholder="Charles Grand Peaks"
+                                                value={formData.fullName}
+                                                onChange={(e) => updateFormData({ fullName: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 ml-4">Professional Email</label>
+                                        <div className="relative group">
+                                            <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-foreground/20 group-focus-within:text-brand-gold transition-colors" size={20} />
+                                            <input
+                                                required
+                                                type="email"
+                                                className="w-full h-16 rounded-[1.25rem] border border-white/5 bg-brand-gray-900/50 pl-16 pr-6 text-white outline-none focus:border-brand-gold/50 transition-all font-bold placeholder:text-foreground/10"
+                                                placeholder="cgp@grandpeaks.com"
+                                                value={formData.email}
+                                                onChange={(e) => updateFormData({ email: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 ml-4">
+                                            {invitation ? "Create Secure Password" : "Secure Password"}
+                                        </label>
+                                        <div className="relative group">
+                                            <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-foreground/20 group-focus-within:text-brand-gold transition-colors" size={20} />
+                                            <input
+                                                required
+                                                type="password"
+                                                className="w-full h-16 rounded-[1.25rem] border border-white/5 bg-brand-gray-900/50 pl-16 pr-6 text-white outline-none focus:border-brand-gold/50 transition-all font-bold placeholder:text-foreground/10"
+                                                placeholder={invitation ? "Define your password..." : "••••••••"}
+                                                value={formData.password}
+                                                onChange={(e) => updateFormData({ password: e.target.value })}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40 ml-1">Secure Password</label>
-                                    <div className="relative group">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/20 group-focus-within:text-brand-gold transition-colors" size={18} />
-                                        <input
-                                            required
-                                            type="password"
-                                            className="w-full h-14 rounded-xl border border-white/5 bg-brand-gray-900 pl-12 pr-4 text-white outline-none focus:border-brand-gold/50 transition-all font-bold"
-                                            placeholder="••••••••"
-                                            value={formData.password}
-                                            onChange={(e) => updateFormData({ password: e.target.value })}
-                                        />
+                                {error && (
+                                    <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest text-center">
+                                        {error}
                                     </div>
-                                </div>
-
+                                )}
                                 <button
-                                    onClick={() => setStep(2)}
-                                    disabled={!formData.email || !formData.password}
+                                    onClick={() => invitation ? handleSignup() : setStep(2)}
+                                    disabled={isLoading || !formData.fullName || !formData.email || !formData.password}
                                     className="w-full h-14 flex items-center justify-center gap-3 rounded-xl bg-brand-gold text-brand-dark font-black uppercase tracking-widest text-xs transition-all hover:shadow-lg hover:scale-[1.02] disabled:opacity-50"
                                 >
-                                    Define Firm Entity
-                                    <ArrowRight size={18} />
+                                    {isLoading ? (
+                                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-dark border-t-transparent" />
+                                    ) : invitation ? (
+                                        <>
+                                            Complete Registration
+                                            <ArrowRight size={18} />
+                                        </>
+                                    ) : (
+                                        <>
+                                            Define Firm Entity
+                                            <ArrowRight size={18} />
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </motion.div>

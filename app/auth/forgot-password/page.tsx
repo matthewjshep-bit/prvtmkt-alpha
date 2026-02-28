@@ -8,17 +8,34 @@ export default function ForgotPasswordPage() {
     const [email, setEmail] = useState("");
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
+        setError(null);
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        try {
+            const res = await fetch('/api/auth/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email.toLowerCase() })
+            });
 
-        setIsSubmitted(true);
-        setIsLoading(false);
+            if (res.ok) {
+                setIsSubmitted(true);
+            } else {
+                const data = await res.json();
+                setError(data.error || "An unexpected error occurred.");
+            }
+        } catch (err: any) {
+            setError("An unexpected network error occurred.");
+        } finally {
+            setIsLoading(false);
+        }
     };
+
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-brand-dark px-6">
@@ -34,7 +51,13 @@ export default function ForgotPasswordPage() {
                 <div className="glass rounded-[2rem] p-8 md:p-10 border border-white/5 shadow-2xl">
                     {!isSubmitted ? (
                         <form onSubmit={handleSubmit} className="space-y-6">
+                            {error && (
+                                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest text-center">
+                                    {error}
+                                </div>
+                            )}
                             <div className="space-y-2">
+
                                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40 ml-1">Registered Email</label>
                                 <div className="relative group">
                                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/20 group-focus-within:text-brand-gold transition-colors" size={18} />
