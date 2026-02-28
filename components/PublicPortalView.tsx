@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect } from "react";
 import DealCard from "@/components/DealCard";
 import { motion, AnimatePresence } from "framer-motion";
-import { Filter, Search, LayoutGrid, Globe, Building2, UserPlus, FilePlus, ArrowLeft, Volume2, VolumeX, ArrowUpRight, Mail, Linkedin, Phone, Briefcase, Award, TrendingUp, Layers, Maximize2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Filter, Search, LayoutGrid, Globe, Building2, UserPlus, FilePlus, ArrowLeft, Volume2, VolumeX, ArrowUpRight, Mail, Linkedin, Phone, Briefcase, Award, TrendingUp, Layers, Maximize2, ChevronLeft, ChevronRight, MapPin, List } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Firm, Deal, TeamMember } from "@/context/DataContext";
 
 const CATEGORIES = ["ALL", "INDUSTRIAL", "RETAIL", "MULTIFAMILY", "SF"];
@@ -37,6 +38,7 @@ export default function PublicPortalView({
     onMemberClick,
     onDealClick
 }: PublicPortalViewProps) {
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState(initialTab || "DEALS");
 
     // Initialize view modes based on firm settings
@@ -119,6 +121,26 @@ export default function PublicPortalView({
     });
 
     // Dynamic Theming
+    useEffect(() => {
+        const fontsToLoad = new Set<string>();
+        if (firm.firmNameFontFamily && firm.firmNameFontFamily !== 'Inter') fontsToLoad.add(firm.firmNameFontFamily);
+        if (firm.bioFontFamily && firm.bioFontFamily !== 'Inter') fontsToLoad.add(firm.bioFontFamily);
+
+        if (fontsToLoad.size > 0) {
+            const fontString = Array.from(fontsToLoad).map(f => f.replace(/ /g, '+')).join('|');
+            const linkId = 'dynamic-fonts';
+            let link = document.getElementById(linkId) as HTMLLinkElement;
+            if (!link) {
+                link = document.createElement('link');
+                link.id = linkId;
+                link.rel = 'stylesheet';
+                document.head.appendChild(link);
+            }
+            // Load weights: 300,400,600,700,900
+            link.href = `https://fonts.googleapis.com/css2?family=${Array.from(fontsToLoad).map(f => `${f.replace(/ /g, '+')}:wght@300;400;600;700;900`).join('&family=')}&display=swap`;
+        }
+    }, [firm.firmNameFontFamily, firm.bioFontFamily]);
+
     const themeStyles = {
         '--firm-bg': firm.backgroundColor || '#0a0a0a',
         '--firm-text': firm.fontColor || '#ffffff',
@@ -152,7 +174,7 @@ export default function PublicPortalView({
     if (!isInitialized) {
         return (
             <div className="flex h-[400px] items-center justify-center">
-                <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand-gold/30 border-t-brand-gold" />
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-[var(--firm-primary)]/30 border-t-[var(--firm-primary)]" />
             </div>
         );
     }
@@ -241,11 +263,11 @@ export default function PublicPortalView({
                             </div>
 
                             {focusedMember.heroMediaUrl && (
-                                <div className={`aspect-[21/9] w-full overflow-hidden border border-black/5 bg-black/5 shadow-2xl relative ${radiusClass}`}>
+                                <div className={`w-full overflow-hidden border border-black/5 bg-black/5 shadow-2xl relative flex items-center justify-center min-h-[300px] md:min-h-[400px] ${radiusClass}`}>
                                     {isVideo(focusedMember.heroMediaUrl) ? (
-                                        <video src={focusedMember.heroMediaUrl} autoPlay loop muted playsInline className="h-full w-full object-cover" />
+                                        <video src={focusedMember.heroMediaUrl} autoPlay loop muted playsInline className="max-w-full max-h-[60vh] object-contain" />
                                     ) : (
-                                        <img src={focusedMember.heroMediaUrl} className="h-full w-full object-cover" alt="" />
+                                        <img src={focusedMember.heroMediaUrl} className="max-w-full max-h-[60vh] object-contain" alt="" />
                                     )}
                                 </div>
                             )}
@@ -272,143 +294,181 @@ export default function PublicPortalView({
                             Back to Portfolio
                         </button>
 
-                        <div
-                            className="mx-auto flex flex-col"
-                            style={{
-                                gap: `${firm.tombstonePadding ?? 48}px`,
-                                maxWidth: firm.tombstoneMaxWidth ? `${firm.tombstoneMaxWidth}px` : '1200px'
-                            }}
-                        >
-                            {(firm.tombstoneLayout || ['INFO', 'METRICS', 'MEDIA', 'NARRATIVE']).map((section) => {
-                                const sectionBg = (firm as any)[`tombstone${section.charAt(0) + section.slice(1).toLowerCase()}BgColor`] || 'var(--firm-secondary)';
+                        <div className="flex flex-col items-center">
+                            <div
+                                className="flex flex-col w-fit max-w-full"
+                                style={{
+                                    gap: `${firm.tombstonePadding ?? 48}px`,
+                                    maxWidth: firm.tombstoneMaxWidth ? `${firm.tombstoneMaxWidth}px` : '1200px'
+                                }}
+                            >
+                                {(firm.tombstoneLayout || ['INFO', 'METRICS', 'MEDIA', 'NARRATIVE']).map((section) => {
+                                    const sectionBg = (firm as any)[`tombstone${section.charAt(0) + section.slice(1).toLowerCase()}BgColor`] || 'var(--firm-secondary)';
 
-                                switch (section) {
-                                    case 'INFO':
-                                        return (
-                                            <div key="INFO" className={`${radiusClass} p-10 md:p-12 shadow-2xl transition-all duration-500`} style={{ backgroundColor: sectionBg }}>
-                                                <div className="grid lg:grid-cols-[1fr_300px] gap-12 items-center">
-                                                    <div className="space-y-6">
-                                                        <span className={`${subRadiusClass} px-4 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-sm inline-block font-inter`} style={{ backgroundColor: 'var(--firm-primary)', color: 'var(--firm-bg)' }}>
-                                                            {focusedDeal.assetType.replace("_", " ")}
-                                                        </span>
-                                                        <h1 className="text-4xl md:text-6xl font-black text-black tracking-tighter leading-none">
-                                                            {focusedDeal.address.split(',')[0]}
-                                                            <small className="block text-xl font-bold opacity-30 mt-4 italic">{focusedDeal.address.split(',').slice(1).join(',')}</small>
-                                                        </h1>
-                                                    </div>
-                                                    <div className="space-y-4">
-                                                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-black/20 text-center lg:text-right">Transaction Leads</p>
-                                                        <div className="flex flex-col gap-3 items-center lg:items-end">
-                                                            {focusedDeal.teamMemberIds?.map(mId => teamMembers.find(m => m.id === mId)).filter(Boolean).map((m: any) => (
-                                                                <div key={m.id} className="flex items-center gap-3">
-                                                                    <span className="text-right">
-                                                                        <p className="text-[10px] font-black uppercase tracking-widest text-black leading-none">{m.name}</p>
-                                                                        <p className="text-[8px] font-bold uppercase tracking-tighter text-black/40 mt-1">{m.role}</p>
-                                                                    </span>
-                                                                    <div className={`h-12 w-12 overflow-hidden ${subRadiusClass} border-2 border-white shadow-lg`}>
-                                                                        <img src={m.imageURL} alt={m.name} className="h-full w-full object-cover" />
-                                                                    </div>
-                                                                </div>
-                                                            ))}
+                                    switch (section) {
+                                        case 'INFO':
+                                            return (
+                                                <div key="INFO" className={`${radiusClass} p-10 md:p-12 shadow-2xl transition-all duration-500 w-full`} style={{ backgroundColor: sectionBg }}>
+                                                    <div className="grid lg:grid-cols-[1fr_300px] gap-12 items-center">
+                                                        <div className="space-y-6">
+                                                            <span className={`${subRadiusClass} px-4 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-sm inline-block font-inter`} style={{ backgroundColor: 'var(--firm-primary)', color: 'var(--firm-bg)' }}>
+                                                                {focusedDeal.assetType.replace("_", " ")}
+                                                            </span>
+                                                            <h1 className="text-4xl md:text-6xl font-black text-black tracking-tighter leading-none">
+                                                                {focusedDeal.address.split(',')[0]}
+                                                                <small className="block text-xl font-bold opacity-30 mt-4 italic">{focusedDeal.address.split(',').slice(1).join(',')}</small>
+                                                            </h1>
+                                                        </div>
+                                                        <div className="space-y-4">
+                                                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-black/20 text-center lg:text-right">Transaction Leads</p>
+                                                            <div className="flex flex-col gap-3 items-center lg:items-end">
+                                                                {focusedDeal.teamMemberIds?.map(mId => teamMembers.find(m => m.id === mId)).filter(Boolean).map((m: any) => (
+                                                                    <button
+                                                                        key={m.id}
+                                                                        onClick={() => {
+                                                                            if (onMemberClick) {
+                                                                                onMemberClick(m.id);
+                                                                            } else {
+                                                                                router.push(`/team/${m.slug || m.id}`);
+                                                                            }
+                                                                        }}
+                                                                        className="flex items-center gap-3 group/lead transition-all hover:opacity-100 cursor-pointer"
+                                                                    >
+                                                                        <span className="text-right">
+                                                                            <p className="text-[10px] font-black uppercase tracking-widest text-black/80 leading-none group-hover/lead:text-black transition-colors">{m.name}</p>
+                                                                            <p className="text-[8px] font-bold uppercase tracking-tighter text-black/40 mt-1">{m.role}</p>
+                                                                        </span>
+                                                                        <div className={`h-12 w-12 overflow-hidden ${subRadiusClass} border-2 border-white shadow-lg transition-all group-hover/lead:border-[var(--firm-primary)]/40`}>
+                                                                            <img src={m.imageURL} alt={m.name} className="h-full w-full object-cover" />
+                                                                        </div>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    case 'METRICS':
-                                        return (
-                                            <div key="METRICS" className={`${radiusClass} p-10 shadow-2xl overflow-hidden transition-all duration-500`} style={{ backgroundColor: sectionBg }}>
-                                                <div className="flex flex-wrap justify-between gap-8 divide-x divide-black/5">
-                                                    {focusedDeal.purchaseAmount && focusedDeal.purchaseAmount > 0 && (
-                                                        <div className="px-4 space-y-1">
-                                                            <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-black/40"><TrendingUp size={10} className="text-[var(--firm-primary)]" />Acquisition</p>
-                                                            <p className="text-2xl font-black text-black">{focusedDeal.isPublic ? formatCurrency(focusedDeal.purchaseAmount || 0) : "Confid."}</p>
-                                                        </div>
-                                                    )}
-                                                    {focusedDeal.rehabAmount && focusedDeal.rehabAmount > 0 && (
-                                                        <div className="px-4 space-y-1 border-l border-black/5">
-                                                            <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-black/40"><Layers size={10} className="text-[var(--firm-primary)]" />CapEx</p>
-                                                            <p className="text-2xl font-black text-black">{formatCurrency(focusedDeal.rehabAmount || 0)}</p>
-                                                        </div>
-                                                    )}
-                                                    {focusedDeal.arv && focusedDeal.arv > 0 && (
-                                                        <div className="px-4 space-y-1 border-l border-black/5">
-                                                            <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-black/40"><Award size={10} className="text-[var(--firm-primary)]" />ARV</p>
-                                                            <p className="text-2xl font-black text-black">{formatCurrency(focusedDeal.arv || 0)}</p>
-                                                        </div>
-                                                    )}
-                                                    <div className="px-4 space-y-1 border-l border-black/5">
-                                                        <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-black/40"><Maximize2 size={10} className="text-[var(--firm-primary)]" />Dimensions</p>
-                                                        <p className="text-2xl font-black text-black">{focusedDeal.sqFt?.toLocaleString()} <span className="text-[10px] opacity-30 font-inter font-bold">SF</span></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    case 'MEDIA':
-                                        return (
-                                            <div key="MEDIA" className={`relative group ${radiusClass} overflow-hidden shadow-2xl border-4 border-white/5 bg-black/5 aspect-video transition-all duration-500`} style={{ backgroundColor: sectionBg }}>
-                                                <AnimatePresence mode="wait">
-                                                    <motion.div key={dealMediaIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full w-full">
-                                                        {allDealImages.length > 0 && (
-                                                            isVideo(allDealImages[dealMediaIndex]) ? (
-                                                                <video src={allDealImages[dealMediaIndex]} autoPlay muted loop playsInline className="h-full w-full object-cover" />
-                                                            ) : (
-                                                                <img src={allDealImages[dealMediaIndex]} className="h-full w-full object-cover" alt="" />
-                                                            )
+                                            );
+                                        case 'METRICS':
+                                            return (
+                                                <div key="METRICS" className={`${radiusClass} p-10 shadow-2xl overflow-hidden transition-all duration-500 w-full`} style={{ backgroundColor: sectionBg }}>
+                                                    <div className="flex flex-wrap justify-between gap-8 divide-x divide-black/5">
+                                                        {focusedDeal.purchaseAmount && focusedDeal.purchaseAmount > 0 && (
+                                                            <div className="px-4 space-y-1">
+                                                                <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-black/40"><TrendingUp size={10} className="text-[var(--firm-primary)]" />Acquisition</p>
+                                                                <p className="text-2xl font-black text-black">{focusedDeal.isPublic ? formatCurrency(focusedDeal.purchaseAmount || 0) : "Confid."}</p>
+                                                            </div>
                                                         )}
-                                                    </motion.div>
-                                                </AnimatePresence>
-                                                {allDealImages.length > 1 && (
-                                                    <>
-                                                        <button onClick={() => setDealMediaIndex(prev => (prev - 1 + allDealImages.length) % allDealImages.length)} className="absolute left-4 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/20 backdrop-blur-md border border-white/10 flex items-center justify-center text-white transition-all hover:bg-black/40"><ChevronLeft size={16} /></button>
-                                                        <button onClick={() => setDealMediaIndex(prev => (prev + 1) % allDealImages.length)} className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/20 backdrop-blur-md border border-white/10 flex items-center justify-center text-white transition-all hover:bg-black/40"><ChevronRight size={16} /></button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        );
-                                    case 'NARRATIVE':
-                                        return (
-                                            <div key="NARRATIVE" className={`${radiusClass} p-12 shadow-2xl transition-all duration-500`} style={{ backgroundColor: sectionBg }}>
-                                                <div className="max-w-4xl mx-auto text-center space-y-8">
-                                                    <h3 className="text-[9px] font-black uppercase tracking-[0.5em] text-[var(--firm-primary)]">Narrative</h3>
-                                                    <div
-                                                        className="text-2xl font-black leading-relaxed text-black/80 tracking-tight prose max-w-none font-inter"
-                                                        dangerouslySetInnerHTML={{
-                                                            __html: (focusedDeal.investmentOverview || focusedDeal.context || "Institutional transaction.").replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-                                                        }}
-                                                    />
+                                                        {focusedDeal.rehabAmount && focusedDeal.rehabAmount > 0 && (
+                                                            <div className="px-4 space-y-1 border-l border-black/5">
+                                                                <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-black/40"><Layers size={10} className="text-[var(--firm-primary)]" />CapEx</p>
+                                                                <p className="text-2xl font-black text-black">{formatCurrency(focusedDeal.rehabAmount || 0)}</p>
+                                                            </div>
+                                                        )}
+                                                        {focusedDeal.arv && focusedDeal.arv > 0 && (
+                                                            <div className="px-4 space-y-1 border-l border-black/5">
+                                                                <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-black/40"><Award size={10} className="text-[var(--firm-primary)]" />ARV</p>
+                                                                <p className="text-2xl font-black text-black">{formatCurrency(focusedDeal.arv || 0)}</p>
+                                                            </div>
+                                                        )}
+                                                        <div className="px-4 space-y-1 border-l border-black/5">
+                                                            <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-black/40"><Maximize2 size={10} className="text-[var(--firm-primary)]" />Dimensions</p>
+                                                            <p className="text-2xl font-black text-black">{focusedDeal.sqFt?.toLocaleString()} <span className="text-[10px] opacity-30 font-inter font-bold">SF</span></p>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    default: return null;
-                                }
-                            })}
+                                            );
+                                        case 'MEDIA':
+                                            return (
+                                                <div key="MEDIA" className="w-full flex flex-col items-center">
+                                                    <div className={`relative group ${radiusClass} overflow-hidden shadow-2xl border-4 border-white/5 bg-black/5 w-fit transition-all duration-500`} style={{ backgroundColor: sectionBg }}>
+                                                        <AnimatePresence mode="wait">
+                                                            <motion.div key={dealMediaIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center justify-center">
+                                                                {allDealImages.length > 0 && (
+                                                                    isVideo(allDealImages[dealMediaIndex]) ? (
+                                                                        <video src={allDealImages[dealMediaIndex]} autoPlay muted loop playsInline className="max-h-[75vh] w-auto h-auto min-w-[300px] block" />
+                                                                    ) : (
+                                                                        <img src={allDealImages[dealMediaIndex]} className="max-h-[75vh] w-auto h-auto min-w-[300px] block" alt="" />
+                                                                    )
+                                                                )}
+                                                            </motion.div>
+                                                        </AnimatePresence>
+                                                        {allDealImages.length > 1 && (
+                                                            <>
+                                                                <button onClick={() => setDealMediaIndex(prev => (prev - 1 + allDealImages.length) % allDealImages.length)} className="absolute left-4 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/20 backdrop-blur-md border border-white/10 flex items-center justify-center text-white transition-all hover:bg-black/40"><ChevronLeft size={16} /></button>
+                                                                <button onClick={() => setDealMediaIndex(prev => (prev + 1) % allDealImages.length)} className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/20 backdrop-blur-md border border-white/10 flex items-center justify-center text-white transition-all hover:bg-black/40"><ChevronRight size={16} /></button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        case 'NARRATIVE':
+                                            return (
+                                                <div key="NARRATIVE" className={`${radiusClass} p-12 shadow-2xl transition-all duration-500 w-full`} style={{ backgroundColor: sectionBg }}>
+                                                    <div className="max-w-4xl mx-auto text-center space-y-8">
+                                                        <h3 className="text-[9px] font-black uppercase tracking-[0.5em] text-black/30">Narrative</h3>
+                                                        <div
+                                                            className="text-2xl font-black leading-relaxed text-black/80 tracking-tight prose max-w-none font-inter"
+                                                            dangerouslySetInnerHTML={{
+                                                                __html: (focusedDeal.investmentOverview || focusedDeal.context || "Institutional transaction.").replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        default: return null;
+                                    }
+                                })}
+                            </div>
                         </div>
                     </div>
                 ) : (
                     <>
                         {/* GALLERY VIEW: Firm Info */}
                         <div className={`mb-8 p-10 md:p-14 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-10 ${radiusClass}`} style={{ backgroundColor: 'var(--firm-secondary)' }}>
-                            <div className="flex flex-col lg:flex-row items-center gap-12">
+                            <div className="flex flex-col lg:flex-row items-center gap-12 flex-1">
                                 <div className="h-32 w-80 flex-shrink-0 flex items-center justify-center relative overflow-hidden">
                                     {firm.logoUrl && (
                                         <img src={firm.logoUrl} className="max-h-full max-w-full object-contain" style={{ transform: `scale(${(firm.logoScale || 100) / 100})` }} />
                                     )}
                                 </div>
-                                <div className="text-center lg:text-left">
+                                <div className="text-center lg:text-left flex-1">
                                     <h1 className="mb-4 tracking-tight" style={{ fontFamily: 'var(--firm-name-font)', fontWeight: 'var(--firm-name-weight)', fontSize: 'var(--firm-name-size)', color: 'var(--firm-name-color)' }}>{firm.name}</h1>
                                     <div className="font-bold opacity-40 leading-relaxed max-w-2xl prose prose-invert" style={{ color: 'var(--firm-bio-color)', fontFamily: 'var(--firm-bio-font)', fontSize: 'var(--firm-bio-size)' }} dangerouslySetInnerHTML={{ __html: firm.bio || "" }} />
                                 </div>
                             </div>
+
+                            {/* Connectivity Section */}
+                            {(firm.linkedInUrl || firm.googleReviewsUrl || firm.googleMapsUrl) && (
+                                <div className="flex flex-col gap-3 min-w-[200px]">
+                                    {firm.linkedInUrl && (
+                                        <a href={firm.linkedInUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-3 px-6 py-4 bg-white/5 border border-white/10 ${subRadiusClass} hover:bg-white/10 transition-all group`}>
+                                            <Linkedin size={20} className="text-[var(--firm-primary)] opacity-60 group-hover:opacity-100" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest opacity-40 group-hover:opacity-100">LinkedIn</span>
+                                        </a>
+                                    )}
+                                    {firm.googleReviewsUrl && (
+                                        <a href={firm.googleReviewsUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-3 px-6 py-4 bg-white/5 border border-white/10 ${subRadiusClass} hover:bg-white/10 transition-all group`}>
+                                            <Globe size={20} className="text-[var(--firm-primary)] opacity-60 group-hover:opacity-100" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest opacity-40 group-hover:opacity-100">Reviews</span>
+                                        </a>
+                                    )}
+                                    {firm.googleMapsUrl && (
+                                        <a href={firm.googleMapsUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-3 px-6 py-4 bg-white/5 border border-white/10 ${subRadiusClass} hover:bg-white/10 transition-all group`}>
+                                            <MapPin size={20} className="text-[var(--firm-primary)] opacity-60 group-hover:opacity-100" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest opacity-40 group-hover:opacity-100">Location</span>
+                                        </a>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* GALLERY VIEW: Hero Media Section */}
                         {firm.heroMediaUrl && (
-                            <div className={`mb-16 overflow-hidden shadow-2xl relative aspect-[21/9] ${radiusClass}`} style={{ backgroundColor: 'var(--firm-secondary)' }}>
+                            <div className={`mb-16 overflow-hidden shadow-2xl relative flex items-center justify-center min-h-[300px] md:min-h-[400px] ${radiusClass}`} style={{ backgroundColor: 'var(--firm-secondary)' }}>
                                 {isVideo(firm.heroMediaUrl) ? (
-                                    <video src={firm.heroMediaUrl} autoPlay loop muted playsInline className="h-full w-full object-cover" />
+                                    <video src={firm.heroMediaUrl} autoPlay loop muted playsInline className="max-w-full max-h-[70vh] object-contain" />
                                 ) : (
-                                    <img src={firm.heroMediaUrl} className="h-full w-full object-cover" alt="Firm Hero Banner" />
+                                    <img src={firm.heroMediaUrl} className="max-w-full max-h-[70vh] object-contain" alt="Firm Hero Banner" />
                                 )}
                             </div>
                         )}
@@ -419,9 +479,33 @@ export default function PublicPortalView({
                                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-black/30" size={20} />
                                 <input type="text" placeholder="Search..." className={`h-16 w-full bg-white/50 border border-black/5 pl-14 pr-6 text-lg font-bold text-black outline-none ${subRadiusClass}`} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                             </div>
-                            <div className={`flex h-16 items-center bg-white/50 p-2 border border-black/5 ${subRadiusClass}`}>
-                                <button onClick={() => setActiveTab("DEALS")} className={`flex h-full items-center gap-3 px-12 text-xs font-black uppercase tracking-widest transition-all ${subRadiusClass} ${activeTab === "DEALS" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}><LayoutGrid size={20} />Portfolio</button>
-                                <button onClick={() => setActiveTab("PEOPLE")} className={`flex h-full items-center gap-3 px-12 text-xs font-black uppercase tracking-widest transition-all ${subRadiusClass} ${activeTab === "PEOPLE" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}><Globe size={20} />Team</button>
+                            <div className="flex items-center gap-4">
+                                {(firm.viewLayoutMode === 'BOTH' || !firm.viewLayoutMode) && (
+                                    <div className={`flex h-16 items-center bg-white/50 p-2 border border-black/5 ${subRadiusClass}`}>
+                                        <button
+                                            onClick={() => {
+                                                if (activeTab === 'DEALS') setViewMode("GRID");
+                                                else setTeamViewMode("GRID");
+                                            }}
+                                            className={`flex h-full items-center justify-center w-12 transition-all ${subRadiusClass} ${(activeTab === 'DEALS' ? viewMode === 'GRID' : teamViewMode === 'GRID') ? "bg-white text-black shadow-lg" : "text-black/30 hover:text-black"}`}
+                                        >
+                                            <LayoutGrid size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                if (activeTab === 'DEALS') setViewMode("LIST");
+                                                else setTeamViewMode("LIST");
+                                            }}
+                                            className={`flex h-full items-center justify-center w-12 transition-all ${subRadiusClass} ${(activeTab === 'DEALS' ? viewMode === 'LIST' : teamViewMode === 'LIST') ? "bg-white text-black shadow-lg" : "text-black/30 hover:text-black"}`}
+                                        >
+                                            <List size={18} />
+                                        </button>
+                                    </div>
+                                )}
+                                <div className={`flex h-16 items-center bg-white/50 p-2 border border-black/5 ${subRadiusClass}`}>
+                                    <button onClick={() => setActiveTab("DEALS")} className={`flex h-full items-center gap-3 px-12 text-xs font-black uppercase tracking-widest transition-all ${subRadiusClass} ${activeTab === "DEALS" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}>Portfolio</button>
+                                    <button onClick={() => setActiveTab("PEOPLE")} className={`flex h-full items-center gap-3 px-12 text-xs font-black uppercase tracking-widest transition-all ${subRadiusClass} ${activeTab === "PEOPLE" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}>Team</button>
+                                </div>
                             </div>
                         </div>
 
@@ -436,31 +520,44 @@ export default function PublicPortalView({
 
                                 <motion.div layout className={viewMode === "GRID" ? "grid gap-12 sm:grid-cols-2" : "flex flex-col gap-10"}>
                                     <AnimatePresence mode="popLayout">
-                                        {filteredDeals.map((deal, index) => (
-                                            <div key={deal.id} className={`transition-all duration-500 ${focusedDealId === deal.id ? 'ring-4 ring-brand-gold ring-offset-4 ring-offset-[var(--firm-bg)] ' + radiusClass : ''}`} style={{ boxShadow: 'var(--card-shadow)' }}>
-                                                <DealCard deal={deal} index={index} isListView={viewMode === "LIST"} firm={firm} isPreview={isPreview} onMemberClick={onMemberClick} onDealClick={onDealClick} />
-                                            </div>
-                                        ))}
+                                        {filteredDeals.map((deal, index) => {
+                                            const isReversed = viewMode === "LIST" && firm.portfolioListStyle === 'ALTERNATING' && index % 2 !== 0;
+                                            return (
+                                                <div key={deal.id} className={`transition-all duration-500 overflow-hidden ${radiusClass} ${focusedDealId === deal.id ? 'ring-4 ring-[var(--firm-primary)] ring-offset-4 ring-offset-[var(--firm-bg)]' : ''}`} style={{ boxShadow: 'var(--card-shadow)' }}>
+                                                    <DealCard deal={deal} index={index} isListView={viewMode === "LIST"} firm={firm} isPreview={isPreview} onMemberClick={onMemberClick} onDealClick={onDealClick} isReversed={isReversed} />
+                                                </div>
+                                            );
+                                        })}
                                     </AnimatePresence>
                                 </motion.div>
                             </div>
                         ) : (
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={teamViewMode === "GRID" ? "grid gap-10 sm:grid-cols-2 lg:grid-cols-3" : "flex flex-col gap-8"}>
-                                {firmTeamMembers.map((member, index) => (
-                                    <div key={member.id} id={`member-${member.id}`} className={`transition-all duration-500 ${focusedMemberId === member.id ? 'ring-4 ring-brand-gold ring-offset-8 ring-offset-[var(--firm-bg)] ' + radiusClass : ''}`} style={{ boxShadow: 'var(--card-shadow)', borderRadius: firm.borderRadius === 'square' ? '0' : '2.5rem' }}>
-                                        <div onClick={(e) => { if (isPreview) { e.preventDefault(); onMemberClick?.(member.id); } }} className="cursor-pointer h-full">
-                                            <Link href={isPreview ? "#" : `/team/${member.slug}`} className={`group overflow-hidden border border-black/5 p-6 flex ${radiusClass} ${teamViewMode === "GRID" ? "flex-col" : "flex-row items-center gap-6"}`} style={{ backgroundColor: 'var(--member-card-bg)' }}>
-                                                <div className={`overflow-hidden shadow-md border-4 border-white ${cardRadiusClass} ${teamViewMode === "GRID" ? "aspect-[4/5] w-full mb-6" : "h-40 w-40 shrink-0"}`}>
-                                                    <img src={member.imageURL} alt={member.name} className="h-full w-full object-cover transition-transform group-hover:scale-110" />
-                                                </div>
-                                                <div className="space-y-3 px-2 flex-1">
-                                                    <h3 className="text-3xl font-black leading-none" style={{ color: 'var(--firm-text)' }}>{member.name}</h3>
-                                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40" style={{ color: 'var(--firm-text)' }}>{member.role}</p>
-                                                </div>
-                                            </Link>
+                                {firmTeamMembers.map((member, index) => {
+                                    const isReversed = teamViewMode === "LIST" && firm.teamListStyle === 'ALTERNATING' && index % 2 !== 0;
+                                    return (
+                                        <div key={member.id} id={`member-${member.id}`} className={`transition-all duration-500 overflow-hidden ${radiusClass} ${focusedMemberId === member.id ? 'ring-4 ring-[var(--firm-primary)] ring-offset-8 ring-offset-[var(--firm-bg)]' : ''}`} style={{ boxShadow: 'var(--card-shadow)' }}>
+                                            <div onClick={(e) => { if (isPreview) { e.preventDefault(); onMemberClick?.(member.id); } }} className="cursor-pointer h-full">
+                                                <Link
+                                                    href={isPreview ? "#" : `/team/${member.slug}`}
+                                                    className={`group overflow-hidden border border-black/5 p-6 flex ${radiusClass} ${teamViewMode === "GRID" ? "flex-col" : `flex-row items-center ${isReversed ? 'flex-row-reverse text-right' : ''}`}`}
+                                                    style={{
+                                                        backgroundColor: 'var(--member-card-bg)',
+                                                        gap: 'var(--member-photo-spacing)'
+                                                    }}
+                                                >
+                                                    <div className={`overflow-hidden shadow-md border-4 border-white shrink-0 ${cardRadiusClass} ${teamViewMode === "GRID" ? "aspect-[4/5] w-full mb-6" : "h-40 w-40"}`}>
+                                                        <img src={member.imageURL} alt={member.name} className="h-full w-full object-cover transition-transform group-hover:scale-110" />
+                                                    </div>
+                                                    <div className="space-y-3 px-2 flex-1">
+                                                        <h3 className="text-3xl font-black leading-none" style={{ color: 'var(--firm-text)' }}>{member.name}</h3>
+                                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40" style={{ color: 'var(--firm-text)' }}>{member.role}</p>
+                                                    </div>
+                                                </Link>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </motion.div>
                         )}
                     </>

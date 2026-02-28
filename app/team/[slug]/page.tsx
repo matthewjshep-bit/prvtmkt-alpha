@@ -3,7 +3,7 @@
 import { use } from "react";
 import { useData } from "@/context/DataContext";
 import DealCard from "@/components/DealCard";
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Mail, Briefcase, Award, Building2, ChevronLeft, Linkedin, Phone, LayoutGrid, List, Search, Globe, Tag, MapPin, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -45,21 +45,33 @@ export default function TeamMemberPage({
         return hasVideoExtension || isVideoDataUrl || (url.startsWith('data:') && !lowerUrl.includes('image/'));
     };
 
-    if (!isInitialized) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-brand-dark">
-                <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand-gold/30 border-t-brand-gold" />
-            </div>
-        );
-    }
-
-    // Improved lookup: try slug first, then ID
+    // Look up member
     const member = teamMembers.find((m) => m.slug === slug) || teamMembers.find((m) => m.id === slug);
+    const memberDeals = member ? deals.filter((d) => (d.teamMemberIds || []).includes(member.id)) : [];
+    const firm = member ? firms.find(f => (member.firmIds || []).includes(f.id)) : undefined;
 
+    // Hook definitions (must be top-level)
+    const availableAssetTypes = useMemo(() => {
+        if (!member) return [];
+        const types = new Set(memberDeals.map(d => d.assetType));
+        return Array.from(types).sort();
+    }, [member, memberDeals]);
+
+    const filteredDeals = useMemo(() => {
+        if (!member) return [];
+        return memberDeals.filter(deal => {
+            const matchesFilter = activeFilter === "ALL" || deal.assetType === activeFilter;
+            const matchesSearch = deal.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                deal.assetType.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesFilter && matchesSearch;
+        });
+    }, [member, memberDeals, activeFilter, searchQuery]);
+
+    // Early returns after all hooks
     if (!isInitialized) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-brand-dark">
-                <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand-gold/30 border-t-brand-gold" />
+            <div className="flex min-h-screen items-center justify-center bg-[var(--firm-bg)]">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-[var(--firm-primary)]/30 border-t-[var(--firm-primary)]" />
             </div>
         );
     }
@@ -70,7 +82,7 @@ export default function TeamMemberPage({
                 <div className="text-center">
                     <h1 className="text-4xl font-bold text-white mb-4">Profile Not Found</h1>
                     <p className="text-foreground/50 mb-8">The professional profile you're looking for doesn't exist or has been moved.</p>
-                    <Link href="/" className="inline-flex items-center gap-2 rounded-xl bg-brand-gold px-6 py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/20">
+                    <Link href="/" className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all hover:shadow-lg" style={{ backgroundColor: 'var(--firm-primary)', color: 'var(--firm-bg)' }}>
                         <ChevronLeft size={18} />
                         Return to Team
                     </Link>
@@ -79,24 +91,6 @@ export default function TeamMemberPage({
         );
     }
 
-    const memberDeals = deals.filter((d) => (d.teamMemberIds || []).includes(member.id));
-    const firm = firms.find(f => (member.firmIds || []).includes(f.id)); // Use first associated firm for branding
-
-    // Smart Filtering Logic
-    const availableAssetTypes = useMemo(() => {
-        const types = new Set(memberDeals.map(d => d.assetType));
-        return Array.from(types).sort();
-    }, [memberDeals]);
-
-    const filteredDeals = useMemo(() => {
-        return memberDeals.filter(deal => {
-            const matchesFilter = activeFilter === "ALL" || deal.assetType === activeFilter;
-            const matchesSearch = deal.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                deal.assetType.toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesFilter && matchesSearch;
-        });
-    }, [memberDeals, activeFilter, searchQuery]);
-
     // Dynamic Theming Inheritance
     const themeStyles = {
         '--firm-bg': firm?.backgroundColor || '#0a0a0a',
@@ -104,6 +98,25 @@ export default function TeamMemberPage({
         '--firm-primary': firm?.primaryColor || '#ffffff',
         '--firm-secondary': firm?.accentColor || '#f5f5f5',
     } as React.CSSProperties;
+
+    useEffect(() => {
+        if (!firm) return;
+        const fontsToLoad = new Set<string>();
+        if (firm.firmNameFontFamily && firm.firmNameFontFamily !== 'Inter') fontsToLoad.add(firm.firmNameFontFamily);
+        if (firm.bioFontFamily && firm.bioFontFamily !== 'Inter') fontsToLoad.add(firm.bioFontFamily);
+
+        if (fontsToLoad.size > 0) {
+            const linkId = 'dynamic-fonts';
+            let link = document.getElementById(linkId) as HTMLLinkElement;
+            if (!link) {
+                link = document.createElement('link');
+                link.id = linkId;
+                link.rel = 'stylesheet';
+                document.head.appendChild(link);
+            }
+            link.href = `https://fonts.googleapis.com/css2?family=${Array.from(fontsToLoad).map(f => `${f.replace(/ /g, '+')}:wght@300;400;600;700;900`).join('&family=')}&display=swap`;
+        }
+    }, [firm?.firmNameFontFamily, firm?.bioFontFamily]);
 
     return (
         <div
@@ -200,7 +213,7 @@ export default function TeamMemberPage({
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <Volume2 size={16} className="text-brand-gold" />
+                                                        <Volume2 size={16} style={{ color: 'var(--firm-primary)' }} />
                                                         Sound On
                                                     </>
                                                 )}
@@ -275,7 +288,7 @@ export default function TeamMemberPage({
                     <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
                         <div className="space-y-4">
                             <h2 className="text-4xl font-black tracking-tight text-white uppercase">
-                                Track <span className="text-brand-gold">Record</span>
+                                Track <span style={{ color: 'var(--firm-primary)' }}>Record</span>
                             </h2>
                             <p className="max-w-md text-sm font-medium leading-relaxed text-white/40">
                                 Exclusive digital tombstones representing verified execution and high-performance asset management by this professional.
@@ -285,13 +298,13 @@ export default function TeamMemberPage({
                         {/* Search & Toggle Group */}
                         <div className="flex flex-wrap items-center gap-4">
                             <div className="relative group">
-                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 transition-colors group-focus-within:text-brand-gold" size={18} />
+                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 transition-colors group-focus-within:text-[var(--firm-primary)]" size={18} />
                                 <input
                                     type="text"
                                     placeholder="Search track record..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="h-14 w-full rounded-2xl border border-white/5 bg-white/5 pl-14 pr-6 text-sm font-bold text-white outline-none transition-all focus:border-brand-gold/50 focus:bg-white/10 md:w-80"
+                                    className="h-14 w-full rounded-2xl border border-white/5 bg-white/5 pl-14 pr-6 text-sm font-bold text-white outline-none transition-all focus:border-[var(--firm-primary)]/50 focus:bg-white/10 md:w-80"
                                 />
                             </div>
 
@@ -299,14 +312,16 @@ export default function TeamMemberPage({
                             <div className="flex h-14 items-center gap-1 rounded-2xl border border-white/5 bg-white/5 p-1.5 backdrop-blur-xl">
                                 <button
                                     onClick={() => setViewMode("GRID")}
-                                    className={`flex h-full items-center gap-2 rounded-xl px-5 transition-all ${viewMode === "GRID" ? "bg-brand-gold text-black shadow-lg" : "text-white/40 hover:bg-white/5"}`}
+                                    className={`flex h-full items-center gap-2 rounded-xl px-5 transition-all ${viewMode === "GRID" ? "shadow-lg" : "text-white/40 hover:bg-white/5"}`}
+                                    style={viewMode === "GRID" ? { backgroundColor: 'var(--firm-primary)', color: 'var(--firm-bg)' } : {}}
                                 >
                                     <LayoutGrid size={16} />
                                     <span className="text-[10px] font-black uppercase tracking-widest">Grid</span>
                                 </button>
                                 <button
                                     onClick={() => setViewMode("LIST")}
-                                    className={`flex h-full items-center gap-2 rounded-xl px-5 transition-all ${viewMode === "LIST" ? "bg-brand-gold text-black shadow-lg" : "text-white/40 hover:bg-white/5"}`}
+                                    className={`flex h-full items-center gap-2 rounded-xl px-5 transition-all ${viewMode === "LIST" ? "shadow-lg" : "text-white/40 hover:bg-white/5"}`}
+                                    style={viewMode === "LIST" ? { backgroundColor: 'var(--firm-primary)', color: 'var(--firm-bg)' } : {}}
                                 >
                                     <List size={16} />
                                     <span className="text-[10px] font-black uppercase tracking-widest">List</span>
@@ -318,13 +333,14 @@ export default function TeamMemberPage({
                     {/* 2. Asset Type Filter Bar (Smart Pruning) */}
                     <div className="flex flex-wrap items-center gap-3 border-y border-white/5 py-8">
                         <div className="flex items-center gap-2 pr-6 border-r border-white/5 mr-3">
-                            <Tag size={14} className="text-brand-gold" />
+                            <Tag size={14} style={{ color: 'var(--firm-primary)' }} />
                             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Filter</span>
                         </div>
 
                         <button
                             onClick={() => setActiveFilter("ALL")}
-                            className={`rounded-xl px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${activeFilter === "ALL" ? "border-brand-gold bg-brand-gold text-black shadow-lg shadow-brand-gold/20" : "border-white/5 bg-white/5 text-white/40 hover:border-white/20 hover:bg-white/10"}`}
+                            className={`rounded-xl px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${activeFilter === "ALL" ? "shadow-lg" : "border-white/5 bg-white/5 text-white/40 hover:border-white/20 hover:bg-white/10"}`}
+                            style={activeFilter === "ALL" ? { border: '1px solid var(--firm-primary)', backgroundColor: 'var(--firm-primary)', color: 'var(--firm-bg)' } : {}}
                         >
                             All Assets
                         </button>
@@ -333,7 +349,8 @@ export default function TeamMemberPage({
                             <button
                                 key={type}
                                 onClick={() => setActiveFilter(type)}
-                                className={`rounded-xl px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${activeFilter === type ? "border-brand-gold bg-brand-gold text-black shadow-lg shadow-brand-gold/20" : "border-white/5 bg-white/5 text-white/40 hover:border-white/20 hover:bg-white/10"}`}
+                                className={`rounded-xl px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${activeFilter === type ? "shadow-lg" : "border-white/5 bg-white/5 text-white/40 hover:border-white/20 hover:bg-white/10"}`}
+                                style={activeFilter === type ? { border: '1px solid var(--firm-primary)', backgroundColor: 'var(--firm-primary)', color: 'var(--firm-bg)' } : {}}
                             >
                                 {type.replace("_", " ")}
                             </button>
@@ -362,7 +379,8 @@ export default function TeamMemberPage({
                                 <p className="mt-2 text-sm font-medium text-white/30">Adjust your filters or search to view track record.</p>
                                 <button
                                     onClick={() => { setActiveFilter("ALL"); setSearchQuery(""); }}
-                                    className="mt-8 text-[10px] font-black uppercase tracking-[0.2em] text-brand-gold hover:underline"
+                                    className="mt-8 text-[10px] font-black uppercase tracking-[0.2em] hover:underline"
+                                    style={{ color: 'var(--firm-primary)' }}
                                 >
                                     Reset all filters
                                 </button>

@@ -89,13 +89,13 @@ export default function DealCard({
                         muted
                         loop
                         playsInline
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-110"
                     />
                 ) : deal.stillImageURL ? (
                     <img
                         src={deal.stillImageURL}
                         alt={deal.address}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-110"
                     />
                 ) : (
                     <div className="h-full w-full bg-brand-gray-800" />
@@ -159,7 +159,7 @@ export default function DealCard({
                             {members.length > 0 ? (
                                 <Link
                                     href={isPreview ? "#" : `/team/${members[0]?.slug || members[0]?.id}`}
-                                    className={`flex items-center gap-3 transition-all hover:opacity-70 z-30 ${isReversed ? 'flex-row-reverse text-right' : ''}`}
+                                    className={`relative z-30 flex items-center gap-3 transition-all hover:opacity-70 ${isReversed ? 'flex-row-reverse text-right' : ''}`}
                                     onClick={(e) => {
                                         if (isPreview) {
                                             e.preventDefault();

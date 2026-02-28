@@ -1111,9 +1111,12 @@ export default function MySiteOverhaul() {
                                                 >
                                                     <option value="Inter">Inter</option>
                                                     <option value="Roboto">Roboto</option>
+                                                    <option value="Montserrat">Montserrat</option>
+                                                    <option value="Poppins">Poppins</option>
                                                     <option value="Outfit">Outfit</option>
                                                     <option value="Playfair Display">Playfair</option>
                                                     <option value="Space Grotesk">Space Grotesk</option>
+                                                    <option value="Lora">Lora</option>
                                                 </select>
                                                 <select
                                                     className="h-9 rounded-lg bg-brand-dark border border-white/5 px-2 text-[9px] font-bold text-white outline-none"
@@ -1174,8 +1177,12 @@ export default function MySiteOverhaul() {
                                             >
                                                 <option value="Inter">Inter</option>
                                                 <option value="Roboto">Roboto</option>
-                                                <option value="Georgia">Georgia</option>
+                                                <option value="Open Sans">Open Sans</option>
+                                                <option value="Montserrat">Montserrat</option>
+                                                <option value="Lora">Lora</option>
                                                 <option value="Merriweather">Merriweather</option>
+                                                <option value="Crimson Text">Crimson Text</option>
+                                                <option value="Georgia">Georgia</option>
                                             </select>
                                             <div className="space-y-2">
                                                 <div className="flex items-center justify-between">
@@ -1183,7 +1190,7 @@ export default function MySiteOverhaul() {
                                                     <span className="text-[9px] font-mono text-brand-gold">{formData.bioFontSize}px</span>
                                                 </div>
                                                 <input
-                                                    type="range" min="12" max="24" step="1"
+                                                    type="range" min="12" max="32" step="1"
                                                     className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-gold"
                                                     value={formData.bioFontSize}
                                                     onChange={(e) => updateField('bioFontSize', parseInt(e.target.value))}
@@ -1543,6 +1550,19 @@ export default function MySiteOverhaul() {
                                                 value={formData.googleReviewsUrl || ''}
                                                 onChange={(e) => updateField('googleReviewsUrl', e.target.value)}
                                                 placeholder="Search for your business on Google Maps..."
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-white/30">Google Maps URL</label>
+                                        <div className="relative flex items-center">
+                                            <MapPin className="text-brand-gold/40 mr-3" size={14} />
+                                            <input
+                                                type="text"
+                                                className="flex-1 bg-transparent text-xs text-white outline-none font-medium placeholder:text-white/5"
+                                                value={formData.googleMapsUrl || ''}
+                                                onChange={(e) => updateField('googleMapsUrl', e.target.value)}
+                                                placeholder="google.com/maps/place/..."
                                             />
                                         </div>
                                     </div>

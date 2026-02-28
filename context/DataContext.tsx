@@ -22,6 +22,7 @@ export interface Firm {
     googleReviewsUrl?: string;
     logoScale?: number;
     borderRadius?: 'rounded' | 'square';
+    googleMapsUrl?: string;
     isColorLinked?: boolean;
     isFontLinked?: boolean;
     firmNameFontFamily?: string;
@@ -308,12 +309,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const updateFirm = async (id: string, updates: Partial<Firm>) => {
         try {
-            // Typography Sync Logic
+            // Typography Sync Logic: Use new value if provided, else current value
             const firmToUpdate = firms.find(f => f.id === id);
+            const isLinked = updates.isFontLinked !== undefined ? updates.isFontLinked : firmToUpdate?.isFontLinked;
             let finalUpdates = { ...updates };
 
-            if (firmToUpdate?.isFontLinked || updates.isFontLinked) {
-                // If font is linked, sync family and size from Firm Name to Bio
+            if (isLinked) {
+                // If font is linked, sync family, size and color from Firm Name to Bio
                 if (updates.firmNameFontFamily) {
                     finalUpdates.bioFontFamily = updates.firmNameFontFamily;
                 }

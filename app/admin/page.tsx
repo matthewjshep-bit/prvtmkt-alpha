@@ -55,7 +55,7 @@ export default function AdminDashboard() {
     const [newFirm, setNewFirm] = useState({
         name: "",
         logoUrl: "",
-        primaryColor: "#c5a059"
+        primaryColor: "#ffffff"
     });
 
     const handleEditUser = (e: React.FormEvent) => {
@@ -92,7 +92,7 @@ export default function AdminDashboard() {
         };
         addFirm(firmToAdd);
         setIsAddingFirm(false);
-        setNewFirm({ name: "", logoUrl: "", primaryColor: "#c5a059" });
+        setNewFirm({ name: "", logoUrl: "", primaryColor: "#ffffff" });
     };
 
     const stats = [
