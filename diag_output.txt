@@ -1,0 +1,30 @@
+[Prisma] Initializing new PrismaClient instance v3
+Error during inspection: PrismaClientKnownRequestError: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+Raw query failed. Code: `N/A`. Message: `Can't reach database server at base`
+    at zr.handleRequestError (/Users/mattshepherd/PRVTMONEYGIT/PRVTMKT-Alpha/node_modules/@prisma/client/src/runtime/RequestHandler.ts:237:13)
+    at zr.handleAndLogRequestError (/Users/mattshepherd/PRVTMONEYGIT/PRVTMKT-Alpha/node_modules/@prisma/client/src/runtime/RequestHandler.ts:183:12)
+    at zr.request (/Users/mattshepherd/PRVTMONEYGIT/PRVTMKT-Alpha/node_modules/@prisma/client/src/runtime/RequestHandler.ts:152:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async a (/Users/mattshepherd/PRVTMONEYGIT/PRVTMKT-Alpha/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:808:24)
+    at async main (/Users/mattshepherd/PRVTMONEYGIT/PRVTMKT-Alpha/scripts/diag_columns.ts:5:30) {
+  code: 'P2010',
+  meta: {
+    driverAdapterError: DriverAdapterError: DatabaseNotReachable
+        at PrismaPgAdapter.onError (/Users/mattshepherd/PRVTMONEYGIT/PRVTMKT-Alpha/node_modules/@prisma/adapter-pg/dist/index.js:687:11)
+        at PrismaPgAdapter.performIO (/Users/mattshepherd/PRVTMONEYGIT/PRVTMKT-Alpha/node_modules/@prisma/adapter-pg/dist/index.js:682:12)
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        at async PrismaPgAdapter.queryRaw (/Users/mattshepherd/PRVTMONEYGIT/PRVTMKT-Alpha/node_modules/@prisma/adapter-pg/dist/index.js:602:30)
+        at async e.interpretNode (/Users/mattshepherd/PRVTMONEYGIT/PRVTMKT-Alpha/node_modules/@prisma/client-engine-runtime/src/interpreter/query-interpreter.ts:182:26)
+        at async e.run (/Users/mattshepherd/PRVTMONEYGIT/PRVTMKT-Alpha/node_modules/@prisma/client-engine-runtime/src/interpreter/query-interpreter.ts:93:23)
+        at async e.execute (/Users/mattshepherd/PRVTMONEYGIT/PRVTMKT-Alpha/node_modules/@prisma/client/src/runtime/core/engines/client/LocalExecutor.ts:81:12)
+        at async qt.request (/Users/mattshepherd/PRVTMONEYGIT/PRVTMKT-Alpha/node_modules/@prisma/client/src/runtime/core/engines/client/ClientEngine.ts:492:22)
+        at async Object.singleLoader (/Users/mattshepherd/PRVTMONEYGIT/PRVTMKT-Alpha/node_modules/@prisma/client/src/runtime/RequestHandler.ts:112:26)
+        at async zr.request (/Users/mattshepherd/PRVTMONEYGIT/PRVTMKT-Alpha/node_modules/@prisma/client/src/runtime/RequestHandler.ts:149:14) {
+      cause: [Object]
+    }
+  },
+  clientVersion: '7.4.1'
+}

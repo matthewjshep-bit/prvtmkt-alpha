@@ -118,8 +118,9 @@ model ActivityLog {
   firmId    String?
   dealId    String?
   userId    String?
-  memberId  String?
-  firm      Firm?    @relation(fields: [firmId], references: [id])
+  memberId         String?
+  performedByEmail String?
+  firm             Firm?    @relation(fields: [firmId], references: [id])
 }
 
 enum UserRole {
