@@ -43,6 +43,13 @@ model Firm {
   showSearchBar           Boolean       @default(true)
   teamListStyle           String        @default("TRADITIONAL")
   viewLayoutMode          String        @default("BOTH")
+  tombstoneLayout         String[]      @default(["INFO", "METRICS", "MEDIA", "NARRATIVE"])
+  tombstonePadding        Int           @default(48)
+  tombstoneMaxWidth       Int           @default(1200)
+  tombstoneInfoBgColor      String?     @default("#ffffff")
+  tombstoneMetricsBgColor   String?     @default("#f8f9fa")
+  tombstoneMediaBgColor     String?     @default("#ffffff")
+  tombstoneNarrativeBgColor String?     @default("#ffffff")
   activityLogs            ActivityLog[]
   deals                   Deal[]
   teamMembers             TeamMember[]

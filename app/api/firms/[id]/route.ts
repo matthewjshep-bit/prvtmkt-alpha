@@ -47,10 +47,12 @@ export async function PUT(
             'isFontLinked', 'firmNameFontFamily', 'firmNameFontWeight', 'firmNameFontSize',
             'firmNameFontColor', 'bioFontFamily', 'bioFontSize', 'bioFontColor',
             'memberCardBgColor', 'memberPhotoSpacing', 'showMemberNarrative', 'isMemberCardColorLinked',
-            'showSearchBar', 'cardShadowIntensity', 'viewLayoutMode', 'portfolioListStyle', 'teamListStyle'
+            'showSearchBar', 'cardShadowIntensity', 'viewLayoutMode', 'portfolioListStyle', 'teamListStyle',
+            'tombstoneLayout', 'tombstonePadding', 'tombstoneMaxWidth',
+            'tombstoneInfoBgColor', 'tombstoneMetricsBgColor', 'tombstoneMediaBgColor', 'tombstoneNarrativeBgColor'
         ];
 
-        const intFields = ['bioFontSize', 'firmNameFontSize', 'memberPhotoSpacing'];
+        const intFields = ['bioFontSize', 'firmNameFontSize', 'memberPhotoSpacing', 'tombstonePadding', 'tombstoneMaxWidth'];
         const floatFields = ['logoScale', 'cardShadowIntensity'];
         const booleanFields = ['showAgencyBranding', 'isColorLinked', 'isFontLinked', 'showMemberNarrative', 'isMemberCardColorLinked', 'showSearchBar'];
 
@@ -74,7 +76,7 @@ export async function PUT(
             }
         });
 
-        console.log(`[Firm API] Updating firm ${id} with fields:`, Object.keys(updateData));
+        console.log(`[Firm API] Updating firm ${id} with Data:`, JSON.stringify(updateData, null, 2));
 
         const firm = await prisma.firm.update({
             where: { id },

@@ -27,9 +27,19 @@ interface DealCardProps {
     isReversed?: boolean;
     isPreview?: boolean;
     onMemberClick?: (id: string) => void;
+    onDealClick?: (id: string) => void;
 }
 
-export default function DealCard({ deal, index, isListView = false, firm: propFirm, isReversed = false, isPreview = false, onMemberClick }: DealCardProps) {
+export default function DealCard({
+    deal,
+    index,
+    isListView = false,
+    firm: propFirm,
+    isReversed = false,
+    isPreview = false,
+    onMemberClick,
+    onDealClick
+}: DealCardProps) {
     const { teamMembers, firms } = useData();
     const firm = propFirm || firms.find(f => f.id === deal.firmId);
     const members = (deal.teamMemberIds || []).map(mId => teamMembers.find(m => m.id === mId)).filter(Boolean);
@@ -66,6 +76,7 @@ export default function DealCard({ deal, index, isListView = false, firm: propFi
                 onClick={(e) => {
                     if (isPreview) {
                         e.preventDefault();
+                        onDealClick?.(deal.id);
                     }
                 }}
             />

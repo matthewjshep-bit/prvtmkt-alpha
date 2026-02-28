@@ -40,6 +40,14 @@ export interface Firm {
     viewLayoutMode?: 'BOTH' | 'LIST' | 'GRID';
     portfolioListStyle?: 'TRADITIONAL' | 'ALTERNATING';
     teamListStyle?: 'TRADITIONAL' | 'ALTERNATING';
+    // Tombstone Visual Editor Fields
+    tombstonePadding?: number;
+    tombstoneMaxWidth?: number;
+    tombstoneLayout?: string[];
+    tombstoneInfoBgColor?: string;
+    tombstoneMetricsBgColor?: string;
+    tombstoneMediaBgColor?: string;
+    tombstoneNarrativeBgColor?: string;
 }
 
 export interface TeamMember {

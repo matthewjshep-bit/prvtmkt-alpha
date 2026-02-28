@@ -337,7 +337,7 @@ function TenantDealsContent() {
     if (!firm) return null;
 
     const firmDeals = deals.filter(d => d.firmId === firm.id);
-    const firmTeam = teamMembers.filter(m => (m.firmIds || []).includes(firm.id));
+    const firmTeam = teamMembers.filter(m => m.firmId === firm.id || (m.firmIds || []).includes(firm.id));
 
     const handleAddDeal = (e: React.FormEvent) => {
         e.preventDefault();
@@ -902,6 +902,7 @@ function TenantDealsContent() {
                                                     <select
                                                         className="w-full bg-transparent border-b border-white/5 py-1 text-[10px] font-bold text-brand-gold/60 focus:outline-none cursor-pointer"
                                                         value=""
+                                                        onPointerDown={(e) => e.stopPropagation()}
                                                         onChange={(e) => {
                                                             if (e.target.value && !(deal.teamMemberIds || []).includes(e.target.value)) {
                                                                 handleLocalUpdate(deal.id, { teamMemberIds: [...(deal.teamMemberIds || []), e.target.value] });
@@ -915,6 +916,9 @@ function TenantDealsContent() {
                                                                 <option key={member.id} value={member.id}>{member.name}</option>
                                                             ))
                                                         }
+                                                        {firmTeam.length === 0 && (
+                                                            <option disabled>No firm members found...</option>
+                                                        )}
                                                     </select>
                                                 </div>
                                             </td>
@@ -1430,6 +1434,28 @@ function GridDealCard({ deal, firmTeam, onUpdate, onDelete, saveStatus, onMediaO
                             </div>
                         );
                     })}
+                    <select
+                        className="bg-brand-dark/50 text-[8px] font-black uppercase tracking-[0.2em] text-brand-gold/60 hover:text-brand-gold outline-none cursor-pointer transition-all py-2 px-3 border border-white/5 rounded-xl w-full mt-2"
+                        value=""
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            if (val && !(deal.teamMemberIds || []).includes(val)) {
+                                onUpdate({ teamMemberIds: [...(deal.teamMemberIds || []), val] });
+                            }
+                        }}
+                    >
+                        <option value="" disabled className="bg-brand-dark">+ ASSIGN TRANSACTION LEAD</option>
+                        {firmTeam
+                            .filter((m: any) => !(deal.teamMemberIds || []).includes(m.id))
+                            .map((m: any) => (
+                                <option key={m.id} value={m.id} className="bg-brand-dark text-white font-inter">{m.name}</option>
+                            ))
+                        }
+                        {firmTeam.length === 0 && (
+                            <option disabled className="bg-brand-dark text-white/20">NO TEAM MEMBERS FOUND</option>
+                        )}
+                    </select>
                 </div>
             </div>
 
