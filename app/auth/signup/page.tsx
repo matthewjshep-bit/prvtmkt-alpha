@@ -19,7 +19,9 @@ import {
     User
 } from "lucide-react";
 
-export default function SignupPage() {
+import { Suspense } from "react";
+
+function SignupContent() {
     const { signup, getInvitationByToken } = useData();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -53,7 +55,7 @@ export default function SignupPage() {
                 }
             });
         }
-    }, [token]);
+    }, [token, getInvitationByToken]);
 
     const updateFormData = (fields: Partial<typeof formData>) => {
         setFormData(prev => ({ ...prev, ...fields }));
@@ -306,3 +308,16 @@ export default function SignupPage() {
         </div>
     );
 }
+
+export default function SignupPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-brand-dark">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand-gold border-t-transparent" />
+            </div>
+        }>
+            <SignupContent />
+        </Suspense>
+    );
+}
+
