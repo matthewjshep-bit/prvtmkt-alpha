@@ -25,9 +25,11 @@ interface DealCardProps {
     isListView?: boolean;
     firm?: any;
     isReversed?: boolean;
+    isPreview?: boolean;
+    onMemberClick?: (id: string) => void;
 }
 
-export default function DealCard({ deal, index, isListView = false, firm: propFirm, isReversed = false }: DealCardProps) {
+export default function DealCard({ deal, index, isListView = false, firm: propFirm, isReversed = false, isPreview = false, onMemberClick }: DealCardProps) {
     const { teamMembers, firms } = useData();
     const firm = propFirm || firms.find(f => f.id === deal.firmId);
     const members = (deal.teamMemberIds || []).map(mId => teamMembers.find(m => m.id === mId)).filter(Boolean);
@@ -58,7 +60,15 @@ export default function DealCard({ deal, index, isListView = false, firm: propFi
             style={themeStyles}
             className={`group relative overflow-hidden border border-white/5 bg-[var(--firm-bg)] transition-all hover:border-[var(--firm-primary)]/30 hover:shadow-2xl flex ${radiusClass} ${isListView ? `w-full ${isReversed ? 'flex-row-reverse text-right' : 'flex-row'} items-center p-8 gap-10` : 'flex-col'}`}
         >
-            <Link href={`/deals/${deal.id}`} className="absolute inset-0 z-20" />
+            <Link
+                href={isPreview ? "#" : `/deals/${deal.id}`}
+                className="absolute inset-0 z-20"
+                onClick={(e) => {
+                    if (isPreview) {
+                        e.preventDefault();
+                    }
+                }}
+            />
             {/* Image Container */}
             <div className={`relative overflow-hidden ${subRadiusClass} ${isListView ? 'h-48 w-72 shrink-0' : 'aspect-[16/9]'}`}>
                 {deal.generatedVideoURL ? (
@@ -137,8 +147,15 @@ export default function DealCard({ deal, index, isListView = false, firm: propFi
                         <div className={`flex items-center gap-3 ${isReversed ? 'flex-row-reverse' : ''}`}>
                             {members.length > 0 ? (
                                 <Link
-                                    href={`/team/${members[0]?.slug || members[0]?.id}`}
-                                    className={`flex items-center gap-3 transition-all hover:opacity-70 ${isReversed ? 'flex-row-reverse text-right' : ''}`}
+                                    href={isPreview ? "#" : `/team/${members[0]?.slug || members[0]?.id}`}
+                                    className={`flex items-center gap-3 transition-all hover:opacity-70 z-30 ${isReversed ? 'flex-row-reverse text-right' : ''}`}
+                                    onClick={(e) => {
+                                        if (isPreview) {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onMemberClick?.(members[0]?.id || "");
+                                        }
+                                    }}
                                 >
                                     <div className={`flex -space-x-2 overflow-hidden ${isReversed ? 'flex-row-reverse space-x-reverse' : ''}`}>
                                         {members.slice(0, 2).map((m: any) => (

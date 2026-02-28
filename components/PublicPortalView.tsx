@@ -168,77 +168,79 @@ export default function PublicPortalView({
                 )}
 
                 {/* Distinct Firm Header (Soft-Rectangular) */}
-                <div className={`mb-8 p-10 md:p-14 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-10 ${radiusClass} ${(!isPreview && firm.showAgencyBranding !== false) ? 'mt-8' : ''}`} style={{ backgroundColor: 'var(--firm-secondary)' }}>
-                    <div className="flex flex-col lg:flex-row items-center gap-12">
-                        <div className="h-32 w-80 flex-shrink-0 flex items-center justify-center relative overflow-hidden">
-                            {firm.logoUrl ? (
-                                <div className="absolute inset-0 flex items-center justify-center p-4">
-                                    <img
-                                        src={firm.logoUrl}
-                                        alt={firm.name}
-                                        className="max-h-full max-w-full object-contain transition-transform duration-300"
-                                        style={{ transform: `scale(${(firm.logoScale || 100) / 100})` }}
-                                    />
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-4 h-full" style={{ color: 'var(--firm-primary)' }}>
-                                    <Building2 size={64} />
-                                    <span className="text-5xl font-black uppercase tracking-widest">{firm.name}</span>
-                                </div>
-                            )}
-                        </div>
-                        <div className="text-center lg:text-left">
-                            <h1 className="mb-4 tracking-tight" style={{ fontFamily: 'var(--firm-name-font)', fontWeight: 'var(--firm-name-weight)', fontSize: 'var(--firm-name-size)', color: 'var(--firm-name-color)' }}>
-                                {firm.name}
-                            </h1>
-                            <div
-                                className="font-bold opacity-40 leading-relaxed max-w-2xl prose prose-invert prose-p:leading-relaxed"
-                                style={{ color: 'var(--firm-bio-color)', fontFamily: 'var(--firm-bio-font)', fontSize: 'var(--firm-bio-size)' }}
-                                dangerouslySetInnerHTML={{ __html: firm.bio || "Professional institutional track record and specialized team directory." }}
-                            />
+                {!(previewMode === "PROFILE" && focusedMemberId) && (
+                    <div className={`mb-8 p-10 md:p-14 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-10 ${radiusClass} ${(!isPreview && firm.showAgencyBranding !== false) ? 'mt-8' : ''}`} style={{ backgroundColor: 'var(--firm-secondary)' }}>
+                        <div className="flex flex-col lg:flex-row items-center gap-12">
+                            <div className="h-32 w-80 flex-shrink-0 flex items-center justify-center relative overflow-hidden">
+                                {firm.logoUrl ? (
+                                    <div className="absolute inset-0 flex items-center justify-center p-4">
+                                        <img
+                                            src={firm.logoUrl}
+                                            alt={firm.name}
+                                            className="max-h-full max-w-full object-contain transition-transform duration-300"
+                                            style={{ transform: `scale(${(firm.logoScale || 100) / 100})` }}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-4 h-full" style={{ color: 'var(--firm-primary)' }}>
+                                        <Building2 size={64} />
+                                        <span className="text-5xl font-black uppercase tracking-widest">{firm.name}</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="text-center lg:text-left">
+                                <h1 className="mb-4 tracking-tight" style={{ fontFamily: 'var(--firm-name-font)', fontWeight: 'var(--firm-name-weight)', fontSize: 'var(--firm-name-size)', color: 'var(--firm-name-color)' }}>
+                                    {firm.name}
+                                </h1>
+                                <div
+                                    className="font-bold opacity-40 leading-relaxed max-w-2xl prose prose-invert prose-p:leading-relaxed"
+                                    style={{ color: 'var(--firm-bio-color)', fontFamily: 'var(--firm-bio-font)', fontSize: 'var(--firm-bio-size)' }}
+                                    dangerouslySetInnerHTML={{ __html: firm.bio || "Professional institutional track record and specialized team directory." }}
+                                />
 
-                            {(firm.linkedInUrl || firm.googleReviewsUrl || firm.physicalAddress) && (
-                                <div className="mt-8 flex flex-wrap items-center gap-6">
-                                    {firm.linkedInUrl && (
-                                        <a
-                                            href={firm.linkedInUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className={`flex items-center gap-2 bg-black/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-black/10 transition-all ${subRadiusClass}`}
-                                        >
-                                            <Globe size={14} className="text-black/40" />
-                                            LinkedIn
-                                        </a>
-                                    )}
-                                    {firm.googleReviewsUrl && (
-                                        <a
-                                            href={firm.googleReviewsUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-2 rounded-full bg-black/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-black/10 transition-all"
-                                        >
-                                            <div className="flex text-yellow-500">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <svg key={i} className="h-3 w-3 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" /></svg>
-                                                ))}
+                                {(firm.linkedInUrl || firm.googleReviewsUrl || firm.physicalAddress) && (
+                                    <div className="mt-8 flex flex-wrap items-center gap-6">
+                                        {firm.linkedInUrl && (
+                                            <a
+                                                href={firm.linkedInUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={`flex items-center gap-2 bg-black/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-black/10 transition-all ${subRadiusClass}`}
+                                            >
+                                                <Globe size={14} className="text-black/40" />
+                                                LinkedIn
+                                            </a>
+                                        )}
+                                        {firm.googleReviewsUrl && (
+                                            <a
+                                                href={firm.googleReviewsUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 rounded-full bg-black/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-black/10 transition-all"
+                                            >
+                                                <div className="flex text-yellow-500">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <svg key={i} className="h-3 w-3 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" /></svg>
+                                                    ))}
+                                                </div>
+                                                Reviews
+                                            </a>
+                                        )}
+                                        {firm.physicalAddress && (
+                                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-black/40">
+                                                <Building2 size={14} />
+                                                <span className="max-w-[250px] truncate">{firm.physicalAddress}</span>
                                             </div>
-                                            Reviews
-                                        </a>
-                                    )}
-                                    {firm.physicalAddress && (
-                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-black/40">
-                                            <Building2 size={14} />
-                                            <span className="max-w-[250px] truncate">{firm.physicalAddress}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 {/* Conditional Hero Media (Banner) */}
-                {firm.heroMediaUrl && (
+                {firm.heroMediaUrl && !(previewMode === "PROFILE" && focusedMemberId) && (
                     <div className="mb-16 animate-in fade-in slide-in-from-bottom-6 duration-1000">
                         <div className={`relative aspect-[21/9] w-full overflow-hidden border border-white/10 shadow-3xl bg-black/20 backdrop-blur-sm ${firm.borderRadius === 'square' ? 'rounded-none' : 'rounded-[3rem]'}`}>
                             {isVideo(firm.heroMediaUrl) ? (
@@ -307,46 +309,48 @@ export default function PublicPortalView({
                 )}
 
                 {/* Distinct Search & Navigation Area (Soft-Rectangular) */}
-                <div className={`mb-16 p-4 pr-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden ${radiusClass}`} style={{ backgroundColor: 'var(--firm-secondary)' }}>
-                    <div className="flex flex-1 items-center gap-4 w-full">
-                        {firm.showSearchBar !== false ? (
-                            <div className="relative flex-1 group">
-                                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-black/30 group-focus-within:text-black transition-colors" size={20} />
-                                <input
-                                    type="text"
-                                    placeholder="Search..."
-                                    className={`h-16 w-full bg-white/50 border border-black/5 pl-14 pr-6 text-lg font-bold text-black outline-none transition-all focus:bg-white focus:border-black/10 placeholder:text-black/20 ${subRadiusClass}`}
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                        ) : (
-                            <div className="flex-1 flex items-center gap-4">
-                                <div className="h-1.5 w-1.5 rounded-full bg-black/10" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-black/20">Market Registry</span>
-                            </div>
-                        )}
-                    </div>
+                {!(previewMode === "PROFILE" && focusedMemberId) && (
+                    <div className={`mb-16 p-4 pr-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden ${radiusClass}`} style={{ backgroundColor: 'var(--firm-secondary)' }}>
+                        <div className="flex flex-1 items-center gap-4 w-full">
+                            {firm.showSearchBar !== false ? (
+                                <div className="relative flex-1 group">
+                                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-black/30 group-focus-within:text-black transition-colors" size={20} />
+                                    <input
+                                        type="text"
+                                        placeholder="Search..."
+                                        className={`h-16 w-full bg-white/50 border border-black/5 pl-14 pr-6 text-lg font-bold text-black outline-none transition-all focus:bg-white focus:border-black/10 placeholder:text-black/20 ${subRadiusClass}`}
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                            ) : (
+                                <div className="flex-1 flex items-center gap-4">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-black/10" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-black/20">Market Registry</span>
+                                </div>
+                            )}
+                        </div>
 
-                    <div className="flex items-center gap-4">
-                        <div className={`flex h-16 items-center bg-white/50 p-2 border border-black/5 ${subRadiusClass}`}>
-                            <button
-                                onClick={() => setActiveTab("DEALS")}
-                                className={`flex h-full items-center gap-3 px-12 text-xs font-black uppercase tracking-widest transition-all ${subRadiusClass} ${activeTab === "DEALS" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
-                            >
-                                <LayoutGrid size={20} />
-                                Portfolio
-                            </button>
-                            <button
-                                onClick={() => setActiveTab("PEOPLE")}
-                                className={`flex h-full items-center gap-3 px-12 text-xs font-black uppercase tracking-widest transition-all ${subRadiusClass} ${activeTab === "PEOPLE" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
-                            >
-                                <Globe size={20} />
-                                Team
-                            </button>
+                        <div className="flex items-center gap-4">
+                            <div className={`flex h-16 items-center bg-white/50 p-2 border border-black/5 ${subRadiusClass}`}>
+                                <button
+                                    onClick={() => setActiveTab("DEALS")}
+                                    className={`flex h-full items-center gap-3 px-12 text-xs font-black uppercase tracking-widest transition-all ${subRadiusClass} ${activeTab === "DEALS" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
+                                >
+                                    <LayoutGrid size={20} />
+                                    Portfolio
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab("PEOPLE")}
+                                    className={`flex h-full items-center gap-3 px-12 text-xs font-black uppercase tracking-widest transition-all ${subRadiusClass} ${activeTab === "PEOPLE" ? "bg-white text-black shadow-lg scale-[1.02]" : "text-black/40 hover:text-black"}`}
+                                >
+                                    <Globe size={20} />
+                                    Team
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 {activeTab === "DEALS" ? (
                     <>
@@ -434,6 +438,8 @@ export default function PublicPortalView({
                                                         isListView={viewMode === "LIST"}
                                                         firm={firm}
                                                         isReversed={isReversed}
+                                                        isPreview={isPreview}
+                                                        onMemberClick={onMemberClick}
                                                     />
                                                 </div>
                                             );
@@ -468,39 +474,41 @@ export default function PublicPortalView({
                     </>
                 ) : (
                     <>
-                        <div className="mb-12 flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest opacity-30" style={{ color: 'var(--firm-text)' }}>
-                                <Globe size={14} />
-                                Leadership Registry
-                            </div>
-
-                            <div className="flex items-center gap-4">
-                                <div className="hidden lg:flex items-center gap-2 mr-4 opacity-30" style={{ color: 'var(--firm-text)' }}>
-                                    <span className="text-xs font-black uppercase tracking-widest">
-                                        {firmTeamMembers.length} Partners identified
-                                    </span>
+                        {!(previewMode === "PROFILE" && focusedMemberId) && (
+                            <div className="mb-12 flex flex-wrap items-center justify-between gap-3">
+                                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest opacity-30" style={{ color: 'var(--firm-text)' }}>
+                                    <Globe size={14} />
+                                    Leadership Registry
                                 </div>
 
-                                {(firm.viewLayoutMode === 'BOTH' || !firm.viewLayoutMode) && (
-                                    <div className={`flex h-12 items-center bg-black/5 p-1.5 border border-black/5 ${subRadiusClass}`}>
-                                        <button
-                                            onClick={() => setTeamViewMode("GRID")}
-                                            className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${teamViewMode === "GRID" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
-                                            title="Grid View"
-                                        >
-                                            <LayoutGrid size={16} />
-                                        </button>
-                                        <button
-                                            onClick={() => setTeamViewMode("LIST")}
-                                            className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${teamViewMode === "LIST" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
-                                            title="List View"
-                                        >
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
-                                        </button>
+                                <div className="flex items-center gap-4">
+                                    <div className="hidden lg:flex items-center gap-2 mr-4 opacity-30" style={{ color: 'var(--firm-text)' }}>
+                                        <span className="text-xs font-black uppercase tracking-widest">
+                                            {firmTeamMembers.length} Partners identified
+                                        </span>
                                     </div>
-                                )}
+
+                                    {(firm.viewLayoutMode === 'BOTH' || !firm.viewLayoutMode) && (
+                                        <div className={`flex h-12 items-center bg-black/5 p-1.5 border border-black/5 ${subRadiusClass}`}>
+                                            <button
+                                                onClick={() => setTeamViewMode("GRID")}
+                                                className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${teamViewMode === "GRID" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                                title="Grid View"
+                                            >
+                                                <LayoutGrid size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => setTeamViewMode("LIST")}
+                                                className={`flex h-9 w-9 items-center justify-center transition-all ${subRadiusClass} ${teamViewMode === "LIST" ? "bg-white text-black shadow-lg" : "text-black/40 hover:text-black"}`}
+                                                title="List View"
+                                            >
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {previewMode === "PROFILE" && focusedMember ? (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -516,7 +524,7 @@ export default function PublicPortalView({
                                 <div className="space-y-12 pb-20">
                                     <div className="flex flex-col md:flex-row gap-10 items-start">
                                         <div className="relative shrink-0">
-                                            <div className={`h-48 w-48 overflow-hidden border-4 border-white shadow-2xl ${cardRadiusClass}`}>
+                                            <div className="h-44 w-44 overflow-hidden border-4 border-white shadow-2xl rounded-[2.5rem]">
                                                 <img src={focusedMember.imageURL || "/placeholder-user.jpg"} className="h-full w-full object-cover" />
                                             </div>
                                             <div className="absolute -bottom-4 -right-4 flex h-12 w-12 items-center justify-center rounded-xl shadow-xl" style={{ backgroundColor: 'var(--firm-primary)', color: 'var(--firm-bg)' }}>
@@ -594,16 +602,16 @@ export default function PublicPortalView({
                                     <div className="pt-12 border-t border-white/5">
                                         <div className="mb-12">
                                             <h2 className="text-4xl font-black tracking-tight uppercase" style={{ color: 'var(--firm-text)' }}>
-                                                Track <span style={{ opacity: 0.4 }}>Record</span>
+                                                Track <span style={{ color: 'var(--firm-primary)' }}>Record</span>
                                             </h2>
                                             <p className="max-w-md text-sm font-medium leading-relaxed mt-2 opacity-40" style={{ color: 'var(--firm-text)' }}>
                                                 Exclusive digital tombstones representing verified execution and high-performance asset management by this professional.
                                             </p>
                                         </div>
 
-                                        <div className="grid gap-8 sm:grid-cols-2">
+                                        <div className="grid gap-8">
                                             {deals.filter(d => (d.teamMemberIds || []).includes(focusedMember.id)).map((deal, idx) => (
-                                                <DealCard key={deal.id} deal={deal} index={idx} firm={firm} />
+                                                <DealCard key={deal.id} deal={deal} index={idx} firm={firm} isPreview={isPreview} onMemberClick={onMemberClick} isListView={true} />
                                             ))}
                                             {deals.filter(d => (d.teamMemberIds || []).includes(focusedMember.id)).length === 0 && (
                                                 <div className="col-span-full py-12 border-2 border-dashed border-black/5 rounded-[2rem] flex flex-col items-center justify-center opacity-30 text-black">

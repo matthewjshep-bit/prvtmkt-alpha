@@ -45,7 +45,8 @@ export default function IntakeFormPage() {
                     const file = form.images[i];
                     const formData = new FormData();
                     formData.append("file", file);
-                    formData.append("dealId", dealId);
+                    formData.append("id", dealId);
+                    formData.append("type", "deals");
 
                     const res = await fetch("/api/upload", { method: "POST", body: formData });
                     const data = await res.json();

@@ -19,6 +19,13 @@ import {
     Globe
 } from "lucide-react";
 
+interface NavItem {
+    label: string;
+    href: string;
+    icon: React.ReactNode;
+    subItems?: { label: string; href: string }[];
+}
+
 export default function TenantAdminLayout({
     children,
 }: {
@@ -57,7 +64,7 @@ export default function TenantAdminLayout({
         );
     }
 
-    const navItems = currentUser.role === "USER"
+    const navItems: NavItem[] = currentUser.role === "USER"
         ? [
             { label: "My Profile", href: `/admin/${firmSlug}/profile`, icon: <UserCircle size={18} /> },
             { label: "Firm Site", href: `/firms/${firmSlug}`, icon: <Globe size={18} /> },
@@ -65,18 +72,13 @@ export default function TenantAdminLayout({
         : [
             { label: "My Site", href: `/admin/${firmSlug}/mysite`, icon: <Globe size={18} /> },
             {
-                label: "Team Members",
-                href: `/admin/${firmSlug}/people`,
+                label: "My Team",
+                href: `/admin/${firmSlug}/people/gallery-editor`,
                 icon: <Users size={18} />,
-                subItems: [
-                    { label: "Team Members", href: `/admin/${firmSlug}/people/gallery-editor` },
-                    { label: "Site Editor", href: `/admin/${firmSlug}/people/site-editor` },
-                ]
             },
+            { label: "Deals", href: `/admin/${firmSlug}/deals`, icon: <Briefcase size={18} /> },
             { label: "Dashboard", href: `/admin/${firmSlug}/dashboard`, icon: <LayoutDashboard size={18} /> },
             { label: "Authorized Users", href: `/admin/${firmSlug}/users`, icon: <Shield size={18} /> },
-            { label: "Firm Deals", href: `/admin/${firmSlug}/deals`, icon: <Briefcase size={18} /> },
-            { label: "Settings", href: `/admin/${firmSlug}/settings`, icon: <Settings size={18} /> },
         ];
 
     return (
@@ -136,14 +138,14 @@ export default function TenantAdminLayout({
                                     return (
                                         <div key={item.label} className="flex flex-col gap-1">
                                             <Link
-                                                href={item.subItems ? item.subItems[0].href : item.href}
+                                                href={hasSubItems ? item.subItems![0].href : item.href}
                                                 className={`flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-bold transition-all ${isActive ? "bg-brand-gold text-brand-dark shadow-lg shadow-brand-gold/10" : "text-foreground/40 hover:bg-white/5 hover:text-white"}`}
                                             >
                                                 {item.icon}
                                                 {item.label}
                                             </Link>
 
-                                            {hasSubItems && isActive && (
+                                            {item.subItems && hasSubItems && isActive && (
                                                 <div className="ml-12 flex flex-col gap-1 mt-1 border-l border-white/5 pl-4">
                                                     {item.subItems.map(subItem => {
                                                         const isSubActive = pathname === subItem.href;

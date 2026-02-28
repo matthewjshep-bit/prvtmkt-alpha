@@ -4,6 +4,9 @@ import * as jose from "jose";
 
 const KLING_API_BASE = "https://api.klingai.com/v1";
 
+// Note: Official status endpoint for image2video is model-specific
+// GET /v1/videos/image2video/{task_id}
+
 async function generateKlingToken() {
     const accessKey = process.env.KLING_ACCESS_KEY;
     const secretKey = process.env.KLING_SECRET_KEY;
@@ -12,15 +15,16 @@ async function generateKlingToken() {
         throw new Error("Kling credentials missing");
     }
 
-    const iat = Math.floor(Date.now() / 1000);
-    const exp = iat + 1800; // 30 minutes
+    const iat = Math.floor(Date.now() / 1000) - 60; // 1 min in past for clock drift
+    const exp = iat + 3600; // 60 minutes
 
     const token = await new jose.SignJWT({
         iss: accessKey,
-        exp,
-        iat,
     })
         .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+        .setIssuedAt(iat)
+        .setNotBefore(iat)
+        .setExpirationTime(exp)
         .sign(new TextEncoder().encode(secretKey));
 
     return token;
@@ -57,25 +61,32 @@ export async function POST(req: Request) {
         }
 
         const token = await generateKlingToken();
+        console.log(`[Kling AI] Authorized. Token: ${token.substring(0, 8)}...`);
 
-        const systemPrompt = "A cinematic FPV drone shot that initiates from a frame-perfect recreation of the uploaded image, meticulously preserving all architectural details, material textures, and the existing color palette. The camera begins on a steady, wide-angle establishing shot, then smoothly pulls back, ascends slightly, and pans slowly to reveal the surrounding environment and broader footprint of the structure. The motion is fluid and professional, maintaining the high-fidelity lighting and atmospheric depth of the original photo. Every structural element from the initial frame remains consistent and geometrically accurate as the perspective expands into a larger, coherent scene. Hyper-realistic textures, 8k resolution, stable drone flight, seamless spatial expansion.";
+        const durationInSeconds = 5;
+        const dronePrompt = `Cinematic ${durationInSeconds}s drone pull-back establishing shot. Start from detail in the image and expand to a professional aerial view. High resolution, high fidelity.`;
 
-        const negativePrompt = "morphing, flickering, architectural distortion, extra windows, blurred textures, unrealistic gravity.";
-
-        console.log("Kling Handshake Initiated:", { dealId, imageUrl });
-        console.log("System Prompt Precision Check:", systemPrompt);
-
+        // Extreme robustness: Providing both top-level and arguments-wrapped keys
         const payload = {
+            model: "kling-v1",
             model_name: "kling-v1",
+            prompt: dronePrompt,
             image: imageUrl,
-            prompt: systemPrompt,
-            negative_prompt: negativePrompt,
-            duration: 5,
-            mode: "high_quality",
-            callback_url: `${getBaseUrl(req)}/api/kling/webhook?dealId=${dealId}`
+            image_url: imageUrl,
+            duration: `${durationInSeconds}`,
+            mode: "pro",
+            arguments: {
+                prompt: dronePrompt,
+                negative_prompt: "low quality, text, logos, face",
+                image: imageUrl,
+                duration: `${durationInSeconds}`,
+                mode: "pro"
+            },
+            callback_url: `${getBaseUrl(req)}/api/kling/webhook?dealId=${dealId}`,
+            replyUrl: `${getBaseUrl(req)}/api/kling/webhook?dealId=${dealId}`
         };
 
-        console.log("Kling Payload Audit:", JSON.stringify({ ...payload, image: imageUrl.substring(0, 30) + "..." }, null, 2));
+        console.log("[Kling AI] Requesting Task:", JSON.stringify(payload, null, 2));
 
         const response = await axios.post(`${KLING_API_BASE}/videos/image2video`, payload, {
             headers: {
@@ -84,14 +95,18 @@ export async function POST(req: Request) {
             }
         });
 
-        console.log("Kling Response Status:", response.status);
-        console.log("Kling Task ID:", response.data.data?.task_id || response.data.task_id);
+        console.log("[Kling AI] Success Response:", JSON.stringify(response.data, null, 2));
+
+        if (response.data.code !== 0 && response.data.code !== undefined) {
+            throw new Error(response.data.message || response.data.msg || "Kling API Error");
+        }
 
         return NextResponse.json(response.data);
     } catch (error: any) {
-        console.error("Kling AI Start Error:", error.response?.data || error.message);
+        const errorData = error.response?.data;
+        console.error("Kling AI Start Error:", JSON.stringify(errorData || error.message, null, 2));
         return NextResponse.json({
-            error: error.response?.data?.error || error.message
+            error: errorData?.message || errorData?.msg || errorData?.error || error.message
         }, { status: error.response?.status || 500 });
     }
 }
@@ -107,14 +122,19 @@ export async function GET(req: Request) {
 
     try {
         const token = await generateKlingToken();
-        const response = await axios.get(`${KLING_API_BASE}/videos/tasks/${taskId}`, {
+        const url = `${KLING_API_BASE}/videos/image2video/${taskId}`;
+        console.log(`[Kling AI] Polling URL: ${url}`);
+
+        const response = await axios.get(url, {
             headers: {
                 "Authorization": `Bearer ${token}`
             }
         });
+
+        console.log(`[Kling AI] Polling Response for Task ${taskId}:`, JSON.stringify(response.data, null, 2));
         return NextResponse.json(response.data);
     } catch (error: any) {
-        console.error("Kling AI Poll Error:", error.response?.data || error.message);
+        console.error("Kling AI Poll Error:", JSON.stringify(error.response?.data || error.message, null, 2));
         return NextResponse.json({
             error: error.response?.data?.error || error.message
         }, { status: error.response?.status || 500 });

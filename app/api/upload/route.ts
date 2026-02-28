@@ -5,10 +5,14 @@ export async function POST(req: Request) {
     try {
         const formData = await req.formData();
         const file = formData.get("file") as File;
-        const id = formData.get("id") as string;
-        const type = formData.get("type") as string || 'deals'; // Fallback to 'deals' for compatibility
+        const id = (formData.get("id") || formData.get("dealId")) as string;
+        const type = formData.get("type") as string || 'deals';
+
+        console.log(`[Upload API] Payload Keys: ${Array.from(formData.keys()).join(", ")}`);
+        console.log(`[Upload API] Targets - ID: ${id}, Type: ${type}`);
 
         if (!file || !id) {
+            console.error(`[Upload API] Validation Failed: file=${!!file}, id=${id}`);
             return NextResponse.json({ error: "Missing file or target ID" }, { status: 400 });
         }
 

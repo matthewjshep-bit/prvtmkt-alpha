@@ -92,6 +92,7 @@ export interface Deal {
     investmentOverview?: string;
     generatedVideoURL?: string; // Cinematic AI Video
     teamMemberIds: string[];
+    order?: number;
 }
 
 interface Activity {
@@ -133,6 +134,7 @@ interface DataContextType {
     addTeamMember: (member: TeamMember) => Promise<TeamMember | null>;
     updateTeamMember: (id: string, updates: Partial<TeamMember>) => Promise<boolean>;
     reorderTeamMembers: (reorderedMembers: TeamMember[]) => Promise<boolean | string>;
+    reorderDeals: (reorderedDeals: Deal[]) => Promise<boolean | string>;
     updateDeal: (id: string, updates: Partial<Deal> | ((prev: Deal) => Partial<Deal>)) => Promise<boolean>;
     addFirm: (firm: Firm) => Promise<void>;
     addDeal: (deal: Deal) => Promise<void>;
@@ -822,12 +824,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             });
             if (res.ok) {
                 const updatedDeal = await res.json();
-                setDeals(prev => prev.map(d => d.id === id ? updatedDeal : d));
+                const normalizedDeal = {
+                    ...updatedDeal,
+                    order: updatedDeal.sortOrder ?? 0
+                };
+                setDeals(prev => prev.map(d => d.id === id ? normalizedDeal : d));
                 addActivity({
                     type: 'DEAL_UPDATED',
-                    title: `Updated deal: ${updatedDeal.address}`,
+                    title: `Updated deal: ${normalizedDeal.address}`,
                     dealId: id,
-                    firmId: updatedDeal.firmId
+                    firmId: normalizedDeal.firmId
                 });
                 console.log('[DataContext] Deal updated successfully:', updatedDeal);
                 return true;
@@ -904,6 +910,23 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             return true;
         } catch (error: any) {
             setTeamMembers(originalMembers);
+            return error.message || 'Ordering failed';
+        }
+    };
+
+    const reorderDeals = async (reorderedDeals: Deal[]): Promise<boolean | string> => {
+        const originalDeals = [...deals];
+        setDeals(reorderedDeals);
+        try {
+            const response = await fetch('/api/deals/reorder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ deals: reorderedDeals.map(d => ({ id: d.id, order: d.order })) }),
+            });
+            if (!response.ok) throw new Error('Failed to persist order');
+            return true;
+        } catch (error: any) {
+            setDeals(originalDeals);
             return error.message || 'Ordering failed';
         }
     };
@@ -998,6 +1021,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             activities,
             addActivity,
             reorderTeamMembers,
+            reorderDeals,
             deleteTeamMember,
             isInitialized,
             impersonateUser,

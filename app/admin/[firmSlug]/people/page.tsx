@@ -9,7 +9,7 @@ export default function PeopleRedirect() {
     const firmSlug = params.firmSlug;
 
     useEffect(() => {
-        router.replace(`/admin/${firmSlug}/people/site-editor`);
+        router.replace(`/admin/${firmSlug}/people/gallery-editor`);
     }, [firmSlug, router]);
 
     return null;

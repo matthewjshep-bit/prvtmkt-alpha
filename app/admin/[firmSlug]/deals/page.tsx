@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useEffect, Suspense, use } from "react";
-import { useData } from "@/context/DataContext";
-import { Briefcase, Building2, MapPin, Eye, Edit3, Trash2, Plus, X, Save, Upload, Search, GripVertical, ListChecks, TrendingUp, Video } from "lucide-react";
+import { useState, useEffect, Suspense, useRef } from "react";
+import { useData, Deal } from "@/context/DataContext";
+import {
+    Briefcase, Building2, MapPin, Eye, Edit3, Trash2, Plus, X,
+    Save, Upload, Search, GripVertical, ListChecks, TrendingUp,
+    Video, LayoutGrid, List as ListIcon, Camera, Image as ImageIcon,
+    ExternalLink, Check, Mail
+} from "lucide-react";
 import { useSearchParams, useParams } from "next/navigation";
 import Link from "next/link";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
 
 export default function TenantDealsPage() {
     return (
@@ -15,11 +21,16 @@ export default function TenantDealsPage() {
 }
 
 function TenantDealsContent() {
-    const { firms, deals, teamMembers, addDeal, updateDeal, deleteDeal, isInitialized } = useData();
+    const { firms, deals, teamMembers, addDeal, updateDeal, deleteDeal, reorderDeals, isInitialized } = useData();
     const params = useParams();
     const firmSlug = params.firmSlug as string;
 
     const firm = firms.find(f => f.slug === firmSlug);
+
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [orderedDeals, setOrderedDeals] = useState<Deal[]>([]);
+    const [hasOrderChanged, setHasOrderChanged] = useState(false);
+    const [saveStatus, setSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
 
     const [editingDeal, setEditingDeal] = useState<any | null>(null);
     const [isAddingDeal, setIsAddingDeal] = useState(false);
@@ -34,106 +45,223 @@ function TenantDealsContent() {
     const [isUploading, setIsUploading] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
 
+    // --- Persist AI Drone Engine Tasks ---
+    const saveProcessingTask = (taskId: string, dealId: string, imageUrl: string) => {
+        try {
+            const saved = localStorage.getItem('kling_active_tasks');
+            const tasks = saved ? JSON.parse(saved) : {};
+            tasks[taskId] = { dealId, imageUrl, timestamp: Date.now() };
+            localStorage.setItem('kling_active_tasks', JSON.stringify(tasks));
+        } catch (e) { console.error("Failed to save AI task:", e); }
+    };
+
+    const removeProcessingTask = (taskId: string) => {
+        try {
+            const saved = localStorage.getItem('kling_active_tasks');
+            if (saved) {
+                const tasks = JSON.parse(saved);
+                delete tasks[taskId];
+                localStorage.setItem('kling_active_tasks', JSON.stringify(tasks));
+            }
+        } catch (e) { console.error("Failed to remove AI task:", e); }
+    };
+
+    const pollTaskStatus = async (taskId: string, dealId: string, imageUrl: string, retryCount = 0) => {
+        try {
+            const pollRes = await fetch(`/api/kling?taskId=${taskId}`);
+            const pollData = await pollRes.json();
+
+            if (pollData.error) throw new Error(pollData.error);
+
+            // Kling spec uses 'succeed' (without -ed) or 'succeeded'
+            const rawStatus = (pollData.data?.task_status || pollData.task_status);
+            const status = rawStatus?.toLowerCase();
+            console.log(`[Kling AI] Polling Task ${taskId}: ${status}`);
+
+            if (status === "succeed" || status === "succeeded") {
+                // Official path: data.task_result.videos[0].url
+                const finalVideoUrl = pollData.data?.task_result?.videos?.[0]?.url ||
+                    pollData.data?.video_url ||
+                    pollData.video_url ||
+                    pollData.data?.video_info?.videos?.[0]?.url;
+
+                if (!finalVideoUrl) throw new Error("Generation succeeded but no video URL found in task_result.");
+
+                console.log(`[Kling AI] Success! Downloading video from: ${finalVideoUrl}`);
+
+                // 1. First, check if the webhook already updated the local state/DB
+                const deal = localDeals.find((d: any) => d.id === dealId);
+
+                if (deal?.generatedVideoURL && deal.generatedVideoURL.includes('supabase')) {
+                    console.log("[Kling AI] Webhook beat the poller! Cleaning up.");
+                    setAiProcessingIds(prev => {
+                        const next = new Set(prev);
+                        next.delete(imageUrl);
+                        return next;
+                    });
+                    removeProcessingTask(taskId);
+                    return;
+                }
+
+                // 2. Otherwise, trigger manual persistence via our unified route
+                const persistRes = await fetch("/api/kling/webhook", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ videoUrl: finalVideoUrl, dealId })
+                });
+                const persistData = await persistRes.json();
+
+                if (persistData.url) {
+                    handleLocalUpdate(dealId, { generatedVideoURL: persistData.url }, true);
+                    setAiProcessingIds(prev => {
+                        const next = new Set(prev);
+                        next.delete(imageUrl);
+                        return next;
+                    });
+                    removeProcessingTask(taskId);
+                    console.log("[Kling AI] Persistence Success via Polling:", persistData.url);
+                }
+            } else if (status === "failed") {
+                const errorMsg = pollData.data?.task_status_msg || "Kling AI generation failed";
+                removeProcessingTask(taskId);
+                setAiProcessingIds(prev => {
+                    const next = new Set(prev);
+                    next.delete(imageUrl);
+                    return next;
+                });
+                throw new Error(errorMsg);
+            } else {
+                // Submitted, Processing, or null - keep polling
+                setTimeout(() => pollTaskStatus(taskId, dealId, imageUrl, 0), 6000);
+            }
+        } catch (e: any) {
+            console.error(`[Kling AI] Polling Error (Attempt ${retryCount}):`, e);
+
+            // If it's a 404/NotFound or permanent failure, stop.
+            if (e.message.includes("Not Found") || e.message.includes("failed")) {
+                setAiProcessingIds(prev => {
+                    const next = new Set(prev);
+                    next.delete(imageUrl);
+                    return next;
+                });
+                removeProcessingTask(taskId);
+                setUploadError(`AI Engine: ${e.message}`);
+                return;
+            }
+
+            // Otherwise (network error, 500), retry up to 10 times with backoff
+            if (retryCount < 10) {
+                setTimeout(() => pollTaskStatus(taskId, dealId, imageUrl, retryCount + 1), 10000);
+            } else {
+                setAiProcessingIds(prev => {
+                    const next = new Set(prev);
+                    next.delete(imageUrl);
+                    return next;
+                });
+                setUploadError("AI Engine: Polling timed out (Network Issue)");
+            }
+        }
+    };
+
     const handleGenerateAIVideo = async (dealId: string, imageUrl: string) => {
         try {
             setAiProcessingIds(prev => new Set(prev).add(imageUrl));
-
-            // 1. Start Kling Task
             const startRes = await fetch("/api/kling", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ imageUrl, dealId })
             });
             const startData = await startRes.json();
+            if (!startRes.ok || startData.error) throw new Error(startData.error || "Handshake Rejected");
 
-            if (startData.error) {
-                throw new Error(startData.error);
-            }
             const taskId = startData.data?.task_id || startData.task_id;
-
-            // 2. Poll for completion
-            const poll = async () => {
-                const pollRes = await fetch(`/api/kling?taskId=${taskId}`);
-                const pollData = await pollRes.json();
-
-                if (pollData.error) throw new Error(pollData.error);
-
-                const status = (pollData.data?.task_status || pollData.task_status)?.toLowerCase();
-
-                if (status === "succeeded") {
-                    const finalVideoUrl = pollData.data?.video_url || pollData.video_url;
-
-                    // 3. Persist to S3
-                    const persistRes = await fetch("/api/kling/persist", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ videoUrl: finalVideoUrl, dealId })
-                    });
-                    const persistData = await persistRes.json();
-
-                    if (persistData.url) {
-                        handleLocalUpdate(dealId, { generatedVideoURL: persistData.url }, true); // Persist immediately
-                        setAiProcessingIds(prev => {
-                            const next = new Set(prev);
-                            next.delete(imageUrl);
-                            return next;
-                        });
-                    }
-                } else if (status === "failed") {
-                    throw new Error(pollData.data?.task_status_msg || "Kling AI generation failed");
-                } else {
-                    setTimeout(poll, 3000); // Poll every 3s
-                }
-            };
-
-            poll();
+            saveProcessingTask(taskId, dealId, imageUrl);
+            pollTaskStatus(taskId, dealId, imageUrl);
+            return true;
         } catch (error: any) {
-            console.error("AI Generation Error:", error);
             setAiProcessingIds(prev => {
                 const next = new Set(prev);
                 next.delete(imageUrl);
                 return next;
             });
-            alert(`AI Drone Cinematic Engine Error: ${error.message}`);
+            setUploadError(`AI Engine: ${error.message}`);
+            return false;
         }
     };
 
     useEffect(() => {
-        // Only sync from global 'deals' if we don't have pending changes.
-        // This prevents re-renders (triggered by other background syncs) from
-        // overwriting local changes while a user is typing.
-        if (isInitialized && firm && changedDealIds.size === 0) {
-            setLocalDeals(deals.filter(d => d.firmId === firm.id));
+        if (isInitialized && firm) {
+            const filtered = deals.filter(d => d.firmId === firm.id);
+            const sorted = [...filtered].sort((a, b) => (a.order || 0) - (b.order || 0));
+            setOrderedDeals(sorted);
+            setLocalDeals(sorted);
+            setHasOrderChanged(false);
+
+            // Resume AI Tasks
+            try {
+                const saved = localStorage.getItem('kling_active_tasks');
+                if (saved) {
+                    const tasks = JSON.parse(saved);
+                    Object.keys(tasks).forEach(taskId => {
+                        const { dealId, imageUrl, timestamp } = tasks[taskId];
+                        if (Date.now() - timestamp > 2 * 60 * 60 * 1000) {
+                            removeProcessingTask(taskId);
+                            return;
+                        }
+                        setAiProcessingIds(prev => new Set(prev).add(imageUrl));
+                        pollTaskStatus(taskId, dealId, imageUrl);
+                    });
+                }
+            } catch (e) { console.error("Resume Tasks Error:", e); }
         }
-    }, [deals, isInitialized, firm?.id, changedDealIds.size]);
+    }, [deals, isInitialized, firm?.id]);
+
+    const handleReorderDeals = (newOrder: Deal[]) => {
+        setOrderedDeals(newOrder);
+        setLocalDeals(newOrder);
+        setHasOrderChanged(true);
+    };
+
+    const handleSaveOrder = async () => {
+        const updatedDeals = orderedDeals.map((d, index) => ({
+            ...d,
+            order: index
+        }));
+        const success = await reorderDeals(updatedDeals);
+        if (success === true) {
+            setHasOrderChanged(false);
+        }
+    };
 
     const handleLocalUpdate = (dealId: string, updates: any, persist = false) => {
-        // 1. Update UI-local state (for immediate feedback)
-        setLocalDeals(prev => prev.map(d => {
-            if (d.id !== dealId) return d;
-            const newDeal = { ...d } as any;
+        const applyUpdates = (deal: any) => {
+            const newDeal = { ...deal } as any;
             Object.keys(updates).forEach(key => {
-                if (typeof updates[key] === 'function') {
-                    newDeal[key] = updates[key]((d as any)[key]);
+                const val = updates[key];
+                if (typeof val === 'function') {
+                    newDeal[key] = val(deal[key]);
                 } else {
-                    newDeal[key] = updates[key];
+                    newDeal[key] = val;
                 }
             });
             return newDeal;
-        }));
+        };
+
+        // 1. Update BOTH UI-local states (for immediate feedback)
+        setLocalDeals(prev => prev.map(d => d.id === dealId ? applyUpdates(d) : d));
+        setOrderedDeals(prev => prev.map(d => d.id === dealId ? applyUpdates(d) : d));
         setChangedDealIds(prev => new Set(prev).add(dealId));
 
         // 2. Conditionally PERSIST to DataContext (IndexedDB)
-        // If persist is false (default for typing), we wait for the 'Save All' button.
-        // If persist is true (e.g. for media uploads), we save immediately.
         if (persist) {
             updateDeal(dealId, (prev) => {
                 const delta: any = {};
                 Object.keys(updates).forEach(key => {
-                    if (typeof updates[key] === 'function') {
-                        delta[key] = updates[key]((prev as any)[key]);
+                    const val = updates[key];
+                    if (typeof val === 'function') {
+                        delta[key] = val((prev as any)[key]);
                     } else {
-                        delta[key] = updates[key];
+                        delta[key] = val;
                     }
                 });
                 return delta;
@@ -240,7 +368,7 @@ function TenantDealsContent() {
         setEditingDeal(null);
     };
 
-    const activeMediaDeal = localDeals.find(d => d.id === activeMediaDealId);
+    const activeMediaDeal = orderedDeals.find(d => d.id === activeMediaDealId);
 
     const handleReorder = (dealId: string, index: number, direction: 'up' | 'down') => {
         const deal = localDeals.find(d => d.id === dealId);
@@ -260,10 +388,25 @@ function TenantDealsContent() {
         <div className="space-y-12">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-4xl font-bold text-white">Firm <span className="text-brand-gold">Deals</span></h1>
+                    <h1 className="text-4xl font-black text-white uppercase tracking-tight">Firm <span className="text-brand-gold">Deals</span></h1>
                     <p className="mt-2 text-foreground/40 font-medium">Manage and curate your digital tombstone portfolio.</p>
                 </div>
                 <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1 rounded-2xl bg-brand-gray-900 border border-white/5 p-1.5 shadow-xl">
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`flex h-10 w-12 items-center justify-center rounded-xl transition-all ${viewMode === 'grid' ? 'bg-brand-gold text-brand-dark shadow-lg' : 'text-foreground/30 hover:text-white'}`}
+                        >
+                            <LayoutGrid size={18} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`flex h-10 w-12 items-center justify-center rounded-xl transition-all ${viewMode === 'list' ? 'bg-brand-gold text-brand-dark shadow-lg' : 'text-foreground/30 hover:text-white'}`}
+                        >
+                            <ListIcon size={18} />
+                        </button>
+                    </div>
+
                     {changedDealIds.size > 0 && (
                         <button
                             onClick={handleSaveAll}
@@ -275,13 +418,38 @@ function TenantDealsContent() {
                     )}
                     <button
                         onClick={() => setIsAddingDeal(true)}
-                        className="flex items-center gap-2 rounded-xl bg-brand-gold px-6 py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/20"
+                        className="flex items-center gap-3 rounded-2xl bg-brand-gold px-8 py-4 text-xs font-black uppercase tracking-widest text-brand-dark transition-all hover:shadow-xl hover:shadow-brand-gold/20 hover:scale-[1.02] active:scale-[0.98]"
                     >
                         <Plus size={18} />
                         New Deal Tombstone
                     </button>
                 </div>
             </div>
+
+            {hasOrderChanged && (
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-between p-6 rounded-[2rem] bg-brand-gold/10 border border-brand-gold/20"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-brand-gold text-brand-dark">
+                            <GripVertical size={20} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-white uppercase tracking-tight">Custom Order Detected</h3>
+                            <p className="text-[10px] text-brand-gold font-bold uppercase tracking-widest">Apply recent drag-and-drop rearrangements to the live site</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleSaveOrder}
+                        className="flex items-center gap-3 rounded-xl bg-brand-gold px-8 py-3 text-[10px] font-black uppercase tracking-widest text-brand-dark transition-all hover:scale-[1.05]"
+                    >
+                        <Save size={14} />
+                        Save New Order
+                    </button>
+                </motion.div>
+            )}
 
             {/* Filter */}
             <div className="relative group max-w-2xl">
@@ -358,7 +526,8 @@ function TenantDealsContent() {
                                                 for (const file of files) {
                                                     const formData = new FormData();
                                                     formData.append("file", file);
-                                                    formData.append("dealId", "new"); // temporary marker
+                                                    formData.append("id", "new-deal");
+                                                    formData.append("type", "deals");
 
                                                     const res = await fetch("/api/upload", {
                                                         method: "POST",
@@ -477,225 +646,298 @@ function TenantDealsContent() {
                 </div>
             )}
 
-            {/* List Table */}
-            <div className="glass overflow-hidden rounded-[2rem] border border-white/5 bg-brand-gray-900/10">
-                <table className="w-full text-left">
-                    <thead>
-                        <tr className="border-b border-white/5 bg-white/2">
-                            <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Media / File Upload</th>
-                            <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Financial Metrics</th>
-                            <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Investment Narrative</th>
-                            <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Strategy & Structure</th>
-                            <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Date Added</th>
-                            <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30">Responsible Parties</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                        {localDeals
+            <AnimatePresence mode="wait">
+                {viewMode === 'grid' ? (
+                    <Reorder.Group
+                        axis="y"
+                        values={orderedDeals}
+                        onReorder={handleReorderDeals}
+                        className="grid gap-8 md:grid-cols-2 lg:grid-cols-3"
+                    >
+                        {orderedDeals
                             .filter(deal => {
                                 const q = searchQuery.toLowerCase();
                                 return deal.address.toLowerCase().includes(q) || deal.assetType.toLowerCase().includes(q);
                             })
                             .map((deal) => (
-                                <tr key={deal.id} className={`group hover:bg-white/[0.02] transition-colors ${changedDealIds.has(deal.id) ? 'bg-brand-gold/[0.02]' : ''}`}>
-                                    <td className="px-10 py-8 min-w-[300px]">
-                                        <div className="flex items-center gap-4">
-                                            <button
-                                                onClick={() => setActiveMediaDealId(deal.id)}
-                                                className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl bg-brand-gray-900 border border-white/10 group/media"
-                                            >
-                                                {deal.stillImageURL ? (
-                                                    <img src={deal.stillImageURL} className="h-full w-full object-cover group-hover/media:scale-110 transition-transform" />
-                                                ) : (
-                                                    <div className="h-full w-full bg-white/5 flex items-center justify-center">
-                                                        <Upload size={16} className="text-white/20" />
-                                                    </div>
-                                                )}
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/media:opacity-100 flex items-center justify-center transition-opacity">
-                                                    <Upload size={16} className="text-white" />
-                                                </div>
-                                            </button>
-                                            <div className="flex-1 space-y-1">
-                                                <input
-                                                    className="w-full bg-transparent border-none p-0 text-white font-bold placeholder:text-white/10 focus:ring-0 focus:outline-none"
-                                                    value={deal.address.split(',')[0]}
-                                                    onChange={(e) => {
-                                                        const suffix = deal.address.split(',').slice(1).join(',');
-                                                        handleLocalUpdate(deal.id, { address: `${e.target.value}${suffix ? ',' + suffix : ''}` });
-                                                    }}
-                                                />
-                                                <div className="flex items-center gap-2">
-                                                    <MapPin size={12} className="text-brand-gold/40" />
-                                                    <input
-                                                        className="w-full bg-transparent border-none p-0 text-[10px] font-bold uppercase tracking-widest text-foreground/30 focus:ring-0 focus:outline-none"
-                                                        value={deal.address.split(',').slice(1).join(',')}
-                                                        onChange={(e) => {
-                                                            const prefix = deal.address.split(',')[0];
-                                                            handleLocalUpdate(deal.id, { address: `${prefix}, ${e.target.value}` });
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-10 py-8 min-w-[250px]">
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between gap-4">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-foreground/20">Purchase</span>
-                                                <div className="relative">
-                                                    <span className="absolute left-0 top-1/2 -translate-y-1/2 text-brand-gold/40 text-[10px]">$</span>
-                                                    <input
-                                                        type="number"
-                                                        className="w-32 bg-transparent border-b border-white/5 py-1 pl-3 text-sm font-bold text-white focus:border-brand-gold/50 focus:outline-none transition-all"
-                                                        value={deal.purchaseAmount || ""}
-                                                        onChange={(e) => handleLocalUpdate(deal.id, { purchaseAmount: Number(e.target.value) })}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center justify-between gap-4">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-foreground/20">Rehab</span>
-                                                <div className="relative">
-                                                    <span className="absolute left-0 top-1/2 -translate-y-1/2 text-brand-gold/40 text-[10px]">$</span>
-                                                    <input
-                                                        type="number"
-                                                        className="w-32 bg-transparent border-b border-white/5 py-1 pl-3 text-sm font-bold text-white focus:border-brand-gold/50 focus:outline-none transition-all"
-                                                        value={deal.rehabAmount || ""}
-                                                        onChange={(e) => handleLocalUpdate(deal.id, { rehabAmount: Number(e.target.value) })}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center justify-between gap-4">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-foreground/20">ARV</span>
-                                                <div className="relative">
-                                                    <span className="absolute left-0 top-1/2 -translate-y-1/2 text-brand-gold/40 text-[10px]">$</span>
-                                                    <input
-                                                        type="number"
-                                                        className="w-32 bg-transparent border-b border-white/5 py-1 pl-3 text-sm font-bold text-white focus:border-brand-gold/50 focus:outline-none transition-all"
-                                                        value={deal.arv || ""}
-                                                        onChange={(e) => handleLocalUpdate(deal.id, { arv: Number(e.target.value) })}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-10 py-8 min-w-[350px]">
-                                        <div className="space-y-4">
-                                            <textarea
-                                                className="w-full bg-brand-dark/30 border border-white/5 rounded-xl p-4 text-sm text-foreground/70 placeholder:text-white/5 focus:border-brand-gold/30 focus:outline-none transition-all resize-none h-32 leading-relaxed"
-                                                placeholder="Enter investment narrative..."
-                                                value={deal.investmentOverview || ""}
-                                                onChange={(e) => handleLocalUpdate(deal.id, { investmentOverview: e.target.value })}
-                                            />
-                                            <div className="flex items-center justify-between">
-                                                <div className={`flex items-center gap-2 rounded-lg px-3 py-1.5 border transition-all ${deal.isPublic ? 'bg-green-500/5 border-green-500/10 text-green-500' : 'bg-brand-gold/5 border-brand-gold/10 text-brand-gold'}`}>
-                                                    <div className={`h-1.5 w-1.5 rounded-full ${deal.isPublic ? 'bg-green-500' : 'bg-brand-gold'}`} />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">{deal.isPublic ? 'Public' : 'Private'}</span>
-                                                </div>
-                                                <div className="flex gap-2">
+                                <Reorder.Item
+                                    key={deal.id}
+                                    value={deal}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    className="h-full"
+                                >
+                                    <GridDealCard
+                                        deal={deal}
+                                        firmTeam={firmTeam}
+                                        onUpdate={(updates: any) => handleLocalUpdate(deal.id, updates)}
+                                        onDelete={() => deleteDeal(deal.id)}
+                                        saveStatus={changedDealIds.has(deal.id) ? 'saving' : 'idle'}
+                                        onMediaOpen={() => setActiveMediaDealId(deal.id)}
+                                        aiProcessingIds={aiProcessingIds}
+                                    />
+                                </Reorder.Item>
+                            ))}
+                    </Reorder.Group>
+                ) : (
+                    <div className="glass overflow-hidden rounded-[2.5rem] border border-white/5 bg-brand-gray-900/10">
+                        <table className="w-full text-left">
+                            <thead className="bg-brand-gray-900/50">
+                                <tr className="border-b border-white/5">
+                                    <th className="w-12 pl-6 py-4"></th>
+                                    <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30 whitespace-nowrap">Media / File Upload</th>
+                                    <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30 whitespace-nowrap">Financial Metrics</th>
+                                    <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30 whitespace-nowrap">Investment Narrative</th>
+                                    <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30 whitespace-nowrap">Strategy & Structure</th>
+                                    <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30 whitespace-nowrap">Date Added</th>
+                                    <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-foreground/30 whitespace-nowrap">Responsible Parties</th>
+                                </tr>
+                            </thead>
+                            <Reorder.Group
+                                axis="y"
+                                values={orderedDeals}
+                                onReorder={handleReorderDeals}
+                                as="tbody"
+                                className="divide-y divide-white/5"
+                            >
+                                {orderedDeals
+                                    .filter(deal => {
+                                        const q = searchQuery.toLowerCase();
+                                        return deal.address.toLowerCase().includes(q) || deal.assetType.toLowerCase().includes(q);
+                                    })
+                                    .map((deal) => (
+                                        <Reorder.Item
+                                            key={deal.id}
+                                            value={deal}
+                                            as="tr"
+                                            className={`group/row transition-colors hover:bg-white/[0.02] ${changedDealIds.has(deal.id) ? 'bg-brand-gold/[0.02]' : ''}`}
+                                        >
+                                            <td className="pl-6 cursor-grab active:cursor-grabbing text-white/10 hover:text-brand-gold transition-colors">
+                                                <GripVertical size={16} />
+                                            </td>
+                                            <td className="px-10 py-8 min-w-[300px]">
+                                                <div className="flex items-center gap-4">
                                                     <button
-                                                        onClick={() => handleLocalUpdate(deal.id, { isPublic: !deal.isPublic })}
-                                                        className="text-[10px] font-bold text-foreground/30 hover:text-white uppercase tracking-widest underline underline-offset-4"
+                                                        onClick={() => setActiveMediaDealId(deal.id)}
+                                                        className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl bg-brand-gray-900 border border-white/10 group/media"
                                                     >
-                                                        Toggle
+                                                        {deal.generatedVideoURL ? (
+                                                            <video
+                                                                src={deal.generatedVideoURL}
+                                                                autoPlay
+                                                                muted
+                                                                loop
+                                                                playsInline
+                                                                className="h-full w-full object-cover group-hover/media:scale-110 transition-transform"
+                                                            />
+                                                        ) : deal.stillImageURL ? (
+                                                            <img src={deal.stillImageURL} className="h-full w-full object-cover group-hover/media:scale-110 transition-transform" />
+                                                        ) : (
+                                                            <div className="h-full w-full bg-white/5 flex items-center justify-center">
+                                                                <Upload size={16} className="text-white/20" />
+                                                            </div>
+                                                        )}
+                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/media:opacity-100 flex items-center justify-center transition-opacity">
+                                                            <Upload size={16} className="text-white" />
+                                                        </div>
+
+                                                        {/* List View AI Indicator */}
+                                                        {Array.from(aiProcessingIds).some((id: any) => id === deal.stillImageURL || (deal.images || []).includes(id)) && (
+                                                            <div className="absolute inset-0 bg-brand-dark/60 backdrop-blur-sm flex items-center justify-center">
+                                                                <div className="h-4 w-4 border-2 border-brand-gold/30 border-t-brand-gold rounded-full animate-spin" />
+                                                            </div>
+                                                        )}
                                                     </button>
+                                                    <div className="flex-1 space-y-1">
+                                                        <input
+                                                            className="w-full bg-transparent border-none p-0 text-white font-bold placeholder:text-white/10 focus:ring-0 focus:outline-none"
+                                                            value={deal.address.split(',')[0]}
+                                                            onPointerDown={(e) => e.stopPropagation()}
+                                                            onChange={(e) => {
+                                                                const suffix = deal.address.split(',').slice(1).join(',');
+                                                                handleLocalUpdate(deal.id, { address: `${e.target.value}${suffix ? ',' + suffix : ''}` });
+                                                            }}
+                                                        />
+                                                        <div className="flex items-center gap-2">
+                                                            <MapPin size={12} className="text-brand-gold/40" />
+                                                            <input
+                                                                className="w-full bg-transparent border-none p-0 text-[10px] font-bold uppercase tracking-widest text-foreground/30 focus:ring-0 focus:outline-none"
+                                                                value={deal.address.split(',').slice(1).join(',')}
+                                                                onPointerDown={(e) => e.stopPropagation()}
+                                                                onChange={(e) => {
+                                                                    const prefix = deal.address.split(',')[0];
+                                                                    handleLocalUpdate(deal.id, { address: `${prefix}, ${e.target.value}` });
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-10 py-8 min-w-[200px]">
-                                        <div className="space-y-3">
-                                            <select
-                                                className="w-full bg-brand-dark/50 border border-white/5 rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:border-brand-gold/50 focus:outline-none appearance-none cursor-pointer"
-                                                value={deal.assetType}
-                                                onChange={(e) => handleLocalUpdate(deal.id, { assetType: e.target.value })}
-                                            >
-                                                <option value="MULTIFAMILY">Multifamily</option>
-                                                <option value="INDUSTRIAL">Industrial</option>
-                                                <option value="RETAIL">Retail</option>
-                                                <option value="SF">Single Family</option>
-                                            </select>
-                                            <select
-                                                className="w-full bg-brand-dark/50 border border-white/5 rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:border-brand-gold/50 focus:outline-none appearance-none cursor-pointer"
-                                                value={deal.strategy}
-                                                onChange={(e) => handleLocalUpdate(deal.id, { strategy: e.target.value })}
-                                            >
-                                                <option value="BUY_AND_HOLD">Buy & Hold</option>
-                                                <option value="FIX_FLIP">Fix & Flip</option>
-                                            </select>
-                                            <select
-                                                className="w-full bg-brand-dark/50 border border-white/5 rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:border-brand-gold/50 focus:outline-none appearance-none cursor-pointer"
-                                                value={deal.financingType}
-                                                onChange={(e) => handleLocalUpdate(deal.id, { financingType: e.target.value })}
-                                            >
-                                                <option value="Debt Financing">Debt Financing</option>
-                                                <option value="Equity Ownership">Equity Ownership</option>
-                                            </select>
-                                        </div>
-                                    </td>
-                                    <td className="px-10 py-8 min-w-[150px]">
-                                        <div className="space-y-1">
-                                            <p className="text-xs font-bold text-white">
-                                                {new Date(deal.createdAt || Date.now()).toLocaleDateString()}
-                                            </p>
-                                            <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
-                                                {new Date(deal.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </p>
-                                        </div>
-                                    </td>
-                                    <td className="px-10 py-8 min-w-[250px]">
-                                        <div className="flex flex-wrap gap-2">
-                                            {(deal.teamMemberIds || []).map((mId: string) => {
-                                                const member = firmTeam.find(m => m.id === mId);
-                                                return (
-                                                    <div key={mId} className="flex items-center gap-2 rounded-lg bg-brand-gold/10 border border-brand-gold/20 px-3 py-1.5 text-[10px] font-bold text-brand-gold">
-                                                        {member?.name}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleLocalUpdate(deal.id, { teamMemberIds: (deal.teamMemberIds || []).filter((id: string) => id !== mId) })}
-                                                            className="hover:text-white"
-                                                        >
-                                                            <X size={12} />
+                                            </td>
+                                            <td className="px-10 py-8 min-w-[250px]">
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-foreground/20">Purchase</span>
+                                                        <div className="relative">
+                                                            <span className="absolute left-0 top-1/2 -translate-y-1/2 text-brand-gold/40 text-[10px]">$</span>
+                                                            <input
+                                                                type="number"
+                                                                className="w-32 bg-transparent border-b border-white/5 py-1 pl-3 text-sm font-bold text-white focus:border-brand-gold/50 focus:outline-none transition-all"
+                                                                value={deal.purchaseAmount || ""}
+                                                                onPointerDown={(e) => e.stopPropagation()}
+                                                                onChange={(e) => handleLocalUpdate(deal.id, { purchaseAmount: Number(e.target.value) })}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-foreground/20">Rehab</span>
+                                                        <div className="relative">
+                                                            <span className="absolute left-0 top-1/2 -translate-y-1/2 text-brand-gold/40 text-[10px]">$</span>
+                                                            <input
+                                                                type="number"
+                                                                className="w-32 bg-transparent border-b border-white/5 py-1 pl-3 text-sm font-bold text-white focus:border-brand-gold/50 focus:outline-none transition-all"
+                                                                value={deal.rehabAmount || ""}
+                                                                onPointerDown={(e) => e.stopPropagation()}
+                                                                onChange={(e) => handleLocalUpdate(deal.id, { rehabAmount: Number(e.target.value) })}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-foreground/20">ARV</span>
+                                                        <div className="relative">
+                                                            <span className="absolute left-0 top-1/2 -translate-y-1/2 text-brand-gold/40 text-[10px]">$</span>
+                                                            <input
+                                                                type="number"
+                                                                className="w-32 bg-transparent border-b border-white/5 py-1 pl-3 text-sm font-bold text-white focus:border-brand-gold/50 focus:outline-none transition-all"
+                                                                value={deal.arv || ""}
+                                                                onPointerDown={(e) => e.stopPropagation()}
+                                                                onChange={(e) => handleLocalUpdate(deal.id, { arv: Number(e.target.value) })}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-10 py-8 min-w-[350px]">
+                                                <div className="space-y-4">
+                                                    <textarea
+                                                        className="w-full bg-brand-dark/30 border border-white/5 rounded-xl p-4 text-sm text-foreground/70 placeholder:text-white/5 focus:border-brand-gold/30 focus:outline-none transition-all resize-none h-32 leading-relaxed"
+                                                        placeholder="Enter investment narrative..."
+                                                        value={deal.investmentOverview || ""}
+                                                        onPointerDown={(e) => e.stopPropagation()}
+                                                        onChange={(e) => handleLocalUpdate(deal.id, { investmentOverview: e.target.value })}
+                                                    />
+                                                    <div className="flex items-center justify-between">
+                                                        <div className={`flex items-center gap-2 rounded-lg px-3 py-1.5 border transition-all ${deal.isPublic ? 'bg-green-500/5 border-green-500/10 text-green-500' : 'bg-brand-gold/5 border-brand-gold/10 text-brand-gold'}`}>
+                                                            <div className={`h-1.5 w-1.5 rounded-full ${deal.isPublic ? 'bg-green-500' : 'bg-brand-gold'}`} />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">{deal.isPublic ? 'Public' : 'Private'}</span>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => handleLocalUpdate(deal.id, { isPublic: !deal.isPublic })}
+                                                                className="text-[10px] font-bold text-foreground/30 hover:text-white uppercase tracking-widest underline underline-offset-4"
+                                                            >
+                                                                Toggle
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-10 py-8 min-w-[200px]">
+                                                <div className="space-y-3">
+                                                    <select
+                                                        className="w-full bg-brand-dark/50 border border-white/5 rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:border-brand-gold/50 focus:outline-none appearance-none cursor-pointer"
+                                                        value={deal.assetType}
+                                                        onChange={(e) => handleLocalUpdate(deal.id, { assetType: e.target.value })}
+                                                    >
+                                                        <option value="MULTIFAMILY">Multifamily</option>
+                                                        <option value="INDUSTRIAL">Industrial</option>
+                                                        <option value="RETAIL">Retail</option>
+                                                        <option value="SF">Single Family</option>
+                                                    </select>
+                                                    <select
+                                                        className="w-full bg-brand-dark/50 border border-white/5 rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:border-brand-gold/50 focus:outline-none appearance-none cursor-pointer"
+                                                        value={deal.strategy}
+                                                        onChange={(e) => handleLocalUpdate(deal.id, { strategy: e.target.value })}
+                                                    >
+                                                        <option value="BUY_AND_HOLD">Buy & Hold</option>
+                                                        <option value="FIX_FLIP">Fix & Flip</option>
+                                                    </select>
+                                                    <select
+                                                        className="w-full bg-brand-dark/50 border border-white/5 rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:border-brand-gold/50 focus:outline-none appearance-none cursor-pointer"
+                                                        value={deal.financingType}
+                                                        onChange={(e) => handleLocalUpdate(deal.id, { financingType: e.target.value })}
+                                                    >
+                                                        <option value="Debt Financing">Debt Financing</option>
+                                                        <option value="Equity Ownership">Equity Ownership</option>
+                                                    </select>
+                                                </div>
+                                            </td>
+                                            <td className="px-10 py-8 min-w-[150px]">
+                                                <div className="space-y-1">
+                                                    <p className="text-xs font-bold text-white">
+                                                        {new Date(deal.createdAt || Date.now()).toLocaleDateString()}
+                                                    </p>
+                                                    <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
+                                                        {new Date(deal.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
+                                                </div>
+                                            </td>
+                                            <td className="px-10 py-8 min-w-[250px]">
+                                                <div className="flex flex-wrap gap-2">
+                                                    {(deal.teamMemberIds || []).map((mId: string) => {
+                                                        const member = firmTeam.find(m => m.id === mId);
+                                                        return (
+                                                            <div key={mId} className="flex items-center gap-2 rounded-lg bg-brand-gold/10 border border-brand-gold/20 px-3 py-1.5 text-[10px] font-bold text-brand-gold">
+                                                                {member?.name}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleLocalUpdate(deal.id, { teamMemberIds: (deal.teamMemberIds || []).filter((id: string) => id !== mId) })}
+                                                                    className="hover:text-white"
+                                                                >
+                                                                    <X size={12} />
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    <select
+                                                        className="w-full bg-transparent border-b border-white/5 py-1 text-[10px] font-bold text-brand-gold/60 focus:outline-none cursor-pointer"
+                                                        value=""
+                                                        onChange={(e) => {
+                                                            if (e.target.value && !(deal.teamMemberIds || []).includes(e.target.value)) {
+                                                                handleLocalUpdate(deal.id, { teamMemberIds: [...(deal.teamMemberIds || []), e.target.value] });
+                                                            }
+                                                        }}
+                                                    >
+                                                        <option value="">+ Assign Team...</option>
+                                                        {firmTeam
+                                                            .filter(m => !(deal.teamMemberIds || []).includes(m.id))
+                                                            .map(member => (
+                                                                <option key={member.id} value={member.id}>{member.name}</option>
+                                                            ))
+                                                        }
+                                                    </select>
+                                                </div>
+                                            </td>
+                                            <td className="px-10 py-8 text-right min-w-[150px]">
+                                                <div className="flex flex-col items-end gap-3 pr-10">
+                                                    <div className="flex gap-2">
+                                                        <Link href={`/deals/${deal.id}`} className="p-3 rounded-xl bg-white/5 text-foreground/30 hover:text-brand-gold transition-all border border-transparent hover:border-brand-gold/20">
+                                                            <Eye size={16} />
+                                                        </Link>
+                                                        <button onClick={() => deleteDeal(deal.id)} className="p-3 rounded-xl bg-white/5 text-foreground/30 hover:text-red-500 transition-all border border-transparent hover:border-red-500/20">
+                                                            <Trash2 size={16} />
                                                         </button>
                                                     </div>
-                                                );
-                                            })}
-                                            <select
-                                                className="w-full bg-transparent border-b border-white/5 py-1 text-[10px] font-bold text-brand-gold/60 focus:outline-none cursor-pointer"
-                                                value=""
-                                                onChange={(e) => {
-                                                    if (e.target.value && !(deal.teamMemberIds || []).includes(e.target.value)) {
-                                                        handleLocalUpdate(deal.id, { teamMemberIds: [...(deal.teamMemberIds || []), e.target.value] });
-                                                    }
-                                                }}
-                                            >
-                                                <option value="">+ Assign Team...</option>
-                                                {firmTeam
-                                                    .filter(m => !(deal.teamMemberIds || []).includes(m.id))
-                                                    .map(member => (
-                                                        <option key={member.id} value={member.id}>{member.name}</option>
-                                                    ))
-                                                }
-                                            </select>
-                                        </div>
-                                    </td>
-                                    <td className="px-10 py-8 text-right min-w-[150px]">
-                                        <div className="flex flex-col items-end gap-3">
-                                            <div className="flex gap-2">
-                                                <Link href={`/deals/${deal.id}`} className="p-3 rounded-xl bg-white/5 text-foreground/30 hover:text-brand-gold transition-all border border-transparent hover:border-brand-gold/20">
-                                                    <Eye size={16} />
-                                                </Link>
-                                                <button onClick={() => deleteDeal(deal.id)} className="p-3 rounded-xl bg-white/5 text-foreground/30 hover:text-red-500 transition-all border border-transparent hover:border-red-500/20">
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        }
-                    </tbody>
-                </table>
-            </div>
+                                                </div>
+                                            </td>
+                                        </Reorder.Item>
+                                    ))
+                                }
+                            </Reorder.Group>
+                        </table>
+                    </div>
+                )}
+            </AnimatePresence>
             {/* Media Gallery Modal */}
             {activeMediaDealId && activeMediaDeal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-dark/95 backdrop-blur-xl animate-in fade-in duration-300">
@@ -748,7 +990,8 @@ function TenantDealsContent() {
                                                         for (const file of files) {
                                                             const formData = new FormData();
                                                             formData.append("file", file);
-                                                            formData.append("dealId", activeMediaDeal.id);
+                                                            formData.append("id", activeMediaDeal.id);
+                                                            formData.append("type", "deals");
 
                                                             const res = await fetch("/api/upload", {
                                                                 method: "POST",
@@ -807,7 +1050,8 @@ function TenantDealsContent() {
                                                     try {
                                                         const formData = new FormData();
                                                         formData.append("file", file);
-                                                        formData.append("dealId", activeMediaDeal.id);
+                                                        formData.append("id", activeMediaDeal.id);
+                                                        formData.append("type", "deals");
 
                                                         const res = await fetch("/api/upload", {
                                                             method: "POST",
@@ -824,12 +1068,12 @@ function TenantDealsContent() {
 
                                                         handleLocalUpdate(activeMediaDeal.id, {
                                                             images: (prev: string[]) => [...(prev || []), url],
-                                                            stillImageURL: (prev: string) => !prev ? url : prev
-                                                        }, true); // Persist immediately for media
+                                                            stillImageURL: url // Force AI upload to becomes the primary cover
+                                                        }, true);
                                                         console.log("AI Engine Upload Success:", url);
 
                                                         // Force Trigger Kling for this specific uploader
-                                                        handleGenerateAIVideo(activeMediaDeal.id, url);
+                                                        await handleGenerateAIVideo(activeMediaDeal.id, url);
                                                     } catch (err: any) {
                                                         console.error("AI Upload Error:", err);
                                                         setUploadError(err.message || "Failed to initiate AI generation.");
@@ -843,6 +1087,20 @@ function TenantDealsContent() {
                                                 <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold">Generate Living Drone View</p>
                                             </div>
                                         </div>
+                                        {uploadError && (
+                                            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 mt-2 animate-in slide-in-from-top-1">
+                                                <div className="rounded-full bg-red-500 p-1 flex-shrink-0 mt-0.5">
+                                                    <X size={8} className="text-white" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-[9px] font-black text-red-400 uppercase tracking-tighter">System Error</p>
+                                                    <p className="text-[8px] font-medium text-red-300 active:select-all">{uploadError}</p>
+                                                </div>
+                                                <button onClick={() => setUploadError(null)} className="text-red-400/40 hover:text-red-400">
+                                                    <X size={12} />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -873,20 +1131,21 @@ function TenantDealsContent() {
                                                     )}
 
                                                     {activeMediaDeal.generatedVideoURL && idx === 0 ? (
-                                                        <div className="absolute inset-0 bg-brand-gold/10 flex items-center justify-center pointer-events-none">
-                                                            <div className="rounded-full bg-brand-gold p-1 shadow-lg">
+                                                        <div className="absolute inset-0 z-10 pointer-events-none">
+                                                            <div className="absolute inset-0 bg-brand-gold/10" />
+                                                            <div className="absolute bottom-2 right-2 rounded-full bg-brand-gold p-1 shadow-lg ring-2 ring-brand-dark">
                                                                 <Video size={10} className="text-brand-dark" />
                                                             </div>
                                                         </div>
                                                     ) : aiProcessingIds.has(img) ? (
-                                                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1">
+                                                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1 z-20">
                                                             <div className="h-4 w-4 border-2 border-brand-gold/30 border-t-brand-gold animate-spin rounded-full" />
                                                             <span className="text-[6px] font-black uppercase text-brand-gold">AI Processing</span>
                                                         </div>
                                                     ) : (
                                                         <button
                                                             onClick={() => img && handleGenerateAIVideo(activeMediaDeal.id, img)}
-                                                            className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-all"
+                                                            className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-all z-20"
                                                         >
                                                             <div className="flex flex-col items-center gap-1">
                                                                 <Upload size={14} className="text-brand-gold" />
@@ -894,6 +1153,18 @@ function TenantDealsContent() {
                                                             </div>
                                                         </button>
                                                     )}
+                                                    {activeMediaDeal.generatedVideoURL && idx === 0 ? (
+                                                        <video
+                                                            src={activeMediaDeal.generatedVideoURL}
+                                                            autoPlay
+                                                            muted
+                                                            loop
+                                                            playsInline
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    ) : img ? (
+                                                        <img src={img} className="h-full w-full object-cover" />
+                                                    ) : null}
                                                 </div>
                                                 <div className="flex-1">
                                                     <p className="text-[10px] font-black uppercase tracking-widest text-foreground/40">Asset File</p>
@@ -978,3 +1249,220 @@ function TenantDealsContent() {
         </div>
     );
 }
+
+// Sub-component: Grid card refined to match Site Editor aesthetic
+function GridDealCard({ deal, firmTeam, onUpdate, onDelete, saveStatus, onMediaOpen, aiProcessingIds }: {
+    deal: Deal,
+    firmTeam: any[],
+    onUpdate: (updates: any) => void,
+    onDelete: () => void,
+    saveStatus: 'idle' | 'saving' | 'saved',
+    onMediaOpen: () => void,
+    aiProcessingIds: Set<string>
+}) {
+    return (
+        <div className="glass group overflow-hidden rounded-[2.5rem] border border-white/5 bg-brand-gray-900/30 p-8 transition-all hover:border-brand-gold/20 hover:bg-brand-gray-900/50 flex flex-col h-full shadow-2xl relative">
+            <div className="absolute top-6 right-8 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-white/10 hover:text-brand-gold">
+                <GripVertical size={16} />
+            </div>
+
+            {/* Media Section */}
+            <div className="relative group/media mb-8">
+                <div
+                    onClick={onMediaOpen}
+                    className="aspect-video w-full overflow-hidden rounded-[2rem] border-2 border-brand-gold/30 shadow-xl bg-brand-dark group-hover/media:border-brand-gold transition-all cursor-pointer relative"
+                >
+                    {deal.generatedVideoURL ? (
+                        <video
+                            src={deal.generatedVideoURL}
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className="h-full w-full object-cover group-hover/media:scale-105 transition-transform"
+                        />
+                    ) : deal.stillImageURL ? (
+                        <img src={deal.stillImageURL} className="h-full w-full object-cover group-hover/media:scale-110 transition-transform" />
+                    ) : (
+                        <div className="h-full w-full bg-white/5 flex items-center justify-center">
+                            <Upload size={32} className="text-white/20" />
+                        </div>
+                    )}
+
+                    {/* AI Generation State on Card */}
+                    {!deal.generatedVideoURL && Array.from(aiProcessingIds).some((id: any) => id === deal.stillImageURL || (deal.images || []).includes(id)) && (
+                        <div className="absolute inset-0 bg-brand-dark/40 backdrop-blur-sm flex flex-col items-center justify-center gap-3 animate-in fade-in z-10">
+                            <div className="h-8 w-8 border-4 border-brand-gold/20 border-t-brand-gold rounded-full animate-spin shadow-2xl" />
+                            <div className="text-center">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-gold">AI Rendering</p>
+                                <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mt-1">Cinematic Drone Flight</p>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/media:opacity-100 flex items-center justify-center transition-opacity">
+                        <Camera size={32} className="text-white" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Identity & Address */}
+            <div className="space-y-4 mb-8">
+                <div className="space-y-1">
+                    <label className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 ml-1">Property Address</label>
+                    <input
+                        type="text"
+                        value={deal.address}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onChange={(e) => onUpdate({ address: e.target.value })}
+                        className="w-full bg-transparent border-b border-white/10 text-xl font-black text-white outline-none focus:border-brand-gold transition-all"
+                    />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                        <label className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 ml-1">Asset Category</label>
+                        <select
+                            className="w-full bg-transparent border-b border-white/10 text-[10px] font-black text-brand-gold outline-none focus:border-brand-gold transition-all uppercase tracking-widest appearance-none py-1"
+                            value={deal.assetType}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onChange={(e) => onUpdate({ assetType: e.target.value })}
+                        >
+                            <option value="MULTIFAMILY">Multifamily</option>
+                            <option value="INDUSTRIAL">Industrial</option>
+                            <option value="RETAIL">Retail</option>
+                            <option value="SF">Single Family</option>
+                        </select>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 ml-1">Strategy</label>
+                        <select
+                            className="w-full bg-transparent border-b border-white/10 text-[10px] font-black text-brand-gold outline-none focus:border-brand-gold transition-all uppercase tracking-widest appearance-none py-1"
+                            value={deal.strategy}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onChange={(e) => onUpdate({ strategy: e.target.value })}
+                        >
+                            <option value="BUY_AND_HOLD">Buy & Hold</option>
+                            <option value="FIX_FLIP">Fix & Flip</option>
+                        </select>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 ml-1">Structure</label>
+                        <select
+                            className="w-full bg-transparent border-b border-white/10 text-[10px] font-black text-brand-gold outline-none focus:border-brand-gold transition-all uppercase tracking-widest appearance-none py-1"
+                            value={deal.financingType}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onChange={(e) => onUpdate({ financingType: e.target.value })}
+                        >
+                            <option value="Debt Financing">Debt</option>
+                            <option value="Equity Ownership">Equity</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {/* Metrics Section */}
+            <div className="grid grid-cols-3 gap-4 mb-8">
+                <div className="space-y-1 text-center p-3 rounded-2xl bg-black/20 border border-white/5">
+                    <label className="text-[8px] font-black uppercase tracking-widest text-white/20 block">Purchase</label>
+                    <div className="text-xs font-black text-white flex items-center justify-center gap-0.5">
+                        <span className="text-brand-gold/40">$</span>
+                        <input
+                            type="number"
+                            className="bg-transparent w-full text-center outline-none"
+                            value={deal.purchaseAmount || ""}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onChange={(e) => onUpdate({ purchaseAmount: Number(e.target.value) })}
+                        />
+                    </div>
+                </div>
+                <div className="space-y-1 text-center p-3 rounded-2xl bg-black/20 border border-white/5">
+                    <label className="text-[8px] font-black uppercase tracking-widest text-white/20 block">Rehab</label>
+                    <div className="text-xs font-black text-white flex items-center justify-center gap-0.5">
+                        <span className="text-brand-gold/40">$</span>
+                        <input
+                            type="number"
+                            className="bg-transparent w-full text-center outline-none"
+                            value={deal.rehabAmount || ""}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onChange={(e) => onUpdate({ rehabAmount: Number(e.target.value) })}
+                        />
+                    </div>
+                </div>
+                <div className="space-y-1 text-center p-3 rounded-2xl bg-black/20 border border-white/5">
+                    <label className="text-[8px] font-black uppercase tracking-widest text-white/20 block">ARV</label>
+                    <div className="text-xs font-black text-white flex items-center justify-center gap-0.5">
+                        <span className="text-brand-gold/40">$</span>
+                        <input
+                            type="number"
+                            className="bg-transparent w-full text-center outline-none"
+                            value={deal.arv || ""}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onChange={(e) => onUpdate({ arv: Number(e.target.value) })}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Narrative Section */}
+            <div className="space-y-2 mb-8 flex-1">
+                <label className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 ml-1">Investment Narrative</label>
+                <textarea
+                    className="w-full h-32 rounded-2xl border border-white/5 bg-black/20 p-4 text-xs font-medium text-white/60 outline-none focus:border-brand-gold/30 transition-all resize-none custom-scrollbar"
+                    value={deal.investmentOverview || ""}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onChange={(e) => onUpdate({ investmentOverview: e.target.value })}
+                    placeholder="Describe the opportunity..."
+                />
+            </div>
+
+            {/* Parties Section */}
+            <div className="space-y-3 mb-8">
+                <label className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 ml-1">Team Assigned</label>
+                <div className="flex flex-wrap gap-1.5 p-3 rounded-2xl bg-black/20 border border-white/5 min-h-[48px]">
+                    {(deal.teamMemberIds || []).map(mId => {
+                        const m = firmTeam.find(item => item.id === mId);
+                        return (
+                            <div key={mId} className="flex items-center gap-1.5 rounded-lg bg-brand-gold/10 px-2.5 py-1 text-[8px] font-black uppercase tracking-widest text-brand-gold border border-brand-gold/20">
+                                {m?.name}
+                                <button onClick={() => onUpdate({ teamMemberIds: (deal.teamMemberIds || []).filter((id: string) => id !== mId) })}>
+                                    <X size={10} />
+                                </button>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Actions Bar */}
+            <div className="flex items-center gap-3">
+                <button
+                    onClick={() => onUpdate({ isPublic: !deal.isPublic })}
+                    className={`h-14 px-6 flex items-center gap-3 rounded-2xl border transition-all ${deal.isPublic ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-brand-gold/10 border-brand-gold/20 text-brand-gold'}`}
+                >
+                    <div className={`h-2 w-2 rounded-full ${deal.isPublic ? 'bg-green-500 animate-pulse' : 'bg-brand-gold'}`} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">{deal.isPublic ? 'Public' : 'Private'}</span>
+                </button>
+                <Link
+                    href={`/deals/${deal.id}`}
+                    className="flex-1 flex items-center justify-center gap-3 h-14 rounded-2xl bg-brand-dark/50 border border-white/5 text-[10px] font-black uppercase tracking-widest text-white/40 transition-all hover:bg-brand-gray-800 hover:text-white"
+                >
+                    <ExternalLink size={14} />
+                    View Live
+                </Link>
+                <button
+                    onClick={onDelete}
+                    className="h-14 w-14 flex items-center justify-center rounded-2xl bg-white/5 text-white/20 border border-white/5 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 transition-all"
+                >
+                    <Trash2 size={20} />
+                </button>
+            </div>
+
+            {saveStatus === 'saving' && (
+                <div className="absolute top-4 left-4">
+                    <div className="h-2 w-2 rounded-full bg-brand-gold animate-pulse" />
+                </div>
+            )}
+        </div>
+    );
+}
+

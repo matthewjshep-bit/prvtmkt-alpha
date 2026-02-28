@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useData, Firm } from "@/context/DataContext";
 import {
@@ -22,7 +22,9 @@ import {
     Settings2,
     Monitor,
     Smartphone,
-    Globe
+    Globe,
+    Star,
+    GripVertical
 } from "lucide-react";
 import PublicPortalView from "@/components/PublicPortalView";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -38,6 +40,11 @@ export default function MySiteOverhaul() {
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState("");
     const [isUploadingHero, setIsUploadingHero] = useState(false);
+    const [focusedMemberId, setFocusedMemberId] = useState<string | undefined>();
+    const [portalPreviewMode, setPortalPreviewMode] = useState<"GALLERY" | "PROFILE">("GALLERY");
+    const [editorWidth, setEditorWidth] = useState(40); // Initial 40% width
+    const [isResizing, setIsResizing] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     // Local state for live sync
     const [formData, setFormData] = useState<Firm | null>(null);
@@ -49,6 +56,42 @@ export default function MySiteOverhaul() {
             });
         }
     }, [firm, formData]);
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isResizing || !containerRef.current) return;
+
+            const containerRect = containerRef.current.getBoundingClientRect();
+            const relativeX = e.clientX - containerRect.left;
+            const containerWidth = containerRect.width;
+
+            // Calculate percentage from right
+            const newEditorWidth = ((containerWidth - relativeX) / containerWidth) * 100;
+
+            // Constraints:
+            // Site Preview (left side) must be at least 55% -> Editor max 45%
+            // Live Site Editor (right side) must be at least 15% for usability
+            if (newEditorWidth <= 45 && newEditorWidth >= 15) {
+                setEditorWidth(newEditorWidth);
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+            document.body.style.cursor = 'default';
+        };
+
+        if (isResizing) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+            document.body.style.cursor = 'col-resize';
+        }
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isResizing]);
 
     if (!firm || !formData) return (
         <div className="h-full flex items-center justify-center">
@@ -78,7 +121,7 @@ export default function MySiteOverhaul() {
     };
 
     return (
-        <div className="h-[calc(100vh-120px)] flex overflow-hidden -m-8">
+        <div ref={containerRef} className="h-[calc(100vh-120px)] flex overflow-hidden -m-8 select-none">
             {/* Center Preview Area */}
             <div className="flex-1 flex flex-col bg-brand-gray-900/50 relative overflow-hidden">
                 <div className="p-6 flex items-center justify-between border-b border-white/5 bg-brand-dark/50 backdrop-blur-md z-20">
@@ -114,21 +157,47 @@ export default function MySiteOverhaul() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-auto p-12 flex justify-center items-start scrollbar-hide">
-                    <div className={`transition-all duration-700 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] rounded-[3rem] overflow-hidden border border-white/10 bg-brand-dark ${previewMode === "DESKTOP" ? "w-full max-w-6xl h-auto min-h-[800px]" : "w-[375px] h-[750px] sticky top-0"}`}>
+                <div className="flex-1 overflow-auto p-4 flex justify-center items-start scrollbar-hide">
+                    <div className={`transition-all duration-700 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] rounded-[3rem] overflow-hidden border border-white/10 bg-brand-dark ${previewMode === "DESKTOP" ? "w-full h-auto min-h-[800px]" : "w-[375px] h-[750px] sticky top-0"}`}>
                         <PublicPortalView
                             firm={formData}
                             deals={deals}
                             teamMembers={teamMembers}
                             isInitialized={isInitialized}
                             isPreview={true}
+                            focusedMemberId={focusedMemberId}
+                            previewMode={portalPreviewMode}
+                            onMemberClick={(id) => {
+                                if (id) {
+                                    setFocusedMemberId(id);
+                                    setPortalPreviewMode("PROFILE");
+                                } else {
+                                    setFocusedMemberId(undefined);
+                                    setPortalPreviewMode("GALLERY");
+                                }
+                            }}
                         />
                     </div>
                 </div>
             </div>
 
+            {/* Resizer Handle */}
+            {isEditorOpen && (
+                <div
+                    onMouseDown={() => setIsResizing(true)}
+                    className="group relative z-40 flex w-1 cursor-col-resize items-center justify-center bg-white/5 transition-colors hover:bg-brand-gold/40"
+                >
+                    <div className="absolute left-1/2 -translate-x-1/2 flex h-10 w-4 items-center justify-center rounded-full bg-brand-dark border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <GripVertical size={12} className="text-white/40" />
+                    </div>
+                </div>
+            )}
+
             {/* Right Editor Column */}
-            <div className={`transition-all duration-500 bg-brand-dark border-l border-white/5 flex flex-col overflow-hidden shadow-2xl z-30 ${isEditorOpen ? "w-[450px]" : "w-0"}`}>
+            <div
+                style={{ width: isEditorOpen ? `${editorWidth}%` : '0' }}
+                className={`${!isResizing ? 'transition-[width] duration-500' : ''} bg-brand-dark border-l border-white/5 flex flex-col overflow-hidden shadow-2xl z-30`}
+            >
                 <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
                     <div className="flex items-center gap-3">
                         <div className="h-8 w-16 flex items-center justify-center rounded-lg bg-white/5 p-1 border border-white/5">
@@ -751,6 +820,19 @@ export default function MySiteOverhaul() {
                                         value={formData.linkedInUrl || ''}
                                         onChange={(e) => updateField('linkedInUrl', e.target.value)}
                                         placeholder="linkedin.com/company/..."
+                                    />
+                                </div>
+                            </div>
+                            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-white/30">Google Reviews URL</label>
+                                <div className="relative flex items-center">
+                                    <Star className="text-brand-gold/40 mr-3" size={14} />
+                                    <input
+                                        type="text"
+                                        className="flex-1 bg-transparent text-xs text-white outline-none font-medium placeholder:text-white/5"
+                                        value={formData.googleReviewsUrl || ''}
+                                        onChange={(e) => updateField('googleReviewsUrl', e.target.value)}
+                                        placeholder="Search for your business on Google Maps..."
                                     />
                                 </div>
                             </div>
