@@ -172,20 +172,46 @@ export default function AdminFirmsPage() {
 
             // 3. Add Deals
             if (scrapedResults.deals && Array.isArray(scrapedResults.deals)) {
+                console.log(`[Import] Processing ${scrapedResults.deals.length} deals...`);
                 for (let i = 0; i < scrapedResults.deals.length; i++) {
                     const deal = scrapedResults.deals[i];
-                    await addDeal({
+
+                    // Normalize Enums
+                    const normalizeEnum = (val: string, type: 'asset' | 'strategy') => {
+                        const clean = (val || "").toUpperCase().trim().replace(/ /g, '_').replace(/-/g, '_');
+                        if (type === 'asset') {
+                            const allowed = ['INDUSTRIAL', 'RETAIL', 'MULTIFAMILY', 'SF', 'OFFICE', 'HOTEL', 'HOSPITALITY', 'MIXED_USE', 'LAND'];
+                            if (allowed.includes(clean)) return clean;
+                            if (clean.includes('HOSPITAL')) return 'HOSPITALITY';
+                            if (clean.includes('MIXED')) return 'MIXED_USE';
+                            return 'INDUSTRIAL'; // Safety fallback
+                        } else {
+                            const allowed = ['BUY_AND_HOLD', 'FIX_FLIP', 'VALUE_ADD', 'CORE', 'STABILIZED', 'OPPORTUNISTIC'];
+                            if (allowed.includes(clean)) return clean;
+                            if (clean.includes('HOLD')) return 'BUY_AND_HOLD';
+                            if (clean.includes('FIX')) return 'FIX_FLIP';
+                            if (clean.includes('VALUE')) return 'VALUE_ADD';
+                            return 'CORE'; // Safety fallback
+                        }
+                    };
+
+                    const added = await addDeal({
                         id: `d-temp-${Date.now()}-${i}`,
                         firmId: firmId,
                         address: deal.address || "Unknown Property",
-                        assetType: deal.assetType || "INDUSTRIAL",
-                        strategy: deal.strategy || "Core Plus",
-                        context: deal.description || "",
-                        stillImageURL: deal.imageURL || "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab",
+                        assetType: normalizeEnum(deal.assetType, 'asset') as any,
+                        strategy: normalizeEnum(deal.strategy, 'strategy') as any,
+                        context: deal.description || deal.context || "",
+                        stillImageURL: deal.imageURL || deal.propertyPhoto || "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab",
                         purchaseAmount: deal.purchaseAmount || null,
                         isPublic: true,
+                        images: [deal.imageURL || deal.propertyPhoto].filter(Boolean) as string[],
                         teamMemberIds: []
                     });
+
+                    if (!added) {
+                        console.error(`[Import] Failed to save deal ${i}:`, deal.address);
+                    }
                 }
             }
 
