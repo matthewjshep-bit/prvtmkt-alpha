@@ -6,7 +6,7 @@ import {
     Briefcase, Building2, MapPin, Eye, Edit3, Trash2, Plus, X,
     Save, Upload, Search, GripVertical, ListChecks, TrendingUp,
     Video, LayoutGrid, List as ListIcon, Camera, Image as ImageIcon,
-    ExternalLink, Check, Mail
+    ExternalLink, Check, Mail, Globe, Sparkles, Loader2
 } from "lucide-react";
 import { useSearchParams, useParams } from "next/navigation";
 import Link from "next/link";
@@ -44,6 +44,14 @@ function TenantDealsContent() {
     const [aiProcessingIds, setAiProcessingIds] = useState<Set<string>>(new Set());
     const [isUploading, setIsUploading] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
+
+    // Asset Scraper State
+    const [isScraping, setIsScraping] = useState(false);
+    const [scrapeUrl, setScrapeUrl] = useState("");
+    const [scrapedDeals, setScrapedDeals] = useState<any[]>([]);
+    const [showScrapeModal, setShowScrapeModal] = useState(false);
+    const [scrapeError, setScrapeError] = useState<string | null>(null);
+    const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
 
     // --- Persist AI Drone Engine Tasks ---
     const saveProcessingTask = (taskId: string, dealId: string, imageUrl: string) => {
@@ -384,6 +392,123 @@ function TenantDealsContent() {
         });
     };
 
+    const handleScrapeAssets = async () => {
+        if (!scrapeUrl) return;
+        setIsScraping(true);
+        setScrapedDeals([]);
+        setScrapeError(null);
+        try {
+            const response = await fetch('/api/scrape/assets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: scrapeUrl })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                setScrapeError(errorData.error || errorData.detail || `Server error (${response.status})`);
+                return;
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                setScrapedDeals(result.deals || []);
+                if (result.deals?.length === 0) {
+                    setScrapeError("No assets were found on the provided page. Try the main portfolio URL.");
+                }
+            } else {
+                setScrapeError(result.error || result.detail || 'Unknown scraper error');
+            }
+        } catch (error: any) {
+            console.error("Scrape Error:", error);
+            setScrapeError(error.message || "Connection failed while scraping.");
+        } finally {
+            setIsScraping(false);
+        }
+    };
+
+    const handleApplyScrapeImport = async () => {
+        if (!scrapedDeals.length) return;
+        setIsSaving(true);
+        setScrapeError(null);
+        setImportProgress({ current: 0, total: scrapedDeals.length });
+
+        let successCount = 0;
+        let failedCount = 0;
+        let lastError = "";
+
+        const normalizeEnum = (val: string, type: 'asset' | 'strategy') => {
+            const clean = (val || "").toUpperCase().trim().replace(/ /g, '_').replace(/-/g, '_');
+            if (type === 'asset') {
+                const allowed = ['INDUSTRIAL', 'RETAIL', 'MULTIFAMILY', 'SF', 'OFFICE', 'HOTEL', 'HOSPITALITY', 'MIXED_USE', 'LAND'];
+                if (allowed.includes(clean)) return clean;
+                if (clean.includes('HOTEL')) return 'HOTEL';
+                if (clean.includes('RESORT') || clean.includes('HOSPITAL') || clean.includes('VACATION') || clean.includes('LODGING')) return 'HOSPITALITY';
+                if (clean.includes('MIXED')) return 'MIXED_USE';
+                if (clean.includes('MULTI')) return 'MULTIFAMILY';
+                if (clean.includes('OFFICE')) return 'OFFICE';
+                if (clean.includes('RETAIL')) return 'RETAIL';
+                if (clean.includes('LAND')) return 'LAND';
+                return 'INDUSTRIAL'; // Safety fallback
+            } else {
+                const allowed = ['BUY_AND_HOLD', 'FIX_FLIP', 'VALUE_ADD', 'CORE', 'STABILIZED', 'OPPORTUNISTIC'];
+                if (allowed.includes(clean)) return clean;
+                if (clean.includes('HOLD')) return 'BUY_AND_HOLD';
+                if (clean.includes('FIX')) return 'FIX_FLIP';
+                if (clean.includes('VALUE')) return 'VALUE_ADD';
+                if (clean.includes('CORE')) return 'CORE';
+                if (clean.includes('OPPORTUNI')) return 'OPPORTUNISTIC';
+                return 'CORE'; // Safety fallback
+            }
+        };
+
+        for (let i = 0; i < scrapedDeals.length; i++) {
+            const deal = scrapedDeals[i];
+            setImportProgress({ current: i + 1, total: scrapedDeals.length });
+
+            try {
+                const added = await addDeal({
+                    id: `d-temp-${Date.now()}-${i}`,
+                    firmId: firm.id,
+                    address: deal.address || "Unknown Property",
+                    assetType: normalizeEnum(deal.assetType, 'asset') as any,
+                    strategy: normalizeEnum(deal.strategy, 'strategy') as any,
+                    context: deal.description || deal.context || "",
+                    stillImageURL: deal.imageURL || "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab",
+                    purchaseAmount: deal.purchaseAmount ? (typeof deal.purchaseAmount === 'string' ? parseFloat(deal.purchaseAmount.replace(/[^0-9.]/g, '')) : deal.purchaseAmount) : null,
+                    isPublic: true,
+                    images: (deal.images && deal.images.length > 0 ? deal.images : [deal.imageURL]).filter(Boolean) as string[],
+                    teamMemberIds: [],
+                    sqFt: deal.sqFt || 20000,
+                    capRate: 5.0
+                });
+
+                if (added) {
+                    successCount++;
+                } else {
+                    failedCount++;
+                    lastError = localStorage.getItem('last_add_deal_error') || 'Unknown Save Error';
+                }
+            } catch (err: any) {
+                failedCount++;
+                lastError = err.message || "Unknown Exception";
+            }
+        }
+
+        setIsSaving(false);
+        if (successCount > 0) {
+            setScrapedDeals([]);
+            setScrapeUrl("");
+            setShowScrapeModal(false);
+            // Show summary message
+            if (failedCount > 0) {
+                alert(`Import Complete: ${successCount} assets saved, ${failedCount} failed.\nLatest Error: ${lastError}`);
+            }
+        } else {
+            setScrapeError(`Failed to save any assets. Latest error: ${lastError}`);
+        }
+    };
+
     return (
         <div className="space-y-12">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -416,6 +541,13 @@ function TenantDealsContent() {
                             Save All ({changedDealIds.size})
                         </button>
                     )}
+                    <button
+                        onClick={() => setShowScrapeModal(true)}
+                        className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 px-6 py-4 text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-white/10 hover:border-brand-gold/50"
+                    >
+                        <Sparkles size={18} className="text-brand-gold" />
+                        AI Scrape Assets
+                    </button>
                     <button
                         onClick={() => setIsAddingDeal(true)}
                         className="flex items-center gap-3 rounded-2xl bg-brand-gold px-8 py-4 text-xs font-black uppercase tracking-widest text-brand-dark transition-all hover:shadow-xl hover:shadow-brand-gold/20 hover:scale-[1.02] active:scale-[0.98]"
@@ -1250,6 +1382,144 @@ function TenantDealsContent() {
                     </div>
                 </div>
             )}
+
+            {/* Asset Scraper Modal */}
+            <AnimatePresence>
+                {showScrapeModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => !isScraping && !isSaving && setShowScrapeModal(false)}
+                            className="absolute inset-0 bg-black/80 backdrop-blur-xl"
+                        />
+
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-4xl overflow-hidden rounded-[2.5rem] border border-white/10 bg-brand-gray-900 shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between border-b border-white/5 bg-white/[0.02] p-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-gold/10 text-brand-gold">
+                                        <Sparkles size={24} />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-white uppercase tracking-tight">AI Asset <span className="text-brand-gold">Scraper</span></h2>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-white/20">Isolated Portfolio extraction Engine</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setShowScrapeModal(false)}
+                                    disabled={isScraping || isSaving}
+                                    className="rounded-xl p-2 text-white/20 hover:bg-white/5 hover:text-white transition-all disabled:opacity-30"
+                                >
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+                                {/* URL Input */}
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">Target Portfolio URL</label>
+                                    <div className="flex gap-3">
+                                        <div className="relative flex-1">
+                                            <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
+                                            <input
+                                                type="text"
+                                                placeholder="https://firm.com/portfolio-or-projects"
+                                                className="w-full h-14 rounded-2xl border border-white/5 bg-black/50 pl-12 pr-4 text-sm font-bold text-white outline-none focus:border-brand-gold/50 transition-all placeholder:text-white/10"
+                                                value={scrapeUrl}
+                                                onChange={(e) => setScrapeUrl(e.target.value)}
+                                                disabled={isScraping || isSaving}
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={handleScrapeAssets}
+                                            disabled={!scrapeUrl || isScraping || isSaving}
+                                            className="h-14 px-8 rounded-2xl bg-brand-gold text-brand-dark font-black uppercase tracking-widest text-xs transition-all hover:shadow-xl hover:shadow-brand-gold/20 disabled:opacity-50 flex items-center gap-3"
+                                        >
+                                            {isScraping ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
+                                            {isScraping ? "Analyzing..." : "Locate Assets"}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {scrapeError && (
+                                    <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold">
+                                        {scrapeError}
+                                    </div>
+                                )}
+
+                                {/* Scraped Results Preview */}
+                                {scrapedDeals.length > 0 && (
+                                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-gold flex items-center gap-2">
+                                                <ListChecks size={16} />
+                                                Detected Assets ({scrapedDeals.length})
+                                            </h3>
+                                            <button
+                                                onClick={handleApplyScrapeImport}
+                                                disabled={isSaving}
+                                                className="flex items-center gap-3 rounded-xl bg-green-500 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:shadow-lg hover:shadow-green-500/20 disabled:opacity-50"
+                                            >
+                                                {isSaving ? <Loader2 className="animate-spin" size={12} /> : <Save size={12} />}
+                                                {isSaving ? `Importing (${importProgress.current}/${importProgress.total})` : "Finalize Import"}
+                                            </button>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {scrapedDeals.map((deal, idx) => (
+                                                <div key={idx} className="group relative flex gap-4 p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all">
+                                                    <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black">
+                                                        {deal.imageURL ? (
+                                                            <img src={deal.imageURL} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                                                        ) : (
+                                                            <div className="flex h-full w-full items-center justify-center text-white/10">
+                                                                <ImageIcon size={24} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0 space-y-1">
+                                                        <h4 className="text-xs font-bold text-white truncate">{deal.address}</h4>
+                                                        <div className="flex flex-wrap gap-2 pt-1">
+                                                            <span className="px-2 py-0.5 rounded-md bg-brand-gold/10 text-brand-gold text-[8px] font-black uppercase tracking-widest">
+                                                                {deal.assetType || 'ASSET'}
+                                                            </span>
+                                                            <span className="px-2 py-0.5 rounded-md bg-white/5 text-white/40 text-[8px] font-black uppercase tracking-widest">
+                                                                {deal.strategy || 'STRATEGY'}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-[9px] text-white/20 line-clamp-2 pt-1 font-medium italic">
+                                                            {deal.description || "No narrative extracted."}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Blank Slate */}
+                                {!isScraping && !scrapedDeals.length && !scrapeError && (
+                                    <div className="flex flex-col items-center justify-center py-12 text-center opacity-30">
+                                        <div className="h-16 w-16 mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                                            <Briefcase size={32} />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-white uppercase tracking-tight">Engine Offline</h3>
+                                        <p className="text-[10px] font-black uppercase tracking-widest max-w-[240px] mt-2">Enter a portfolio or projects URL to begin deep asset extraction</p>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

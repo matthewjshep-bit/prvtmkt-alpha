@@ -641,14 +641,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             });
             if (res.ok) {
                 const savedDeal = await res.json();
-                setDeals(prev => [savedDeal, ...prev]);
+                console.log('[DataContext] Deal processed successfully:', savedDeal.id);
 
-                // Update the nested deals array in the firms state for accurate counts
-                setFirms(prev => prev.map(f =>
-                    f.id === savedDeal.firmId
-                        ? { ...f, deals: [savedDeal, ...(f.deals || [])] }
-                        : f
-                ));
+                // Update local state: Check if it's an update or newline
+                setDeals(prev => {
+                    const exists = prev.some(d => d.id === savedDeal.id);
+                    if (exists) {
+                        return prev.map(d => d.id === savedDeal.id ? savedDeal : d);
+                    }
+                    return [savedDeal, ...prev];
+                });
+
+                // Update the nested deals array in the firms state
+                setFirms(prev => prev.map(f => {
+                    if (f.id === savedDeal.firmId) {
+                        const firmDeals = f.deals || [];
+                        const exists = firmDeals.some(d => d.id === savedDeal.id);
+                        const updatedDeals = exists
+                            ? firmDeals.map(d => d.id === savedDeal.id ? savedDeal : d)
+                            : [savedDeal, ...firmDeals];
+                        return { ...f, deals: updatedDeals };
+                    }
+                    return f;
+                }));
 
                 addActivity({
                     type: 'DEAL_ADDED',
@@ -659,7 +674,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 return savedDeal;
             }
             const errData = await res.json().catch(() => ({}));
-            localStorage.setItem('last_add_deal_error', errData.error || `Server Error (${res.status})`);
+            const errorMsg = errData.error || errData.message || `Server Error (${res.status})`;
+            console.error('[DataContext] Failed to add deal:', errorMsg, errData);
+            localStorage.setItem('last_add_deal_error', errorMsg);
             return null;
         } catch (error: any) {
             console.error('Failed to add deal:', error);

@@ -188,51 +188,63 @@ export default function AdminFirmsPage() {
             }
 
             // 3. Add Deals
+            let failedDeals = 0;
+            let lastDealError = "";
+
             if (scrapedResults.deals && Array.isArray(scrapedResults.deals)) {
                 console.log(`[Import] Processing ${scrapedResults.deals.length} deals...`);
                 for (let i = 0; i < scrapedResults.deals.length; i++) {
                     const deal = scrapedResults.deals[i];
+                    try {
+                        const normalizeEnum = (val: string, type: 'asset' | 'strategy') => {
+                            const clean = (val || "").toUpperCase().trim().replace(/ /g, '_').replace(/-/g, '_');
+                            if (type === 'asset') {
+                                const allowed = ['INDUSTRIAL', 'RETAIL', 'MULTIFAMILY', 'SF', 'OFFICE', 'HOTEL', 'HOSPITALITY', 'MIXED_USE', 'LAND'];
+                                if (allowed.includes(clean)) return clean;
+                                if (clean.includes('HOTEL')) return 'HOTEL';
+                                if (clean.includes('RESORT') || clean.includes('HOSPITAL') || clean.includes('VACATION') || clean.includes('LODGING')) return 'HOSPITALITY';
+                                if (clean.includes('MIXED')) return 'MIXED_USE';
+                                if (clean.includes('MULTI')) return 'MULTIFAMILY';
+                                if (clean.includes('OFFICE')) return 'OFFICE';
+                                if (clean.includes('RETAIL')) return 'RETAIL';
+                                if (clean.includes('LAND')) return 'LAND';
+                                return 'INDUSTRIAL'; // Safety fallback
+                            } else {
+                                const allowed = ['BUY_AND_HOLD', 'FIX_FLIP', 'VALUE_ADD', 'CORE', 'STABILIZED', 'OPPORTUNISTIC'];
+                                if (allowed.includes(clean)) return clean;
+                                if (clean.includes('HOLD')) return 'BUY_AND_HOLD';
+                                if (clean.includes('FIX')) return 'FIX_FLIP';
+                                if (clean.includes('VALUE')) return 'VALUE_ADD';
+                                if (clean.includes('CORE')) return 'CORE';
+                                if (clean.includes('OPPORTUNI')) return 'OPPORTUNISTIC';
+                                return 'CORE'; // Safety fallback
+                            }
+                        };
 
-                    // Normalize Enums with full schema support
-                    const normalizeEnum = (val: string, type: 'asset' | 'strategy') => {
-                        const clean = (val || "").toUpperCase().trim().replace(/ /g, '_').replace(/-/g, '_');
-                        if (type === 'asset') {
-                            const allowed = ['INDUSTRIAL', 'RETAIL', 'MULTIFAMILY', 'SF', 'OFFICE', 'HOTEL', 'HOSPITALITY', 'MIXED_USE', 'LAND'];
-                            if (allowed.includes(clean)) return clean;
-                            if (clean.includes('HOTEL')) return 'HOTEL';
-                            if (clean.includes('RESORT') || clean.includes('HOSPITAL')) return 'HOSPITALITY';
-                            if (clean.includes('MIXED')) return 'MIXED_USE';
-                            if (clean.includes('MULTI')) return 'MULTIFAMILY';
-                            return 'INDUSTRIAL'; // Safety fallback
-                        } else {
-                            const allowed = ['BUY_AND_HOLD', 'FIX_FLIP', 'VALUE_ADD', 'CORE', 'STABILIZED', 'OPPORTUNISTIC'];
-                            if (allowed.includes(clean)) return clean;
-                            if (clean.includes('HOLD')) return 'BUY_AND_HOLD';
-                            if (clean.includes('FIX')) return 'FIX_FLIP';
-                            if (clean.includes('VALUE')) return 'VALUE_ADD';
-                            if (clean.includes('CORE')) return 'CORE';
-                            return 'CORE'; // Safety fallback
+                        console.log(`[Import] Creating deal ${i} with payload:`, deal);
+                        const added = await addDeal({
+                            id: `d-temp-${Date.now()}-${i}`,
+                            firmId: firmId,
+                            address: deal.address || "Unknown Property",
+                            assetType: normalizeEnum(deal.assetType, 'asset') as any,
+                            strategy: normalizeEnum(deal.strategy, 'strategy') as any,
+                            context: deal.description || deal.context || "",
+                            stillImageURL: deal.imageURL || deal.propertyPhoto || "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab",
+                            purchaseAmount: deal.purchaseAmount || null,
+                            isPublic: true,
+                            images: [deal.imageURL || deal.propertyPhoto].filter(Boolean) as string[],
+                            teamMemberIds: []
+                        });
+
+                        if (!added) {
+                            failedDeals++;
+                            lastDealError = localStorage.getItem('last_add_deal_error') || 'Unknown DB Error';
+                            console.error(`[Import] Failed to save asset "${deal.address}": ${lastDealError}`);
                         }
-                    };
-
-                    console.log(`[Import] Creating deal ${i} with payload:`, deal);
-                    const added = await addDeal({
-                        id: `d-temp-${Date.now()}-${i}`,
-                        firmId: firmId,
-                        address: deal.address || "Unknown Property",
-                        assetType: normalizeEnum(deal.assetType, 'asset') as any,
-                        strategy: normalizeEnum(deal.strategy, 'strategy') as any,
-                        context: deal.description || deal.context || "",
-                        stillImageURL: deal.imageURL || deal.propertyPhoto || "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab",
-                        purchaseAmount: deal.purchaseAmount || null,
-                        isPublic: true,
-                        images: [deal.imageURL || deal.propertyPhoto].filter(Boolean) as string[],
-                        teamMemberIds: []
-                    });
-
-                    if (!added) {
-                        const dealErr = localStorage.getItem('last_add_deal_error') || 'Unknown DB Error';
-                        throw new Error(`Failed to save asset "${deal.address}": ${dealErr}`);
+                    } catch (err: any) {
+                        failedDeals++;
+                        lastDealError = err.message || "Unknown Exception";
+                        console.error(`[Import] Exception saving asset "${deal.address}":`, err);
                     }
                 }
             }
@@ -240,7 +252,12 @@ export default function AdminFirmsPage() {
             setScrapedResults(null);
             setIsImporting(false);
             setImportUrl("");
-            alert("Firm, Team, and Portfolio successfully imported!");
+
+            if (failedDeals > 0) {
+                alert(`⚠️ Import partial success: Created firm and team, but ${failedDeals} portfolio assets failed to save. \n\nLast error: ${lastDealError}`);
+            } else {
+                alert("Firm, Team, and Portfolio successfully imported!");
+            }
         } catch (error) {
             console.error("Apply Import Error:", error);
             const errorMsg = error instanceof Error ? error.message : (typeof error === 'string' ? error : JSON.stringify(error));
