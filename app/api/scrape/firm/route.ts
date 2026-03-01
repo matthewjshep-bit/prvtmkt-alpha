@@ -79,16 +79,22 @@ export async function POST(req: NextRequest) {
 
         // 1. Map the site to find subpages
         let targetUrls = [url];
+        const baseUrl = new URL(url).origin;
         try {
             const mapRes = await axios.post(FIRECRAWL_MAP_URL,
                 { url, search: "team, about, leadership, portfolio, deals" },
-                { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 8000 }
+                { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 12000 }
             );
 
             if (mapRes.data.success && mapRes.data.links && mapRes.data.links.length > 0) {
-                const links = mapRes.data.links as string[];
+                const rawLinks = mapRes.data.links as string[];
 
-                const usefulLinks = links.filter(l => {
+                // Convert to absolute and filter
+                const usefulLinks = rawLinks.map(l => {
+                    if (l.startsWith('http')) return l;
+                    if (l.startsWith('/')) return `${baseUrl}${l}`;
+                    return `${baseUrl}/${l}`;
+                }).filter(l => {
                     const low = l.toLowerCase();
                     return low.includes('team') ||
                         low.includes('leadership') ||
@@ -150,53 +156,72 @@ export async function POST(req: NextRequest) {
         const seenTeam = new Set<string>();
         const seenDeals = new Set<string>();
 
-        results.forEach(res => {
-            if (res.data?.success && res.data?.data?.extract) {
-                const ext = res.data.data.extract;
+        results.forEach((res, index) => {
+            const url = targetUrls[index];
+            if (res.data?.success) {
+                // Firecrawl sometimes puts extraction in different places depending on version/config
+                const ext = res.data.data?.extract || res.data.data || {};
+                const metadata = res.data.data?.metadata || {};
 
-                // Keep the firm info from the most complete source (usually homepage)
-                if (ext.firm && (!mergedData.firm || (ext.firm.bio && ext.firm.bio.length > (mergedData.firm?.bio?.length || 0)))) {
-                    mergedData.firm = ext.firm;
+                console.log(`Processing results for ${url}... found team: ${ext.team?.length || 0}, deals: ${ext.deals?.length || 0}`);
+
+                // Merge Firm info
+                if (ext.firm?.name || metadata.title) {
+                    if (!mergedData.firm) {
+                        mergedData.firm = {
+                            name: ext.firm?.name || metadata.title,
+                            bio: ext.firm?.bio || metadata.description || "",
+                            logoUrl: ext.firm?.logoUrl || metadata.ogImage || "",
+                            ...ext.firm
+                        };
+                    } else if (ext.firm) {
+                        // Supplement existing firm data if we find longer bio or more fields
+                        if (ext.firm.bio && ext.firm.bio.length > (mergedData.firm.bio?.length || 0)) {
+                            mergedData.firm.bio = ext.firm.bio;
+                        }
+                        mergedData.firm = { ...ext.firm, ...mergedData.firm };
+                    }
                 }
 
                 // Merge and deduplicate Team
-                if (ext.team && Array.isArray(ext.team)) {
-                    ext.team.forEach((m: any) => {
-                        const key = (m.name || "").toLowerCase().trim();
-                        if (key && !seenTeam.has(key)) {
-                            seenTeam.add(key);
-                            mergedData.team.push(m);
-                        }
-                    });
-                }
+                const teamArr = Array.isArray(ext.team) ? ext.team : [];
+                teamArr.forEach((m: any) => {
+                    const key = (m.name || "").toLowerCase().trim();
+                    if (key && !seenTeam.has(key)) {
+                        seenTeam.add(key);
+                        mergedData.team.push(m);
+                    }
+                });
 
                 // Merge and deduplicate Deals
-                if (ext.deals && Array.isArray(ext.deals)) {
-                    ext.deals.forEach((d: any) => {
-                        const key = (d.address || "").toLowerCase().trim();
-                        if (key && !seenDeals.has(key)) {
-                            seenDeals.add(key);
-                            mergedData.deals.push(d);
-                        }
-                    });
-                }
+                const dealsArr = Array.isArray(ext.deals) ? ext.deals : [];
+                dealsArr.forEach((d: any) => {
+                    const addressKey = (d.address || "").toLowerCase().trim();
+                    if (addressKey && !seenDeals.has(addressKey)) {
+                        seenDeals.add(addressKey);
+                        mergedData.deals.push(d);
+                    }
+                });
+            } else {
+                console.warn(`Scrape failed for ${url}: ${res.data?.error || "Unknown error"}`);
             }
         });
 
+        // Ensure we ALWAYS have a firm object even if extraction was shaky
         if (!mergedData.firm) {
-            // Fallback if firm object was missed but name exists in metadata
-            const firstSuccess = results.find(r => r.data?.success);
-            if (firstSuccess?.data?.data?.metadata?.title) {
-                mergedData.firm = { name: firstSuccess.data.data.metadata.title };
-            } else {
-                return NextResponse.json({ error: "No data could be extracted from the target URLs" }, { status: 404 });
-            }
+            mergedData.firm = { name: "Imported Firm" };
+        }
+
+        // Final name cleaning
+        if (mergedData.firm.name) {
+            mergedData.firm.name = mergedData.firm.name.replace(/ \| .*/, '').replace(/ - .*/, '').trim();
         }
 
         return NextResponse.json({
             success: true,
             data: mergedData,
-            scrapedCount: targetUrls.length
+            scrapedCount: targetUrls.length,
+            pageUrls: targetUrls
         });
 
     } catch (error: any) {
