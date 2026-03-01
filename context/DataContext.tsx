@@ -426,9 +426,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 });
                 return savedFirm;
             }
+            const errData = await res.json().catch(() => ({}));
+            localStorage.setItem('last_add_firm_error', errData.error || `Server Error (${res.status})`);
             return null;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to add firm:', error);
+            localStorage.setItem('last_add_firm_error', error.message || 'Connection failed');
             return null;
         }
     };
@@ -632,9 +635,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 });
                 return savedDeal;
             }
+            const errData = await res.json().catch(() => ({}));
+            localStorage.setItem('last_add_deal_error', errData.error || `Server Error (${res.status})`);
             return null;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to add deal:', error);
+            localStorage.setItem('last_add_deal_error', error.message || 'Connection failed');
             return null;
         }
     };

@@ -129,7 +129,11 @@ export default function AdminFirmsPage() {
         try {
             // 1. Create Firm
             const rawFirm = scrapedResults.firm;
-            const firmSlug = (rawFirm.name || "new-firm").toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+            const baseSlug = (rawFirm.name || "new-firm").toLowerCase()
+                .trim()
+                .replace(/\s+/g, '-')
+                .replace(/[^\w-]+/g, '');
+            const firmSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`;
 
             const initialFirmData = {
                 ...newFirm,
@@ -147,26 +151,37 @@ export default function AdminFirmsPage() {
             };
 
             const savedFirm = await addFirm(initialFirmData);
-            if (!savedFirm) throw new Error("Failed to create firm during import");
+            if (!savedFirm) {
+                const lastError = localStorage.getItem('last_add_firm_error') || 'Unknown error';
+                throw new Error(`Failed to create firm: ${lastError}`);
+            }
 
             const firmId = savedFirm.id;
 
             // 2. Add Team Members
             if (scrapedResults.team && Array.isArray(scrapedResults.team)) {
+                console.log(`[Import] Processing ${scrapedResults.team.length} team members...`);
                 for (let i = 0; i < scrapedResults.team.length; i++) {
                     const member = scrapedResults.team[i];
-                    await addTeamMember({
+                    const memberSlug = (member.name || "member").toLowerCase()
+                        .replace(/ /g, '-')
+                        .replace(/[^\w-]+/g, '') + `-${Math.random().toString(36).substring(2, 5)}`;
+
+                    const result = await addTeamMember({
                         id: `m-temp-${Date.now()}-${i}`,
                         firmId: firmId,
                         firmIds: [firmId],
                         name: member.name || "Unknown Member",
-                        slug: (member.name || "member").toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''),
+                        slug: memberSlug,
                         role: member.role || "Team Member",
                         bio: member.bio || "",
                         imageURL: member.imageURL || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e",
                         linkedInUrl: member.linkedInUrl || "",
                         order: i
                     });
+                    if (!result) {
+                        console.warn(`[Import] Skipping member ${member.name} due to creation error.`);
+                    }
                 }
             }
 
