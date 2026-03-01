@@ -59,7 +59,14 @@ export async function POST(req: Request) {
         });
         return NextResponse.json(firm);
     } catch (error: any) {
-        console.error('[Firms API] POST Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('[Firms API] POST Error details:', {
+            error: error.message,
+            payload: body || 'Empty Body',
+            stack: error.stack
+        });
+        return NextResponse.json({
+            error: `Database Creation Failed: ${error.message}`,
+            details: error.code || 'UNKNOWN_PRISMA_ERROR'
+        }, { status: 500 });
     }
 }

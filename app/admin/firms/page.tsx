@@ -127,6 +127,7 @@ export default function AdminFirmsPage() {
         setIsApplyingImport(true);
         setScrapeError(null);
         try {
+            console.log("[Import] Starting apply for:", importUrl);
             // 1. Create Firm
             const rawFirm = scrapedResults.firm;
             const baseSlug = (rawFirm.name || "new-firm").toLowerCase()
@@ -150,6 +151,7 @@ export default function AdminFirmsPage() {
                 linkedInUrl: rawFirm.linkedInUrl || ""
             };
 
+            console.log("[Import] Creating firm with payload:", initialFirmData);
             const savedFirm = await addFirm(initialFirmData);
             if (!savedFirm) {
                 const lastError = localStorage.getItem('last_add_firm_error') || 'Unknown error';
@@ -213,6 +215,7 @@ export default function AdminFirmsPage() {
                         }
                     };
 
+                    console.log(`[Import] Creating deal ${i} with payload:`, deal);
                     const added = await addDeal({
                         id: `d-temp-${Date.now()}-${i}`,
                         firmId: firmId,
@@ -240,7 +243,8 @@ export default function AdminFirmsPage() {
             alert("Firm, Team, and Portfolio successfully imported!");
         } catch (error) {
             console.error("Apply Import Error:", error);
-            alert("Failed to save imported data.");
+            const errorMsg = error instanceof Error ? error.message : (typeof error === 'string' ? error : JSON.stringify(error));
+            alert(`🛑 Import Failed: ${errorMsg}`);
         } finally {
             setIsApplyingImport(false);
         }
