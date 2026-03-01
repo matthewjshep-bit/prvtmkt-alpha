@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useData } from "@/context/DataContext";
 
-import { Building2, Save, Upload, ExternalLink, Shield, Check, Plus, X, Search, Trash2, AlertTriangle, Palette, Type, Layout, Info, Linkedin, LayoutDashboard } from "lucide-react";
+import { Building2, Save, Upload, ExternalLink, Shield, Check, Plus, X, Search, Trash2, AlertTriangle, Palette, Type, Layout, Info, Linkedin, LayoutDashboard, Sparkles, Globe, Wand2, Loader2, UserPlus, Briefcase } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminFirmsPage() {
-    const { firms, teamMembers, updateFirm, updateTeamMember, addFirm, deleteFirm } = useData();
+    const { firms, teamMembers, updateFirm, updateTeamMember, addFirm, deleteFirm, addTeamMember, addDeal } = useData();
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
     const isVideo = (url: string | undefined) => {
@@ -35,6 +35,13 @@ export default function AdminFirmsPage() {
         googleReviewsUrl: "",
         heroMediaUrl: ""
     });
+
+    // Scraping State
+    const [isImporting, setIsImporting] = useState(false);
+    const [importUrl, setImportUrl] = useState("");
+    const [isScraping, setIsScraping] = useState(false);
+    const [scrapedResults, setScrapedResults] = useState<any>(null);
+    const [isApplyingImport, setIsApplyingImport] = useState(false);
     const [saveStatus, setSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
 
     const filteredFirms = firms.filter(f =>
@@ -82,6 +89,104 @@ export default function AdminFirmsPage() {
         }, 800);
     };
 
+    const handleStartScrape = async () => {
+        if (!importUrl) return;
+        setIsScraping(true);
+        setScrapedResults(null);
+        try {
+            const response = await fetch('/api/scrape/firm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: importUrl })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                setScrapedResults(result.data);
+            } else {
+                alert(`Import failed: ${result.error || result.detail || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error("Scrape Error:", error);
+            alert("Connection error while scraping. Please ensure your backend is running.");
+        } finally {
+            setIsScraping(false);
+        }
+    };
+
+    const handleApplyImport = async () => {
+        if (!scrapedResults) return;
+        setIsApplyingImport(true);
+        try {
+            // 1. Create Firm
+            const rawFirm = scrapedResults.firm;
+            const firmId = `f-${Date.now()}`;
+            const firmSlug = (rawFirm.name || "new-firm").toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+
+            const firm = {
+                ...newFirm,
+                id: firmId,
+                name: rawFirm.name || "Imported Firm",
+                slug: firmSlug,
+                bio: rawFirm.bio || "",
+                logoUrl: rawFirm.logoUrl || "",
+                primaryColor: rawFirm.primaryColor || "#ffffff",
+                physicalAddress: rawFirm.physicalAddress || "",
+                linkedInUrl: rawFirm.linkedInUrl || ""
+            };
+
+            await addFirm(firm);
+
+            // 2. Add Team Members
+            if (scrapedResults.team && Array.isArray(scrapedResults.team)) {
+                for (let i = 0; i < scrapedResults.team.length; i++) {
+                    const member = scrapedResults.team[i];
+                    await addTeamMember({
+                        id: `m-${Date.now()}-${i}`,
+                        firmId: firmId,
+                        firmIds: [firmId],
+                        name: member.name || "Unknown Member",
+                        slug: (member.name || "member").toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''),
+                        role: member.role || "Team Member",
+                        bio: member.bio || "",
+                        imageURL: member.imageURL || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e",
+                        linkedInUrl: member.linkedInUrl || "",
+                        order: i
+                    });
+                }
+            }
+
+            // 3. Add Deals
+            if (scrapedResults.deals && Array.isArray(scrapedResults.deals)) {
+                for (let i = 0; i < scrapedResults.deals.length; i++) {
+                    const deal = scrapedResults.deals[i];
+                    await addDeal({
+                        id: `d-${Date.now()}-${i}`,
+                        firmId: firmId,
+                        address: deal.address || "Unknown Property",
+                        assetType: deal.assetType || "INDUSTRIAL",
+                        strategy: deal.strategy || "Core Plus",
+                        context: deal.description || "",
+                        stillImageURL: deal.imageURL || "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab",
+                        purchaseAmount: deal.purchaseAmount || null,
+                        isPublic: true,
+                        teamMemberIds: []
+                    });
+                }
+            }
+
+            setScrapedResults(null);
+            setIsImporting(false);
+            setImportUrl("");
+            alert("Firm, Team, and Portfolio successfully imported!");
+        } catch (error) {
+            console.error("Apply Import Error:", error);
+            alert("Failed to save imported data.");
+        } finally {
+            setIsApplyingImport(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-brand-dark pt-28 pb-20">
             <div className="container mx-auto px-6">
@@ -106,6 +211,13 @@ export default function AdminFirmsPage() {
                             />
                         </div>
                         <button
+                            onClick={() => setIsImporting(true)}
+                            className="flex shrink-0 items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-6 py-3 text-sm font-bold text-white transition-all hover:bg-white/10"
+                        >
+                            <Sparkles size={18} className="text-brand-gold animate-pulse" />
+                            AI Scrape Import
+                        </button>
+                        <button
                             onClick={() => setIsAddingFirm(true)}
                             className="flex shrink-0 items-center gap-2 rounded-xl bg-brand-gold px-6 py-3 text-sm font-bold text-brand-dark transition-all hover:shadow-lg hover:shadow-brand-gold/30"
                         >
@@ -117,6 +229,117 @@ export default function AdminFirmsPage() {
                         </Link>
                     </div>
                 </div>
+
+                {/* AI Import Modal */}
+                {isImporting && (
+                    <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
+                        <div className="glass overflow-hidden rounded-[2.5rem] border border-brand-gold/20 bg-brand-gray-900/50 p-10 shadow-[0_0_50px_rgba(234,179,8,0.1)]">
+                            <div className="flex items-center justify-between mb-8">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Sparkles className="text-brand-gold" size={20} />
+                                        <h2 className="text-2xl font-bold text-white">Automated <span className="text-brand-gold">Firm Scraper</span></h2>
+                                    </div>
+                                    <p className="text-sm text-foreground/40">Enter a website URL. Our AI will automatically detect the brand identity, team members, and properties.</p>
+                                </div>
+                                <button onClick={() => { setIsImporting(false); setScrapedResults(null); }} className="text-foreground/40 hover:text-white p-2">
+                                    <X size={28} />
+                                </button>
+                            </div>
+
+                            {!scrapedResults ? (
+                                <div className="space-y-6">
+                                    <div className="flex flex-col md:flex-row gap-4">
+                                        <div className="relative flex-1 group">
+                                            <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gold/40 group-focus-within:text-brand-gold transition-colors" size={20} />
+                                            <input
+                                                type="url"
+                                                placeholder="https://firmwebsite.com"
+                                                className="h-16 w-full rounded-2xl border border-white/5 bg-brand-dark pl-14 pr-4 text-white focus:border-brand-gold/50 focus:outline-none transition-all text-lg font-medium"
+                                                value={importUrl}
+                                                onChange={(e) => setImportUrl(e.target.value)}
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={handleStartScrape}
+                                            disabled={!importUrl || isScraping}
+                                            className="h-16 px-10 rounded-2xl bg-brand-gold text-brand-dark font-black uppercase tracking-widest text-xs flex items-center gap-3 disabled:opacity-50 hover:shadow-2xl transition-all"
+                                        >
+                                            {isScraping ? <Loader2 className="animate-spin" size={20} /> : <Wand2 size={20} />}
+                                            {isScraping ? "Analyzing Firm..." : "Analyze Website"}
+                                        </button>
+                                    </div>
+                                    {isScraping && (
+                                        <div className="flex items-center gap-4 p-6 rounded-2xl bg-white/5 border border-white/5 animate-pulse">
+                                            <div className="space-y-2 flex-1">
+                                                <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-brand-gold w-1/3 animate-progress" />
+                                                </div>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold/60">Scraping URL and extracting entities with AI...</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="space-y-10 animate-in zoom-in-95 duration-500">
+                                    <div className="grid md:grid-cols-2 gap-8">
+                                        <div className="space-y-6 p-8 rounded-3xl bg-brand-dark/50 border border-white/5">
+                                            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-gold flex items-center gap-2">
+                                                <Building2 size={16} />
+                                                Firm Identity Detected
+                                            </h3>
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-16 w-16 rounded-xl bg-white/5 border border-white/10 p-2 shrink-0">
+                                                        <img src={scrapedResults.firm?.logoUrl || "/master-logo.png"} alt="" className="w-full h-full object-contain" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-xl font-bold text-white">{scrapedResults.firm?.name}</h4>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <div className="h-3 w-3 rounded-full border border-white/10" style={{ backgroundColor: scrapedResults.firm?.primaryColor }} />
+                                                            <span className="text-[10px] font-mono opacity-40 uppercase tracking-widest">{scrapedResults.firm?.primaryColor}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <p className="text-sm text-foreground/60 leading-relaxed line-clamp-3">{scrapedResults.firm?.bio}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="p-6 rounded-3xl bg-brand-dark/50 border border-white/5 flex flex-col items-center justify-center gap-2">
+                                                <UserPlus size={24} className="text-brand-gold" />
+                                                <span className="text-2xl font-black text-white">{scrapedResults.team?.length || 0}</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest opacity-30 text-center leading-tight">Team Members<br />Detected</span>
+                                            </div>
+                                            <div className="p-6 rounded-3xl bg-brand-dark/50 border border-white/5 flex flex-col items-center justify-center gap-2">
+                                                <Briefcase size={24} className="text-brand-gold" />
+                                                <span className="text-2xl font-black text-white">{scrapedResults.deals?.length || 0}</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest opacity-30 text-center leading-tight">Portfolio Assets<br />Detected</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-end gap-4 pt-6 border-t border-white/5">
+                                        <button
+                                            onClick={() => setScrapedResults(null)}
+                                            className="px-8 py-4 rounded-xl text-xs font-bold text-white/40 hover:text-white transition-colors"
+                                        >
+                                            Reset
+                                        </button>
+                                        <button
+                                            onClick={handleApplyImport}
+                                            disabled={isApplyingImport}
+                                            className="px-12 py-4 rounded-xl bg-brand-gold text-brand-dark font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:shadow-2xl hover:scale-105 active:scale-95 transition-all"
+                                        >
+                                            {isApplyingImport ? <Loader2 className="animate-spin" size={18} /> : <Check size={18} />}
+                                            {isApplyingImport ? "Finalizing Firm Data..." : "Apply & Create Firm"}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Add Firm Form */}
                 {isAddingFirm && (
