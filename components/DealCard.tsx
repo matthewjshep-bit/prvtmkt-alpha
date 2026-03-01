@@ -103,11 +103,11 @@ export default function DealCard({
                 {/* Badges */}
                 <div className={`absolute ${isReversed ? 'right-6' : 'left-6'} ${isListView ? 'bottom-4' : 'top-6'} flex gap-2`}>
                     <span className={`glass px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--firm-text)] border border-white/20 backdrop-blur-md ${subRadiusClass}`}>
-                        {deal.assetType.replace("_", " ")}
+                        {(deal.assetType || "INDUSTRIAL").replace("_", " ")}
                     </span>
                     {!isListView && (
                         <span className={`glass px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--firm-text)]/70 border border-white/10 backdrop-blur-md ${subRadiusClass}`}>
-                            {deal.strategy.replace("_", " ")}
+                            {(deal.strategy || "CORE").replace("_", " ")}
                         </span>
                     )}
                 </div>

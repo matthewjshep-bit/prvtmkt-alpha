@@ -191,14 +191,16 @@ export default function AdminFirmsPage() {
                 for (let i = 0; i < scrapedResults.deals.length; i++) {
                     const deal = scrapedResults.deals[i];
 
-                    // Normalize Enums
+                    // Normalize Enums with full schema support
                     const normalizeEnum = (val: string, type: 'asset' | 'strategy') => {
                         const clean = (val || "").toUpperCase().trim().replace(/ /g, '_').replace(/-/g, '_');
                         if (type === 'asset') {
                             const allowed = ['INDUSTRIAL', 'RETAIL', 'MULTIFAMILY', 'SF', 'OFFICE', 'HOTEL', 'HOSPITALITY', 'MIXED_USE', 'LAND'];
                             if (allowed.includes(clean)) return clean;
-                            if (clean.includes('HOSPITAL')) return 'HOSPITALITY';
+                            if (clean.includes('HOTEL')) return 'HOTEL';
+                            if (clean.includes('RESORT') || clean.includes('HOSPITAL')) return 'HOSPITALITY';
                             if (clean.includes('MIXED')) return 'MIXED_USE';
+                            if (clean.includes('MULTI')) return 'MULTIFAMILY';
                             return 'INDUSTRIAL'; // Safety fallback
                         } else {
                             const allowed = ['BUY_AND_HOLD', 'FIX_FLIP', 'VALUE_ADD', 'CORE', 'STABILIZED', 'OPPORTUNISTIC'];
@@ -206,6 +208,7 @@ export default function AdminFirmsPage() {
                             if (clean.includes('HOLD')) return 'BUY_AND_HOLD';
                             if (clean.includes('FIX')) return 'FIX_FLIP';
                             if (clean.includes('VALUE')) return 'VALUE_ADD';
+                            if (clean.includes('CORE')) return 'CORE';
                             return 'CORE'; // Safety fallback
                         }
                     };
@@ -225,7 +228,8 @@ export default function AdminFirmsPage() {
                     });
 
                     if (!added) {
-                        console.error(`[Import] Failed to save deal ${i}:`, deal.address);
+                        const dealErr = localStorage.getItem('last_add_deal_error') || 'Unknown DB Error';
+                        throw new Error(`Failed to save asset "${deal.address}": ${dealErr}`);
                     }
                 }
             }

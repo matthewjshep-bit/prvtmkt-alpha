@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Firm, Deal, TeamMember } from "@/context/DataContext";
 
-const CATEGORIES = ["ALL", "INDUSTRIAL", "RETAIL", "MULTIFAMILY", "SF", "OFFICE", "HOTEL", "LAND"];
+const CATEGORIES = ["ALL", "INDUSTRIAL", "RETAIL", "MULTIFAMILY", "SF", "OFFICE", "HOTEL", "HOSPITALITY", "MIXED_USE", "LAND"];
 
 interface PublicPortalViewProps {
     firm: Firm;

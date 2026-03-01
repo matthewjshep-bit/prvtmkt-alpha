@@ -49,6 +49,8 @@ export interface Firm {
     tombstoneMetricsBgColor?: string;
     tombstoneMediaBgColor?: string;
     tombstoneNarrativeBgColor?: string;
+    deals?: Deal[];
+    teamMembers?: TeamMember[];
 }
 
 export interface TeamMember {
@@ -418,7 +420,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             });
             if (res.ok) {
                 const savedFirm = await res.json();
-                setFirms(prev => [savedFirm, ...prev]);
+                const initializedFirm = {
+                    ...savedFirm,
+                    deals: savedFirm.deals || [],
+                    teamMembers: savedFirm.teamMembers || []
+                };
+                setFirms(prev => [initializedFirm, ...prev]);
                 addActivity({
                     type: 'FIRM_ADDED',
                     title: `Added new firm: ${savedFirm.name}`,
@@ -467,6 +474,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 };
 
                 setTeamMembers(prev => [normalizedMember, ...prev]);
+
+                // Update the nested teamMembers array in the firms state for accurate counts
+                setFirms(prev => prev.map(f =>
+                    f.id === normalizedMember.firmId || (normalizedMember.firmIds || []).includes(f.id)
+                        ? { ...f, teamMembers: [normalizedMember, ...(f.teamMembers || [])] }
+                        : f
+                ));
+
                 console.log(`[DataContext] State updated. Added: ${normalizedMember.name}`);
 
                 addActivity({
@@ -627,6 +642,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             if (res.ok) {
                 const savedDeal = await res.json();
                 setDeals(prev => [savedDeal, ...prev]);
+
+                // Update the nested deals array in the firms state for accurate counts
+                setFirms(prev => prev.map(f =>
+                    f.id === savedDeal.firmId
+                        ? { ...f, deals: [savedDeal, ...(f.deals || [])] }
+                        : f
+                ));
+
                 addActivity({
                     type: 'DEAL_ADDED',
                     title: `New deal uploaded: ${savedDeal.address}`,
