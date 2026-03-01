@@ -81,23 +81,40 @@ export async function POST(req: NextRequest) {
         let targetUrls = [url];
         try {
             const mapRes = await axios.post(FIRECRAWL_MAP_URL,
-                { url, search: "team, about, people, portfolio, deals, properties, investment" },
-                { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 15000 }
+                { url, search: "team, about, people, portfolio, deals, properties, investment, leadership" },
+                { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 20000 }
             );
 
             if (mapRes.data.success && mapRes.data.links && mapRes.data.links.length > 0) {
-                // Find most relevant subpages
                 const links = mapRes.data.links as string[];
-                const teamLink = links.find(l => l.toLowerCase().includes('team') || l.toLowerCase().includes('people') || l.toLowerCase().includes('leadership'));
-                const portfolioLink = links.find(l => (l.toLowerCase().includes('portfolio') || l.toLowerCase().includes('deals') || l.toLowerCase().includes('properties') || l.toLowerCase().includes('investments')) && !l.toLowerCase().includes('team'));
-                const aboutLink = links.find(l => l.toLowerCase().includes('about') && !l.toLowerCase().includes('team') && !l.toLowerCase().includes('portfolio'));
 
-                if (teamLink) targetUrls.push(teamLink);
-                if (portfolioLink) targetUrls.push(portfolioLink);
-                else if (aboutLink) targetUrls.push(aboutLink);
+                // Collect all potentially useful links
+                const usefulLinks = links.filter(l => {
+                    const low = l.toLowerCase();
+                    return low.includes('team') ||
+                        low.includes('people') ||
+                        low.includes('leadership') ||
+                        low.includes('portfolio') ||
+                        low.includes('deals') ||
+                        low.includes('properties') ||
+                        low.includes('investment') ||
+                        low.includes('about');
+                });
 
-                // Deduplicate and limit to top 3 pages total to keep it fast
-                targetUrls = Array.from(new Set(targetUrls)).slice(0, 3);
+                // Prioritize them
+                const sortedLinks = usefulLinks.sort((a, b) => {
+                    const lowA = a.toLowerCase();
+                    const lowB = b.toLowerCase();
+                    if (lowA.includes('team') || lowA.includes('people')) return -1;
+                    if (lowB.includes('team') || lowB.includes('people')) return 1;
+                    if (lowA.includes('portfolio') || lowA.includes('deals')) return -1;
+                    if (lowB.includes('portfolio') || lowB.includes('deals')) return 1;
+                    return 0;
+                });
+
+                targetUrls = [...targetUrls, ...sortedLinks];
+                // Deduplicate and limit to top 4 pages total
+                targetUrls = Array.from(new Set(targetUrls)).slice(0, 4);
             }
         } catch (mapErr) {
             console.warn("Map phase failed, falling back to homepage only scrape.");
@@ -111,12 +128,17 @@ export async function POST(req: NextRequest) {
                 {
                     url: u,
                     formats: ["extract"],
+                    actions: [
+                        { type: "wait", milliseconds: 2000 },
+                        { type: "scrollToBottom" },
+                        { type: "wait", milliseconds: 1000 }
+                    ],
                     extract: {
                         schema: EXTRACTION_SCHEMA,
-                        prompt: "Perform an exhaustive extraction of firm data, team members, and properties/deals. 1. Search for a section called 'Our Team', 'Leadership', or 'People'. Extract every individual listed, including their Name, Role, and their headshot image (often circular). If there is a bio or a 'Read More' link for a team member, follow its purpose to extract their full professional narrative. 2. Look for 'Portfolio', 'Deals', or 'Properties' sections. Extract every asset with its address/name, asset type, strategy, description, and property photo. 3. Identify brand colors (primary, background, accent) and firm bio. BE COMPREHENSIVE."
+                        prompt: "Perform an exhaustive extraction of firm data, team members, and properties/deals. 1. Search for a section called 'Our Team', 'Leadership', or 'People'. Extract every individual listed, including their Name, Role, and their headshot image URL. If there is a bio or a 'Read More' link for a team member, follow its structure or capture enough detail to form a professional narrative. 2. Look for 'Portfolio', 'Deals', or 'Properties' sections. Extract every asset with its address/name, asset type, strategy, description, and property photo. 3. Identify brand colors (primary, background, accent) and firm bio. BE COMPREHENSIVE."
                     }
                 },
-                { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 90000 }
+                { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 110000 }
             ).catch(err => {
                 console.error(`Scrape failed for ${u}:`, err.message);
                 return { data: { success: false } };
