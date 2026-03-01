@@ -1154,7 +1154,7 @@ export default function MySiteOverhaul() {
                                                     <input
                                                         type="color"
                                                         className="h-4 w-4 rounded border-none bg-transparent cursor-pointer"
-                                                        value={ensureHex(formData.firmNameFontColor)}
+                                                        value={ensureHex(formData.firmNameFontColor || formData.fontColor || '#ffffff')}
                                                         onChange={(e) => {
                                                             const newColor = e.target.value;
                                                             updateField('firmNameFontColor', newColor);
@@ -1202,7 +1202,7 @@ export default function MySiteOverhaul() {
                                                     <input
                                                         type="color"
                                                         className="h-4 w-4 rounded border-none bg-transparent cursor-pointer"
-                                                        value={ensureHex(formData.bioFontColor)}
+                                                        value={ensureHex(formData.bioFontColor || formData.fontColor || '#ffffff')}
                                                         onChange={(e) => updateField('bioFontColor', e.target.value)}
                                                     />
                                                 </div>

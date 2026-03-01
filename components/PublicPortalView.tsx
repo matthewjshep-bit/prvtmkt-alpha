@@ -149,10 +149,10 @@ export default function PublicPortalView({
         '--firm-name-font': firm.firmNameFontFamily || 'Inter',
         '--firm-name-weight': firm.firmNameFontWeight || '900',
         '--firm-name-size': `${firm.firmNameFontSize || 72}px`,
-        '--firm-name-color': firm.firmNameFontColor || '#000000',
+        '--firm-name-color': firm.firmNameFontColor || firm.fontColor || '#ffffff',
         '--firm-bio-font': firm.bioFontFamily || 'Inter',
         '--firm-bio-size': `${firm.bioFontSize || 18}px`,
-        '--firm-bio-color': firm.bioFontColor || 'rgba(0,0,0,0.6)',
+        '--firm-bio-color': firm.bioFontColor || firm.fontColor || '#ffffff',
         '--member-card-bg': firm.memberCardBgColor || 'rgba(255, 255, 255, 0.5)',
         '--member-photo-spacing': `${firm.memberPhotoSpacing || 12}px`,
         '--card-shadow': `0 20px 50px rgba(0,0,0,${(firm.cardShadowIntensity || 0) * 0.5})`,
@@ -426,7 +426,7 @@ export default function PublicPortalView({
                         {/* GALLERY VIEW: Firm Info */}
                         <div className={`mb-8 p-10 md:p-14 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-10 ${radiusClass}`} style={{ backgroundColor: 'var(--firm-secondary)' }}>
                             <div className="flex flex-col lg:flex-row items-center gap-12 flex-1">
-                                <div className="flex-shrink-0 flex items-center justify-center relative p-8 bg-white/5 rounded-[3rem] border border-white/5 shadow-inner w-fit h-fit max-w-full">
+                                <div className="flex-shrink-0 flex items-center justify-center relative p-2 bg-white/5 rounded-2xl border border-white/5 shadow-inner w-fit h-fit max-w-full">
                                     {firm.logoUrl && (
                                         <img
                                             src={firm.logoUrl}
@@ -441,7 +441,7 @@ export default function PublicPortalView({
                                 <div className="text-center lg:text-left flex-1 flex flex-col justify-between">
                                     <div>
                                         <h1 className="mb-4 tracking-tight" style={{ fontFamily: 'var(--firm-name-font)', fontWeight: 'var(--firm-name-weight)', fontSize: 'var(--firm-name-size)', color: 'var(--firm-name-color)' }}>{firm.name}</h1>
-                                        <div className="font-bold opacity-40 leading-relaxed max-w-2xl prose prose-invert mb-8" style={{ color: 'var(--firm-bio-color)', fontFamily: 'var(--firm-bio-font)', fontSize: 'var(--firm-bio-size)' }} dangerouslySetInnerHTML={{ __html: firm.bio || "" }} />
+                                        <div className="font-bold leading-relaxed max-w-2xl prose prose-invert mb-8" style={{ color: 'var(--firm-bio-color)', fontFamily: 'var(--firm-bio-font)', fontSize: 'var(--firm-bio-size)' }} dangerouslySetInnerHTML={{ __html: firm.bio || "" }} />
                                     </div>
 
                                     {/* Connectivity Section - Now under bio */}
@@ -449,20 +449,20 @@ export default function PublicPortalView({
                                         <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3">
                                             {firm.linkedInUrl && (
                                                 <a href={firm.linkedInUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 ${subRadiusClass} hover:bg-white/10 transition-all group text-white`}>
-                                                    <Linkedin size={14} className="text-[var(--firm-primary)] opacity-60 group-hover:opacity-100" />
-                                                    <span className="text-[11px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 italic">LinkedIn</span>
+                                                    <Linkedin size={14} className="opacity-60 group-hover:opacity-100" />
+                                                    <span className="text-[11px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100">LinkedIn</span>
                                                 </a>
                                             )}
                                             {firm.googleReviewsUrl && (
                                                 <a href={firm.googleReviewsUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 ${subRadiusClass} hover:bg-white/10 transition-all group text-white`}>
-                                                    <Globe size={14} className="text-[var(--firm-primary)] opacity-60 group-hover:opacity-100" />
-                                                    <span className="text-[11px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 italic">Reviews</span>
+                                                    <Globe size={14} className="opacity-60 group-hover:opacity-100" />
+                                                    <span className="text-[11px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100">Reviews</span>
                                                 </a>
                                             )}
                                             {firm.googleMapsUrl && (
                                                 <a href={firm.googleMapsUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 ${subRadiusClass} hover:bg-white/10 transition-all group text-white`}>
-                                                    <MapPin size={14} className="text-[var(--firm-primary)] opacity-60 group-hover:opacity-100" />
-                                                    <span className="text-[11px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 italic">Location</span>
+                                                    <MapPin size={14} className="opacity-60 group-hover:opacity-100" />
+                                                    <span className="text-[11px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100">Location</span>
                                                 </a>
                                             )}
                                         </div>
