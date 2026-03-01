@@ -145,8 +145,8 @@ interface DataContextType {
     reorderTeamMembers: (reorderedMembers: TeamMember[]) => Promise<boolean | string>;
     reorderDeals: (reorderedDeals: Deal[]) => Promise<boolean | string>;
     updateDeal: (id: string, updates: Partial<Deal> | ((prev: Deal) => Partial<Deal>)) => Promise<boolean>;
-    addFirm: (firm: Firm) => Promise<void>;
-    addDeal: (deal: Deal) => Promise<void>;
+    addFirm: (firm: Firm) => Promise<Firm | null>;
+    addDeal: (deal: Deal) => Promise<Deal | null>;
     deleteDeal: (id: string) => void;
     deleteFirm: (id: string) => void;
     addUser: (user: User) => Promise<User | null>;
@@ -424,11 +424,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                     title: `Added new firm: ${savedFirm.name}`,
                     firmId: savedFirm.id
                 });
+                return savedFirm;
             }
-            // No explicit return needed for Promise<void>
+            return null;
         } catch (error) {
             console.error('Failed to add firm:', error);
-            // No explicit return needed for Promise<void>
+            return null;
         }
     };
 
@@ -629,9 +630,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                     dealId: savedDeal.id,
                     firmId: savedDeal.firmId
                 });
+                return savedDeal;
             }
+            return null;
         } catch (error) {
             console.error('Failed to add deal:', error);
+            return null;
         }
     };
 

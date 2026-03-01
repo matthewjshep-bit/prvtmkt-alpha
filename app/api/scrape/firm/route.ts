@@ -14,9 +14,12 @@ const EXTRACTION_SCHEMA = {
             type: "object",
             properties: {
                 name: { type: "string" },
-                bio: { type: "string" },
-                logoUrl: { type: "string" },
-                primaryColor: { type: "string", description: "The dominant brand hex color (e.g. #0055ff)" },
+                bio: { type: "string", description: "Comprehensive firm biography or mission statement" },
+                logoUrl: { type: "string", description: "Full URL to high quality firm logo" },
+                primaryColor: { type: "string", description: "The dominant brand hex color" },
+                backgroundColor: { type: "string", description: "The suggested dark background hex color (e.g. #0a0a0a or similar dark brand color)" },
+                fontColor: { type: "string", description: "The suggested light text hex color (e.g. #ffffff)" },
+                accentColor: { type: "string", description: "The suggested accent brand hex color" },
                 physicalAddress: { type: "string" },
                 linkedInUrl: { type: "string" }
             },
@@ -29,8 +32,8 @@ const EXTRACTION_SCHEMA = {
                 properties: {
                     name: { type: "string" },
                     role: { type: "string" },
-                    bio: { type: "string" },
-                    imageURL: { type: "string" },
+                    bio: { type: "string", description: "Detailed professional biography" },
+                    imageURL: { type: "string", description: "URL to high quality headshot" },
                     email: { type: "string" },
                     linkedInUrl: { type: "string" }
                 },
@@ -42,11 +45,11 @@ const EXTRACTION_SCHEMA = {
             items: {
                 type: "object",
                 properties: {
-                    address: { type: "string" },
-                    assetType: { type: "string", enum: ["INDUSTRIAL", "RETAIL", "MULTIFAMILY", "SF", "LAND"] },
-                    strategy: { type: "string" },
-                    description: { type: "string" },
-                    stillImageURL: { type: "string" },
+                    address: { type: "string", description: "Title or address of the property/deal" },
+                    assetType: { type: "string", enum: ["INDUSTRIAL", "RETAIL", "MULTIFAMILY", "SF", "LAND", "OFFICE", "MIXED_USE"] },
+                    strategy: { type: "string", description: "Investment strategy (e.g. Value-Add, Core, Debt)" },
+                    description: { type: "string", description: "Detailed description of the deal/asset" },
+                    imageURL: { type: "string", description: "High quality property or asset photo URL" },
                     purchaseAmount: { type: "number" }
                 },
                 required: ["address"]
@@ -73,9 +76,6 @@ export async function POST(req: NextRequest) {
 
         console.log(`Scraping and analyzing firm: ${url}`);
 
-        // Call Firecrawl with extraction enabled
-        // We use LLM extraction directly from Firecrawl if they support it, 
-        // or we'll get the markdown and we can process it with an LLM here.
         const response = await axios.post(
             FIRECRAWL_API_URL,
             {
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
                 formats: ["markdown", "extract"],
                 extract: {
                     schema: EXTRACTION_SCHEMA,
-                    prompt: "Extract the investment firm details, its team members, and its portfolio/completed deals. Be comprehensive about biographies and deal summaries. Focus on finding high-quality bios and images if available. For team member images, look for standard headshot URLs. For deals, look for property photos."
+                    prompt: "Perform a deep extraction of the investment firm's details, team members, and portfolio assets. 1. Find the firm bio and brand colors. 2. Identify all team members, extracting their full names, detailed professional bios, and links to their high-resolution headshot photos. 3. Find historical or current real estate deals/assets, including their names/addresses, types, descriptions, and property photos. Be extremely thorough and prioritize finding real image URLs for people and properties."
                 }
             },
             {
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
                     Authorization: `Bearer ${apiKey}`,
                     "Content-Type": "application/json"
                 },
-                timeout: 60000 // Scrapes + AI can take a while
+                timeout: 90000
             }
         );
 

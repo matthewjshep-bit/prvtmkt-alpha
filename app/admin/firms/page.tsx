@@ -120,29 +120,34 @@ export default function AdminFirmsPage() {
         try {
             // 1. Create Firm
             const rawFirm = scrapedResults.firm;
-            const firmId = `f-${Date.now()}`;
             const firmSlug = (rawFirm.name || "new-firm").toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
 
-            const firm = {
+            const initialFirmData = {
                 ...newFirm,
-                id: firmId,
+                id: `f-temp-${Date.now()}`,
                 name: rawFirm.name || "Imported Firm",
                 slug: firmSlug,
                 bio: rawFirm.bio || "",
                 logoUrl: rawFirm.logoUrl || "",
                 primaryColor: rawFirm.primaryColor || "#ffffff",
+                backgroundColor: rawFirm.backgroundColor || "#0a0a0a",
+                fontColor: rawFirm.fontColor || "#ffffff",
+                accentColor: rawFirm.accentColor || "#151515",
                 physicalAddress: rawFirm.physicalAddress || "",
                 linkedInUrl: rawFirm.linkedInUrl || ""
             };
 
-            await addFirm(firm);
+            const savedFirm = await addFirm(initialFirmData);
+            if (!savedFirm) throw new Error("Failed to create firm during import");
+
+            const firmId = savedFirm.id;
 
             // 2. Add Team Members
             if (scrapedResults.team && Array.isArray(scrapedResults.team)) {
                 for (let i = 0; i < scrapedResults.team.length; i++) {
                     const member = scrapedResults.team[i];
                     await addTeamMember({
-                        id: `m-${Date.now()}-${i}`,
+                        id: `m-temp-${Date.now()}-${i}`,
                         firmId: firmId,
                         firmIds: [firmId],
                         name: member.name || "Unknown Member",
@@ -161,7 +166,7 @@ export default function AdminFirmsPage() {
                 for (let i = 0; i < scrapedResults.deals.length; i++) {
                     const deal = scrapedResults.deals[i];
                     await addDeal({
-                        id: `d-${Date.now()}-${i}`,
+                        id: `d-temp-${Date.now()}-${i}`,
                         firmId: firmId,
                         address: deal.address || "Unknown Property",
                         assetType: deal.assetType || "INDUSTRIAL",
