@@ -42,6 +42,7 @@ export default function AdminFirmsPage() {
     const [isScraping, setIsScraping] = useState(false);
     const [scrapedResults, setScrapedResults] = useState<any>(null);
     const [isApplyingImport, setIsApplyingImport] = useState(false);
+    const [scrapeError, setScrapeError] = useState<string | null>(null);
     const [saveStatus, setSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
 
     const filteredFirms = firms.filter(f =>
@@ -93,6 +94,7 @@ export default function AdminFirmsPage() {
         if (!importUrl) return;
         setIsScraping(true);
         setScrapedResults(null);
+        setScrapeError(null);
         try {
             const response = await fetch('/api/scrape/firm', {
                 method: 'POST',
@@ -100,15 +102,21 @@ export default function AdminFirmsPage() {
                 body: JSON.stringify({ url: importUrl })
             });
 
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                setScrapeError(errorData.error || errorData.detail || `Server error (${response.status})`);
+                return;
+            }
+
             const result = await response.json();
             if (result.success) {
                 setScrapedResults(result.data);
             } else {
-                alert(`Import failed: ${result.error || result.detail || 'Unknown error'}`);
+                setScrapeError(result.error || result.detail || 'Unknown scraper error');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Scrape Error:", error);
-            alert("Connection error while scraping. Please ensure your backend is running.");
+            setScrapeError(error.message || "Connection failed while scraping.");
         } finally {
             setIsScraping(false);
         }
@@ -117,6 +125,7 @@ export default function AdminFirmsPage() {
     const handleApplyImport = async () => {
         if (!scrapedResults) return;
         setIsApplyingImport(true);
+        setScrapeError(null);
         try {
             // 1. Create Firm
             const rawFirm = scrapedResults.firm;
@@ -247,10 +256,27 @@ export default function AdminFirmsPage() {
                                     </div>
                                     <p className="text-sm text-foreground/40">Enter a website URL. Our AI will automatically detect the brand identity, team members, and properties.</p>
                                 </div>
-                                <button onClick={() => { setIsImporting(false); setScrapedResults(null); }} className="text-foreground/40 hover:text-white p-2">
+                                <button onClick={() => { setIsImporting(false); setScrapedResults(null); setScrapeError(null); }} className="text-foreground/40 hover:text-white p-2">
                                     <X size={28} />
                                 </button>
                             </div>
+
+                            {scrapeError && (
+                                <div className="mb-6 p-6 rounded-2xl bg-red-500/10 border border-red-500/20 animate-in slide-in-from-top-2">
+                                    <div className="flex gap-4">
+                                        <div className="h-10 w-10 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+                                            <AlertTriangle className="text-red-500" size={20} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className="text-sm font-bold text-red-100 mb-1">Scraper Error</h4>
+                                            <p className="text-sm text-red-500/80 leading-relaxed font-medium">{scrapeError}</p>
+                                        </div>
+                                        <button onClick={() => setScrapeError(null)} className="text-red-500/40 hover:text-red-500 transition-colors self-start">
+                                            <X size={20} />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             {!scrapedResults ? (
                                 <div className="space-y-6">
