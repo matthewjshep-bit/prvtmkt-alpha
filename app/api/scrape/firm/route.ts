@@ -121,22 +121,32 @@ export async function POST(req: NextRequest) {
         console.log(`Phase 2: Scraping discovered pages: ${targetUrls.join(", ")}`);
 
         // 2. Scrape all target pages in parallel
-        const scrapePromises = targetUrls.map(u =>
-            axios.post(FIRECRAWL_API_URL,
+        const scrapePromises = targetUrls.map(u => {
+            const isPortfolio = u.toLowerCase().includes('portfolio') || u.toLowerCase().includes('projects') || u.toLowerCase().includes('deals');
+
+            return axios.post(FIRECRAWL_API_URL,
                 {
                     url: u,
                     formats: ["extract"],
+                    // If it's a portfolio page, we MUST scroll and wait for images/cards to load
+                    actions: isPortfolio ? [
+                        { type: "wait", milliseconds: 1500 },
+                        { type: "scrollToBottom" },
+                        { type: "wait", milliseconds: 1000 },
+                        { type: "scrollToBottom" },
+                        { type: "wait", milliseconds: 1000 }
+                    ] : [],
                     extract: {
                         schema: EXTRACTION_SCHEMA,
-                        prompt: "Extract firm details, team members, and portfolio assets from this page. Find name, bio, logoUrl, brand colors for the firm. Extract every team member with their Name, Role, Bio, and ImageURL. Extract every deal with its Address, AssetType, Strategy, Description, and ImageURL. Capture everything you see."
+                        prompt: "Extract firm details, team members, and portfolio assets from this page. Find name, bio, logoUrl, brand colors for the firm. Extract every team member with their Name, Role, Bio, and ImageURL. Extract every deal with its Address (Property Name), AssetType, Strategy, Description, and ImageURL. Capture everything you see."
                     }
                 },
-                { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 60000 }
+                { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 85000 }
             ).catch(err => {
                 console.error(`Scrape failed for ${u}:`, err.response?.data || err.message);
                 return { data: { success: false, error: err.message, status: err.response?.status } };
-            })
-        );
+            });
+        });
 
         const results = await Promise.all(scrapePromises);
 
