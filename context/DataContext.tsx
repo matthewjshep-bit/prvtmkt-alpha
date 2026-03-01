@@ -892,6 +892,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             const res = await fetch(`/api/firms/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 setFirms(prev => prev.filter(f => f.id !== id));
+                // Cascade local state updates
+                setDeals(prev => prev.filter(d => d.firmId !== id));
+                setTeamMembers(prev => prev.filter(m => m.firmId !== id));
+                setUsers(prev => prev.filter(u => u.firmId !== id));
+                setActivities(prev => prev.filter(a => a.firmId !== id));
+
                 if (firm) {
                     addActivity({
                         type: 'FIRM_DELETED',
@@ -899,10 +905,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                         firmId: id
                     });
                 }
-                // Cascading: These would ideally be handled by the server but we update local state for immediate feedback
-                setDeals(prev => prev.map(d => d.firmId === id ? { ...d, firmId: "" } : d));
-                setTeamMembers(prev => prev.map(m => m.firmId === id ? { ...m, firmId: "" } : m));
-                console.log(`[DataContext] Firm ${id} deleted successfully.`);
+                console.log(`[DataContext] Firm ${id} and all sub-entities cleared from state.`);
             } else {
                 const errorData = await res.json().catch(() => ({ message: 'Unknown error' }));
                 console.error(`[DataContext] Failed to delete firm ${id}:`, res.status, errorData);

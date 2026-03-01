@@ -114,12 +114,57 @@ export async function DELETE(
 ) {
     const { id } = await params;
     try {
-        await prisma.firm.delete({
-            where: { id },
+        console.log(`[Firm API] Deep Delete initiated for Firm: ${id}`);
+
+        // Perform cascading deletions in a transaction to ensure atomicity
+        await prisma.$transaction(async (tx) => {
+            // 1. Delete all deals associated with this firm
+            const deletedDeals = await tx.deal.deleteMany({
+                where: { firmId: id }
+            });
+            console.log(`[Firm API] Deleted ${deletedDeals.count} associated deals.`);
+
+            // 2. Delete all activities associated with this firm
+            await tx.activityLog.deleteMany({
+                where: { firmId: id }
+            });
+
+            // 3. Delete all invitations associated with this firm
+            await tx.invitation.deleteMany({
+                where: { firmId: id }
+            });
+
+            // 4. Handle Team Members
+            // First, find all members to log or handle specific logic
+            const members = await tx.teamMember.findMany({
+                where: { firmId: id }
+            });
+
+            // Delete all team members
+            const deletedMembers = await tx.teamMember.deleteMany({
+                where: { firmId: id }
+            });
+            console.log(`[Firm API] Deleted ${deletedMembers.count} associated team members.`);
+
+            // 5. Handle Users (Optional: Keep users but detach firm? No, user belongsTo firm)
+            // If the user is only associated with this firm, we should delete them
+            await tx.user.deleteMany({
+                where: { firmId: id }
+            });
+
+            // 6. Delete the Firm itself
+            await tx.firm.delete({
+                where: { id },
+            });
         });
+
+        console.log(`[Firm API] Firm ${id} and all sub-entities cleared.`);
         return NextResponse.json({ success: true });
     } catch (error: any) {
         console.error('[Firm API] DELETE Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({
+            error: "Failed to delete firm and its associations",
+            details: error.message
+        }, { status: 500 });
     }
 }
