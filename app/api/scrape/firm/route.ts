@@ -56,8 +56,7 @@ const EXTRACTION_SCHEMA = {
                 required: ["address"]
             }
         }
-    },
-    required: []
+    }
 };
 
 export async function POST(req: NextRequest) {
@@ -127,20 +126,15 @@ export async function POST(req: NextRequest) {
                 {
                     url: u,
                     formats: ["extract"],
-                    actions: [
-                        { type: "wait", milliseconds: 1000 },
-                        { type: "scrollToBottom" },
-                        { type: "wait", milliseconds: 500 }
-                    ],
                     extract: {
                         schema: EXTRACTION_SCHEMA,
-                        prompt: "Perform an exhaustive extraction of firm data, team members, and properties/deals. 1. Search for a section called 'Our Team', 'Leadership', or 'People'. Extract every individual listed, including their Name, Role, and their headshot image URL. 2. Look for 'Portfolio' or 'Deals' sections. Extract every asset with its address/name, asset type, strategy, description, and property photo. 3. Identify brand colors (primary, background, accent) and firm bio."
+                        prompt: "Extract firm details, team members, and portfolio assets from this page. Find name, bio, logoUrl, brand colors for the firm. Extract every team member with their Name, Role, Bio, and ImageURL. Extract every deal with its Address, AssetType, Strategy, Description, and ImageURL. Capture everything you see."
                     }
                 },
-                { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 45000 }
+                { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 60000 }
             ).catch(err => {
-                console.error(`Scrape failed for ${u}:`, err.message);
-                return { data: { success: false } };
+                console.error(`Scrape failed for ${u}:`, err.response?.data || err.message);
+                return { data: { success: false, error: err.message, status: err.response?.status } };
             })
         );
 
