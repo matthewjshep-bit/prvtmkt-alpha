@@ -30,7 +30,7 @@ export async function POST(req: Request) {
         };
 
         const data: any = {
-            address: body.address || "Unknown Property",
+            address: body.address || body.propertyName || body.name || "Unknown Property",
             assetType: body.assetType || "INDUSTRIAL",
             strategy: body.strategy || "CORE",
             purchaseAmount: parseNum(body.purchaseAmount),
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
             sqFt: parseNum(body.sqFt),
             stillImageURL: body.stillImageURL,
             generatedVideoURL: body.generatedVideoURL,
-            isPublic: body.isPublic ?? false,
+            isPublic: body.isPublic ?? true,
             context: body.context || body.description || "",
             financingType: body.financingType,
             investmentOverview: body.investmentOverview,
@@ -50,13 +50,8 @@ export async function POST(req: Request) {
             firm: { connect: { id: body.firmId } },
         };
 
-        // Handle logical Team Member association if an ID is provided
-        if (body.teamMemberId) {
-            data.teamMember = { connect: { id: body.teamMemberId } };
-        }
-
         const deal = await prisma.deal.create({ data });
-        console.log(`[Deals API] Successfully created deal: ${deal.id}`);
+        console.log(`[Deals API] Successfully created asset/deal: ${deal.id}`);
         return NextResponse.json(deal);
     } catch (error: any) {
         console.error('[Deals API] POST Error details:', {

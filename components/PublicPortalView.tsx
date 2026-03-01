@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Firm, Deal, TeamMember } from "@/context/DataContext";
 
-const CATEGORIES = ["ALL", "INDUSTRIAL", "RETAIL", "MULTIFAMILY", "SF"];
+const CATEGORIES = ["ALL", "INDUSTRIAL", "RETAIL", "MULTIFAMILY", "SF", "OFFICE", "HOTEL", "LAND"];
 
 interface PublicPortalViewProps {
     firm: Firm;
@@ -116,7 +116,7 @@ export default function PublicPortalView({
     const filteredDeals = deals.filter((deal) => {
         const isFirmDeal = deal.firmId === firm.id;
         const matchesFilter = filter === "ALL" || deal.assetType === filter;
-        const matchesSearch = deal.address.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = (deal.address || "").toLowerCase().includes(searchQuery.toLowerCase());
         return isFirmDeal && matchesFilter && matchesSearch;
     });
 

@@ -18,8 +18,8 @@ const EXTRACTION_SCHEMA = {
                 bio: { type: "string", description: "Comprehensive firm biography or mission statement" },
                 logoUrl: { type: "string", description: "Full URL to high quality firm logo" },
                 primaryColor: { type: "string", description: "The dominant brand hex color" },
-                backgroundColor: { type: "string", description: "The suggested dark background hex color (e.g. #0a0a0a or similar dark brand color)" },
-                fontColor: { type: "string", description: "The suggested light text hex color (e.g. #ffffff)" },
+                backgroundColor: { type: "string", description: "The suggested dark background hex color" },
+                fontColor: { type: "string", description: "The suggested light text hex color" },
                 accentColor: { type: "string", description: "The suggested accent brand hex color" },
                 physicalAddress: { type: "string" },
                 linkedInUrl: { type: "string" }
@@ -34,7 +34,7 @@ const EXTRACTION_SCHEMA = {
                     name: { type: "string" },
                     role: { type: "string" },
                     bio: { type: "string", description: "Detailed professional biography" },
-                    imageURL: { type: "string", description: "URL to high quality headshot" },
+                    imageURL: { type: "string", description: "URL to headshot photo" },
                     email: { type: "string" },
                     linkedInUrl: { type: "string" }
                 },
@@ -46,14 +46,13 @@ const EXTRACTION_SCHEMA = {
             items: {
                 type: "object",
                 properties: {
-                    address: { type: "string", description: "Title or address of the property/deal" },
-                    assetType: { type: "string", enum: ["INDUSTRIAL", "RETAIL", "MULTIFAMILY", "SF", "LAND", "OFFICE", "MIXED_USE"] },
-                    strategy: { type: "string", description: "Investment strategy (e.g. Value-Add, Core, Debt)" },
-                    description: { type: "string", description: "Detailed description of the deal/asset" },
-                    imageURL: { type: "string", description: "High quality property or asset photo URL" },
-                    purchaseAmount: { type: "number" }
-                },
-                required: ["address"]
+                    address: { type: "string", description: "Full address, property name, or title of the project" },
+                    assetType: { type: "string", description: "e.g. MULTIFAMILY, HOTEL, OFFICE, INDUSTRIAL, RETAIL, LAND, or MIXED_USE" },
+                    strategy: { type: "string", description: "e.g. VALUE_ADD, CORE, FIX_FLIP, OPPORTUNISTIC, STABILIZED, or BUY_AND_HOLD" },
+                    description: { type: "string", description: "Detailed narrative regarding this specific deal or property" },
+                    imageURL: { type: "string", description: "Direct URL to a high-quality photo of the asset" },
+                    purchaseAmount: { type: "string", description: "The dollar amount of the transaction if visible (as a string or number)" }
+                }
             }
         }
     }
@@ -99,20 +98,32 @@ export async function POST(req: NextRequest) {
                         low.includes('leadership') ||
                         low.includes('portfolio') ||
                         low.includes('deals') ||
+                        low.includes('projects') ||
                         low.includes('about');
                 });
 
                 const sortedLinks = usefulLinks.sort((a, b) => {
                     const lowA = a.toLowerCase();
                     const lowB = b.toLowerCase();
-                    if (lowA.includes('team') || lowA.includes('leadership')) return -1;
-                    if (lowB.includes('team') || lowB.includes('leadership')) return 1;
+
+                    // Priority 1: Portfolio / Deals / Projects
+                    const isPortA = lowA.includes('portfolio') || lowA.includes('projects') || lowA.includes('deals');
+                    const isPortB = lowB.includes('portfolio') || lowB.includes('projects') || lowB.includes('deals');
+                    if (isPortA && !isPortB) return -1;
+                    if (isPortB && !isPortA) return 1;
+
+                    // Priority 2: Team / About
+                    const isTeamA = lowA.includes('team') || lowA.includes('leadership') || lowA.includes('about');
+                    const isTeamB = lowB.includes('team') || lowB.includes('leadership') || lowB.includes('about');
+                    if (isTeamA && !isTeamB) return -1;
+                    if (isTeamB && !isTeamA) return 1;
+
                     return 0;
                 });
 
                 targetUrls = [...targetUrls, ...sortedLinks];
-                // Limit to top 3 pages total (Homepage + 2 best matches)
-                targetUrls = Array.from(new Set(targetUrls)).slice(0, 3);
+                // Limit to top 5 pages total
+                targetUrls = Array.from(new Set(targetUrls)).slice(0, 5);
             }
         } catch (mapErr) {
             console.warn("Map phase failed, falling back to homepage only scrape.");
