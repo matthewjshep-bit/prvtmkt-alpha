@@ -156,9 +156,7 @@ export default function TeamMemberPage({
                                 </div>
                             )}
                         </div>
-                        <div className="absolute -bottom-4 -right-4 flex h-12 w-12 items-center justify-center rounded-xl shadow-xl" style={{ backgroundColor: 'var(--firm-primary)', color: 'var(--firm-bg)' }}>
-                            <Award size={24} />
-                        </div>
+                        {/* Removed Award Badge */}
                     </div>
 
                     <div className="flex-1 text-center md:text-left">
@@ -245,8 +243,7 @@ export default function TeamMemberPage({
                         <div className="flex flex-wrap justify-center gap-4 md:justify-start">
                             <a
                                 href={`mailto:${member.email || "#"}`}
-                                className="flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all hover:opacity-80"
-                                style={{ backgroundColor: 'var(--firm-primary)', color: 'var(--firm-bg)' }}
+                                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition-all hover:bg-[var(--firm-primary)] hover:text-[var(--firm-bg)]"
                             >
                                 <Mail size={18} />
                                 Contact Email

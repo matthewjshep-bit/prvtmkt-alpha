@@ -426,40 +426,49 @@ export default function PublicPortalView({
                         {/* GALLERY VIEW: Firm Info */}
                         <div className={`mb-8 p-10 md:p-14 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-10 ${radiusClass}`} style={{ backgroundColor: 'var(--firm-secondary)' }}>
                             <div className="flex flex-col lg:flex-row items-center gap-12 flex-1">
-                                <div className="h-32 w-80 flex-shrink-0 flex items-center justify-center relative overflow-hidden">
+                                <div className="flex-shrink-0 flex items-center justify-center relative p-8 bg-white/5 rounded-[3rem] border border-white/5 shadow-inner w-fit h-fit max-w-full">
                                     {firm.logoUrl && (
-                                        <img src={firm.logoUrl} className="max-h-full max-w-full object-contain" style={{ transform: `scale(${(firm.logoScale || 100) / 100})` }} />
+                                        <img
+                                            src={firm.logoUrl}
+                                            className="transition-all duration-300 object-contain h-auto"
+                                            style={{
+                                                width: `${(firm.logoScale || 100) * 1.6}px`, // 100 -> 160px base, up to 480px
+                                                maxWidth: 'min(90vw, 600px)',
+                                            }}
+                                        />
                                     )}
                                 </div>
-                                <div className="text-center lg:text-left flex-1">
-                                    <h1 className="mb-4 tracking-tight" style={{ fontFamily: 'var(--firm-name-font)', fontWeight: 'var(--firm-name-weight)', fontSize: 'var(--firm-name-size)', color: 'var(--firm-name-color)' }}>{firm.name}</h1>
-                                    <div className="font-bold opacity-40 leading-relaxed max-w-2xl prose prose-invert" style={{ color: 'var(--firm-bio-color)', fontFamily: 'var(--firm-bio-font)', fontSize: 'var(--firm-bio-size)' }} dangerouslySetInnerHTML={{ __html: firm.bio || "" }} />
+                                <div className="text-center lg:text-left flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <h1 className="mb-4 tracking-tight" style={{ fontFamily: 'var(--firm-name-font)', fontWeight: 'var(--firm-name-weight)', fontSize: 'var(--firm-name-size)', color: 'var(--firm-name-color)' }}>{firm.name}</h1>
+                                        <div className="font-bold opacity-40 leading-relaxed max-w-2xl prose prose-invert mb-8" style={{ color: 'var(--firm-bio-color)', fontFamily: 'var(--firm-bio-font)', fontSize: 'var(--firm-bio-size)' }} dangerouslySetInnerHTML={{ __html: firm.bio || "" }} />
+                                    </div>
+
+                                    {/* Connectivity Section - Now under bio */}
+                                    {(firm.linkedInUrl || firm.googleReviewsUrl || firm.googleMapsUrl) && (
+                                        <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3">
+                                            {firm.linkedInUrl && (
+                                                <a href={firm.linkedInUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 ${subRadiusClass} hover:bg-white/10 transition-all group text-white`}>
+                                                    <Linkedin size={14} className="text-[var(--firm-primary)] opacity-60 group-hover:opacity-100" />
+                                                    <span className="text-[11px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 italic">LinkedIn</span>
+                                                </a>
+                                            )}
+                                            {firm.googleReviewsUrl && (
+                                                <a href={firm.googleReviewsUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 ${subRadiusClass} hover:bg-white/10 transition-all group text-white`}>
+                                                    <Globe size={14} className="text-[var(--firm-primary)] opacity-60 group-hover:opacity-100" />
+                                                    <span className="text-[11px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 italic">Reviews</span>
+                                                </a>
+                                            )}
+                                            {firm.googleMapsUrl && (
+                                                <a href={firm.googleMapsUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 ${subRadiusClass} hover:bg-white/10 transition-all group text-white`}>
+                                                    <MapPin size={14} className="text-[var(--firm-primary)] opacity-60 group-hover:opacity-100" />
+                                                    <span className="text-[11px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 italic">Location</span>
+                                                </a>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-
-                            {/* Connectivity Section */}
-                            {(firm.linkedInUrl || firm.googleReviewsUrl || firm.googleMapsUrl) && (
-                                <div className="flex flex-col gap-3 min-w-[200px]">
-                                    {firm.linkedInUrl && (
-                                        <a href={firm.linkedInUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-3 px-6 py-4 bg-white/5 border border-white/10 ${subRadiusClass} hover:bg-white/10 transition-all group`}>
-                                            <Linkedin size={20} className="text-[var(--firm-primary)] opacity-60 group-hover:opacity-100" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest opacity-40 group-hover:opacity-100">LinkedIn</span>
-                                        </a>
-                                    )}
-                                    {firm.googleReviewsUrl && (
-                                        <a href={firm.googleReviewsUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-3 px-6 py-4 bg-white/5 border border-white/10 ${subRadiusClass} hover:bg-white/10 transition-all group`}>
-                                            <Globe size={20} className="text-[var(--firm-primary)] opacity-60 group-hover:opacity-100" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest opacity-40 group-hover:opacity-100">Reviews</span>
-                                        </a>
-                                    )}
-                                    {firm.googleMapsUrl && (
-                                        <a href={firm.googleMapsUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-3 px-6 py-4 bg-white/5 border border-white/10 ${subRadiusClass} hover:bg-white/10 transition-all group`}>
-                                            <MapPin size={20} className="text-[var(--firm-primary)] opacity-60 group-hover:opacity-100" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest opacity-40 group-hover:opacity-100">Location</span>
-                                        </a>
-                                    )}
-                                </div>
-                            )}
                         </div>
 
                         {/* GALLERY VIEW: Hero Media Section */}

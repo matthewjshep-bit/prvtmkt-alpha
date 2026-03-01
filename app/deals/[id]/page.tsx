@@ -107,9 +107,9 @@ export default function DealPage({
                                 return (
                                     <div key="INFO" className={`${radiusClass} p-10 md:p-12 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700 w-full`} style={{ backgroundColor: sectionBg }}>
                                         <div className="flex flex-col md:flex-row items-center md:items-start gap-12">
-                                            <div className={`h-32 w-32 flex-shrink-0 overflow-hidden ${cardRadiusClass} bg-white/50 p-4 border border-black/5 shadow-inner`}>
+                                            <div className={`flex-shrink-0 ${cardRadiusClass} bg-white/50 p-6 border border-black/5 shadow-inner flex items-center justify-center min-w-[128px] min-h-[128px]`}>
                                                 {firm?.logoUrl ? (
-                                                    <img src={firm.logoUrl} alt={firm?.name} className="h-full w-full object-contain" />
+                                                    <img src={firm.logoUrl} alt={firm?.name} className="max-h-48 w-auto max-w-[320px] object-contain" />
                                                 ) : (
                                                     <Building2 size={64} className="text-black/10" />
                                                 )}
@@ -276,8 +276,8 @@ export default function DealPage({
                     {/* Footer Branding Persistence */}
                     <div className="pt-20 text-center w-full">
                         <div className="inline-flex flex-col items-center gap-4 opacity-20 hover:opacity-100 transition-opacity duration-700 group cursor-default">
-                            <div className="h-12 w-12 grayscale group-hover:grayscale-0 transition-all">
-                                {firm?.logoUrl && <img src={firm.logoUrl} className="h-full w-full object-contain" />}
+                            <div className="grayscale group-hover:grayscale-0 transition-all max-h-16 w-auto flex items-center justify-center">
+                                {firm?.logoUrl && <img src={firm.logoUrl} className="max-h-12 w-auto object-contain" />}
                             </div>
                             <p className="text-[10px] font-black uppercase tracking-[0.3em]">
                                 A {firm?.name} Digital Tombstone
