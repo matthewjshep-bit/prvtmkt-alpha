@@ -5,6 +5,7 @@ import axios from "axios";
 // structured data (Firm, Team, Deals) using AI.
 
 const FIRECRAWL_API_URL = "https://api.firecrawl.dev/v1/scrape";
+const FIRECRAWL_MAP_URL = "https://api.firecrawl.dev/v1/map";
 
 // Default Schema for extraction
 const EXTRACTION_SCHEMA = {
@@ -74,43 +75,119 @@ export async function POST(req: NextRequest) {
             }, { status: 500 });
         }
 
-        console.log(`Scraping and analyzing firm: ${url}`);
+        console.log(`Phase 1: Mapping structure for ${url}...`);
 
-        const response = await axios.post(
-            FIRECRAWL_API_URL,
-            {
-                url: url,
-                formats: ["markdown", "extract"],
-                extract: {
-                    schema: EXTRACTION_SCHEMA,
-                    prompt: "Perform a deep extraction of the investment firm's details, team members, and portfolio assets. 1. Find the firm bio and brand colors. 2. Identify all team members, extracting their full names, detailed professional bios, and links to their high-resolution headshot photos. 3. Find historical or current real estate deals/assets, including their names/addresses, types, descriptions, and property photos. Be extremely thorough and prioritize finding real image URLs for people and properties."
-                }
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${apiKey}`,
-                    "Content-Type": "application/json"
-                },
-                timeout: 90000
+        // 1. Map the site to find subpages
+        let targetUrls = [url];
+        try {
+            const mapRes = await axios.post(FIRECRAWL_MAP_URL,
+                { url, search: "team, about, people, portfolio, deals, properties, investment" },
+                { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 15000 }
+            );
+
+            if (mapRes.data.success && mapRes.data.links && mapRes.data.links.length > 0) {
+                // Find most relevant subpages
+                const links = mapRes.data.links as string[];
+                const teamLink = links.find(l => l.toLowerCase().includes('team') || l.toLowerCase().includes('people') || l.toLowerCase().includes('leadership'));
+                const portfolioLink = links.find(l => (l.toLowerCase().includes('portfolio') || l.toLowerCase().includes('deals') || l.toLowerCase().includes('properties') || l.toLowerCase().includes('investments')) && !l.toLowerCase().includes('team'));
+                const aboutLink = links.find(l => l.toLowerCase().includes('about') && !l.toLowerCase().includes('team') && !l.toLowerCase().includes('portfolio'));
+
+                if (teamLink) targetUrls.push(teamLink);
+                if (portfolioLink) targetUrls.push(portfolioLink);
+                else if (aboutLink) targetUrls.push(aboutLink);
+
+                // Deduplicate and limit to top 3 pages total to keep it fast
+                targetUrls = Array.from(new Set(targetUrls)).slice(0, 3);
             }
-        );
-
-        if (response.data.success) {
-            const extractedData = response.data.data.extract || response.data.data.metadata;
-            return NextResponse.json({
-                success: true,
-                data: extractedData,
-                rawMarkdown: response.data.data.markdown // For debugging if something is missed
-            });
-        } else {
-            console.error("Firecrawl Error:", response.data);
-            return NextResponse.json({ error: "Scraping failed", detail: response.data.error }, { status: 500 });
+        } catch (mapErr) {
+            console.warn("Map phase failed, falling back to homepage only scrape.");
         }
 
-    } catch (error: any) {
-        console.error("Import Firm Error:", error.response?.data || error.message);
+        console.log(`Phase 2: Scraping discovered pages: ${targetUrls.join(", ")}`);
+
+        // 2. Scrape all target pages in parallel
+        const scrapePromises = targetUrls.map(u =>
+            axios.post(FIRECRAWL_API_URL,
+                {
+                    url: u,
+                    formats: ["extract"],
+                    extract: {
+                        schema: EXTRACTION_SCHEMA,
+                        prompt: "Extract firm branding, team members, and real estate portfolio details. Focus on detailed bios and high-quality image URLs for both people and properties."
+                    }
+                },
+                { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 90000 }
+            ).catch(err => {
+                console.error(`Scrape failed for ${u}:`, err.message);
+                return { data: { success: false } };
+            })
+        );
+
+        const results = await Promise.all(scrapePromises);
+
+        // 3. Merge Results
+        const mergedData: any = {
+            firm: null,
+            team: [],
+            deals: []
+        };
+
+        const seenTeam = new Set<string>();
+        const seenDeals = new Set<string>();
+
+        results.forEach(res => {
+            if (res.data?.success && res.data?.data?.extract) {
+                const ext = res.data.data.extract;
+
+                // Keep the firm info from the most complete source (usually homepage)
+                if (ext.firm && (!mergedData.firm || (ext.firm.bio && ext.firm.bio.length > (mergedData.firm?.bio?.length || 0)))) {
+                    mergedData.firm = ext.firm;
+                }
+
+                // Merge and deduplicate Team
+                if (ext.team && Array.isArray(ext.team)) {
+                    ext.team.forEach((m: any) => {
+                        const key = (m.name || "").toLowerCase().trim();
+                        if (key && !seenTeam.has(key)) {
+                            seenTeam.add(key);
+                            mergedData.team.push(m);
+                        }
+                    });
+                }
+
+                // Merge and deduplicate Deals
+                if (ext.deals && Array.isArray(ext.deals)) {
+                    ext.deals.forEach((d: any) => {
+                        const key = (d.address || "").toLowerCase().trim();
+                        if (key && !seenDeals.has(key)) {
+                            seenDeals.add(key);
+                            mergedData.deals.push(d);
+                        }
+                    });
+                }
+            }
+        });
+
+        if (!mergedData.firm) {
+            // Fallback if firm object was missed but name exists in metadata
+            const firstSuccess = results.find(r => r.data?.success);
+            if (firstSuccess?.data?.data?.metadata?.title) {
+                mergedData.firm = { name: firstSuccess.data.data.metadata.title };
+            } else {
+                return NextResponse.json({ error: "No data could be extracted from the target URLs" }, { status: 404 });
+            }
+        }
+
         return NextResponse.json({
-            error: "Failed to process website",
+            success: true,
+            data: mergedData,
+            scrapedCount: targetUrls.length
+        });
+
+    } catch (error: any) {
+        console.error("Deep Import Error:", error.response?.data || error.message);
+        return NextResponse.json({
+            error: "Failed to process website structure",
             detail: error.response?.data || error.message
         }, { status: 500 });
     }
