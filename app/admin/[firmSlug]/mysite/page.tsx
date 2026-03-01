@@ -308,8 +308,8 @@ export default function MySiteOverhaul() {
                 className={`${!isResizing ? 'transition-[width] duration-500' : ''} bg-brand-dark border-l border-white/5 flex flex-col overflow-hidden shadow-2xl z-30`}
             >
                 <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-                    <div className="flex items-center gap-3">
-                        <div className="h-8 w-16 flex items-center justify-center rounded-lg bg-white/5 p-1 border border-white/5">
+                    <div className="flex items-center gap-4">
+                        <div className="h-10 w-20 flex items-center justify-center rounded-lg bg-white/5 p-1.5 border border-white/5 shadow-inner">
                             <img src={formData.logoUrl || "/master-logo.png"} alt="" className="h-full object-contain" />
                         </div>
                         <div className="flex flex-col">

@@ -105,11 +105,11 @@ export default function TenantAdminLayout({
                             {/* Individual Firm Branding - Increased Scale & Visibility */}
                             <div className="flex flex-col gap-2 group/brand p-2">
                                 <Link href={`/firms/${firm.slug}`} className="flex items-center gap-4">
-                                    <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-brand-dark/50 border border-white/10 p-2 shadow-inner group-hover/brand:border-brand-gold/30 transition-all">
+                                    <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-brand-dark/50 border border-white/10 p-2 shadow-inner group-hover/brand:border-brand-gold/30 transition-all">
                                         {firm.logoUrl ? (
                                             <img src={firm.logoUrl} alt={firm.name} className="h-full w-full object-contain" />
                                         ) : (
-                                            <Building2 size={28} className="text-brand-gold" />
+                                            <Building2 size={32} className="text-brand-gold" />
                                         )}
                                     </div>
                                     <div className="flex flex-col">
@@ -117,13 +117,15 @@ export default function TenantAdminLayout({
                                             {firm.name}
                                         </span>
                                         <span className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest mt-0.5">
-                                            Standard User
+                                            {currentUser.role === "SYSTEM_ADMIN" ? "System Admin" :
+                                                currentUser.role === "FIRM_ADMIN" ? "Firm Admin" :
+                                                    "Standard User"}
                                         </span>
                                     </div>
                                 </Link>
                                 <Link
                                     href={`/firms/${firm.slug}`}
-                                    className="flex items-center gap-1.5 ml-20 text-[10px] font-black uppercase tracking-widest text-brand-gold/60 hover:text-brand-gold transition-colors"
+                                    className="flex items-center gap-1.5 ml-24 text-[10px] font-black uppercase tracking-widest text-brand-gold/60 hover:text-brand-gold transition-colors"
                                 >
                                     <ExternalLink size={10} />
                                     View Site
@@ -175,7 +177,11 @@ export default function TenantAdminLayout({
                             </div>
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-xs font-bold text-white truncate">{currentUser.email}</p>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold/60">Standard User</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold/60">
+                                    {currentUser.role === "SYSTEM_ADMIN" ? "System Admin" :
+                                        currentUser.role === "FIRM_ADMIN" ? "Firm Admin" :
+                                            "Standard User"}
+                                </p>
                             </div>
                         </div>
                         <button
