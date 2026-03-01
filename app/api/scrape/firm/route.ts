@@ -57,7 +57,7 @@ const EXTRACTION_SCHEMA = {
             }
         }
     },
-    required: ["firm"]
+    required: []
 };
 
 export async function POST(req: NextRequest) {
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
                     formats: ["extract"],
                     extract: {
                         schema: EXTRACTION_SCHEMA,
-                        prompt: "Extract firm branding, team members, and real estate portfolio details. Focus on detailed bios and high-quality image URLs for both people and properties."
+                        prompt: "Perform an exhaustive extraction of firm data, team members, and properties/deals. 1. Search for a section called 'Our Team', 'Leadership', or 'People'. Extract every individual listed, including their Name, Role, and their headshot image (often circular). If there is a bio or a 'Read More' link for a team member, follow its purpose to extract their full professional narrative. 2. Look for 'Portfolio', 'Deals', or 'Properties' sections. Extract every asset with its address/name, asset type, strategy, description, and property photo. 3. Identify brand colors (primary, background, accent) and firm bio. BE COMPREHENSIVE."
                     }
                 },
                 { headers: { Authorization: `Bearer ${apiKey}` }, timeout: 90000 }
