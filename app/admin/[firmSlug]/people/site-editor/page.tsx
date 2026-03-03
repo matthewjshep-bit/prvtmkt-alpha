@@ -228,6 +228,7 @@ function TenantPeopleContent() {
                             saveStatus={saveStatus[focusedMemberId] || 'idle'}
                             deals={deals.filter(d => (d.teamMemberIds || []).includes(focusedMemberId))}
                             users={users}
+                            teamMembers={teamMembers}
                             firms={firms}
                             currentUser={currentUser}
                             activeTab={activeTab}
