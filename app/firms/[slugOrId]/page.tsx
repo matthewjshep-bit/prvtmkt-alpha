@@ -3,7 +3,7 @@
 import { use } from "react";
 import { useData } from "@/context/DataContext";
 import { notFound } from "next/navigation";
-import PublicPortalView from "@/components/PublicPortalView";
+import InternalDashboardView from "@/components/InternalDashboardView";
 
 export default function FirmProfilePage({
     params,
@@ -22,7 +22,7 @@ export default function FirmProfilePage({
     if (!firm) return null;
 
     return (
-        <PublicPortalView
+        <InternalDashboardView
             firm={firm}
             deals={deals}
             teamMembers={teamMembers}

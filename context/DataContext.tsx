@@ -119,15 +119,29 @@ export interface Deal {
     order?: number;
 }
 
-interface Activity {
+export interface Task {
+    id: string;
+    title: string;
+    description?: string;
+    status: 'PLANNING' | 'INBOX' | 'ASSIGNED' | 'IN_PROGRESS' | 'TESTING' | 'REVIEW';
+    priority: 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
+    assigneeId?: string; // Links to TeamMember.id
+    dueDate?: string;
+    firmId: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface Activity {
     id: string;
     type:
     | 'DEAL_ADDED' | 'DEAL_UPDATED' | 'DEAL_DELETED'
     | 'FIRM_ADDED' | 'FIRM_UPDATED' | 'FIRM_DELETED'
     | 'MEMBER_ADDED' | 'MEMBER_UPDATED' | 'MEMBER_DELETED'
+    | 'TASK_LAUNCHED' | 'TASK_UPDATED' | 'TASK_DELETED'
     | 'USER_ADDED' | 'USER_UPDATED' | 'USER_DELETED'
     | 'USER_IMPERSONATED' | 'IMPERSONATION_STOPPED'
-    | 'FIRM_SETTINGS_UPDATED'; // Added for clarity
+    | 'FIRM_SETTINGS_UPDATED';
     title: string;
     timestamp: string;
     firmId?: string;
@@ -154,6 +168,7 @@ interface DataContextType {
     deals: Deal[];
     teamMembers: TeamMember[];
     users: User[];
+    tasks: Task[];
     updateFirm: (id: string, updates: Partial<Firm>) => Promise<boolean | string>;
     addTeamMember: (member: TeamMember) => Promise<TeamMember | null>;
     updateTeamMember: (id: string, updates: Partial<TeamMember>) => Promise<boolean>;
@@ -168,6 +183,11 @@ interface DataContextType {
     updateUser: (id: string, updates: Partial<User>) => Promise<boolean>;
     deleteUser: (id: string) => Promise<void>;
     deleteTeamMember: (id: string) => void;
+
+    // Task Actions
+    addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Task | null>;
+    updateTask: (id: string, updates: Partial<Task>) => Promise<boolean>;
+    deleteTask: (id: string) => Promise<void>;
     // Team Member File Actions
     fetchMemberFiles: (memberId: string) => Promise<TeamMemberFile[]>;
     uploadMemberFile: (memberId: string, file: Partial<TeamMemberFile>) => Promise<TeamMemberFile | null>;
@@ -205,6 +225,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const [originalAdminId, setOriginalAdminId] = useState<string | null>(null);
     const router = useRouter();
     const [activities, setActivities] = useState<Activity[]>([]);
+    const [tasks, setTasks] = useState<Task[]>([]);
     const [isInitialized, setIsInitialized] = useState(false);
 
     // Load initial data from Supabase API
@@ -212,12 +233,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         const loadInitialData = async () => {
             try {
                 // Fetch basic data from Supabase
-                const [firmsRes, dealsRes, membersRes, usersRes, activitiesRes] = await Promise.all([
+                const [firmsRes, dealsRes, membersRes, usersRes, activitiesRes, tasksRes] = await Promise.all([
                     fetch('/api/firms'),
                     fetch('/api/deals'),
                     fetch('/api/members'),
                     fetch('/api/users'),
-                    fetch('/api/activities')
+                    fetch('/api/activities'),
+                    fetch('/api/tasks')
                 ]);
 
                 if (firmsRes.ok) setFirms(await firmsRes.json());
@@ -230,6 +252,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                 }
                 if (activitiesRes.ok) {
                     setActivities(await activitiesRes.json());
+                }
+                if (tasksRes.ok) {
+                    setTasks(await tasksRes.json());
                 }
                 if (membersRes.ok) {
                     const data = await membersRes.json();
@@ -1153,6 +1178,65 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const addTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+        try {
+            const res = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(taskData),
+            });
+            if (res.ok) {
+                const savedTask = await res.json();
+                setTasks(prev => [savedTask, ...prev]);
+                addActivity({
+                    type: 'DEAL_ADDED',
+                    title: `New mission assigned: ${savedTask.title}`,
+                    firmId: savedTask.firmId
+                });
+                return savedTask;
+            }
+            return null;
+        } catch (error) {
+            console.error('Failed to add task:', error);
+            return null;
+        }
+    };
+
+    const updateTask = async (id: string, updates: Partial<Task>) => {
+        try {
+            const res = await fetch(`/api/tasks/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates),
+            });
+            if (res.ok) {
+                const updatedTask = await res.json();
+                setTasks(prev => prev.map(t => t.id === id ? updatedTask : t));
+                addActivity({
+                    type: 'DEAL_UPDATED',
+                    title: `Mission protocol updated: ${updatedTask.title}`,
+                    firmId: updatedTask.firmId
+                });
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Failed to update task:', error);
+            return false;
+        }
+    };
+
+    const deleteTask = async (id: string) => {
+        try {
+            const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                setTasks(prev => prev.filter(t => t.id !== id));
+            }
+        } catch (error) {
+            console.error('Failed to delete task:', error);
+        }
+    };
+
     return (
         <DataContext.Provider value={{
             firms,
@@ -1182,6 +1266,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             reorderTeamMembers,
             reorderDeals,
             deleteTeamMember,
+            addTask,
+            updateTask,
+            deleteTask,
+            tasks,
             isInitialized,
             impersonateUser,
             stopImpersonation,

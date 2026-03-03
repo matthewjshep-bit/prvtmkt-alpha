@@ -259,6 +259,19 @@ exports.Prisma.ActivityLogScalarFieldEnum = {
   performedByEmail: 'performedByEmail'
 };
 
+exports.Prisma.TaskScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  description: 'description',
+  status: 'status',
+  priority: 'priority',
+  assigneeId: 'assigneeId',
+  dueDate: 'dueDate',
+  firmId: 'firmId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -307,7 +320,8 @@ exports.Prisma.ModelName = {
   TeamMember: 'TeamMember',
   AssetFile: 'AssetFile',
   Deal: 'Deal',
-  ActivityLog: 'ActivityLog'
+  ActivityLog: 'ActivityLog',
+  Task: 'Task'
 };
 
 /**

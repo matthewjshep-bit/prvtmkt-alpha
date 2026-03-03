@@ -56,6 +56,7 @@ model Firm {
   invitations               Invitation[]
   teamMembers               TeamMember[]
   users                     User[]
+  tasks                     Task[]
 }
 
 model Invitation {
@@ -107,6 +108,7 @@ model TeamMember {
   manager      TeamMember?  @relation("Management", fields: [managerId], references: [id])
   reports      TeamMember[] @relation("Management")
   deals        Deal[]
+  tasks        Task[]
   firm         Firm         @relation(fields: [firmId], references: [id])
   user         User?        @relation(fields: [userId], references: [id])
   files        AssetFile[]
@@ -165,6 +167,21 @@ model ActivityLog {
   memberId         String?
   performedByEmail String?
   firm             Firm?    @relation(fields: [firmId], references: [id])
+}
+
+model Task {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  status      String      @default("INBOX")
+  priority    String      @default("NORMAL")
+  assigneeId  String?
+  dueDate     DateTime?
+  firmId      String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  firm        Firm        @relation(fields: [firmId], references: [id])
+  assignee    TeamMember? @relation(fields: [assigneeId], references: [id])
 }
 
 enum UserRole {
