@@ -22,8 +22,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+    let body: any = null;
     try {
-        const body = await req.json();
+        body = await req.json();
         const firm = await prisma.firm.create({
             data: {
                 name: body.name,
