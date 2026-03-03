@@ -41,6 +41,8 @@ export async function PUT(
         if (body.heroMediaUrl !== undefined) updateData.heroMediaUrl = body.heroMediaUrl;
         if (body.firmIds !== undefined) updateData.firmIds = body.firmIds;
         if (body.firmId !== undefined) updateData.firmId = body.firmId;
+        if (body.department !== undefined) updateData.department = body.department;
+        if (body.managerId !== undefined) updateData.managerId = body.managerId;
         if (body.userId !== undefined) {
             const targetUserId = body.userId;
             console.log(`[Member API] Identity Sync Triggered: Member=${id}, User=${targetUserId}`);
@@ -70,6 +72,7 @@ export async function PUT(
             const member = await prisma.teamMember.update({
                 where: { id },
                 data: { ...updateData, userId: targetUserId || null },
+                include: { files: true }
             });
             console.log(`[Member API] Link successful.`);
 
@@ -80,6 +83,7 @@ export async function PUT(
         const member = await prisma.teamMember.update({
             where: { id },
             data: updateData,
+            include: { files: true }
         });
         console.log(`[Member API] Update successful.`);
         return NextResponse.json(member);

@@ -68,6 +68,19 @@ export interface TeamMember {
     bio: string;
     heroMediaUrl?: string;
     order: number;
+    department?: string | null;
+    managerId?: string | null;
+    files?: TeamMemberFile[];
+}
+
+export interface TeamMemberFile {
+    id: string;
+    name: string;
+    content: string;
+    type: string; // 'SOUL', 'ROLE', 'OTHER'
+    teamMemberId: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 // Enhanced User interface for multi‑tenant authentication
@@ -155,6 +168,12 @@ interface DataContextType {
     updateUser: (id: string, updates: Partial<User>) => Promise<boolean>;
     deleteUser: (id: string) => Promise<void>;
     deleteTeamMember: (id: string) => void;
+    // Team Member File Actions
+    fetchMemberFiles: (memberId: string) => Promise<TeamMemberFile[]>;
+    uploadMemberFile: (memberId: string, file: Partial<TeamMemberFile>) => Promise<TeamMemberFile | null>;
+    updateMemberFile: (memberId: string, fileId: string, updates: Partial<TeamMemberFile>) => Promise<boolean>;
+    deleteMemberFile: (memberId: string, fileId: string) => Promise<boolean>;
+
     getUserById: (id: string) => User | undefined;
     getUsersByFirmId: (firmId: string) => User[];
 
@@ -556,6 +575,83 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             return false;
         } catch (error) {
             console.error('Failed to update user:', error);
+            return false;
+        }
+    };
+
+    const fetchMemberFiles = async (memberId: string) => {
+        try {
+            const res = await fetch(`/api/members/${memberId}/files`);
+            if (res.ok) {
+                const files = await res.json();
+                return files;
+            }
+            return [];
+        } catch (error) {
+            console.error('Failed to fetch member files:', error);
+            return [];
+        }
+    };
+
+    const uploadMemberFile = async (memberId: string, file: Partial<TeamMemberFile>) => {
+        try {
+            const res = await fetch(`/api/members/${memberId}/files`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(file),
+            });
+            if (res.ok) {
+                const newFile = await res.json();
+                // Update local team member state if needed, or caller handles it
+                setTeamMembers(prev => prev.map(m =>
+                    m.id === memberId ? { ...m, files: [newFile, ...(m.files || [])] } : m
+                ));
+                return newFile;
+            }
+            return null;
+        } catch (error) {
+            console.error('Failed to upload member file:', error);
+            return null;
+        }
+    };
+
+    const updateMemberFile = async (memberId: string, fileId: string, updates: Partial<TeamMemberFile>) => {
+        try {
+            const res = await fetch(`/api/members/${memberId}/files`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileId, ...updates }),
+            });
+            if (res.ok) {
+                const updatedFile = await res.json();
+                setTeamMembers(prev => prev.map(m =>
+                    m.id === memberId
+                        ? { ...m, files: (m.files || []).map(f => f.id === fileId ? updatedFile : f) }
+                        : m
+                ));
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Failed to update member file:', error);
+            return false;
+        }
+    };
+
+    const deleteMemberFile = async (memberId: string, fileId: string) => {
+        try {
+            const res = await fetch(`/api/members/${memberId}/files?fileId=${fileId}`, {
+                method: 'DELETE',
+            });
+            if (res.ok) {
+                setTeamMembers(prev => prev.map(m =>
+                    m.id === memberId ? { ...m, files: (m.files || []).filter(f => f.id !== fileId) } : m
+                ));
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Failed to delete member file:', error);
             return false;
         }
     };
@@ -1091,7 +1187,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             stopImpersonation,
             isImpersonating: !!originalAdminId,
             createInvitation,
-            getInvitationByToken
+            getInvitationByToken,
+            fetchMemberFiles,
+            uploadMemberFile,
+            updateMemberFile,
+            deleteMemberFile,
         }}>
             {children}
         </DataContext.Provider>

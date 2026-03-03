@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "./generated-client"
 }
 
 datasource db {
@@ -7,54 +8,54 @@ datasource db {
 }
 
 model Firm {
-  id                      String        @id @default(cuid())
-  name                    String
-  slug                    String        @unique
-  logoUrl                 String?
-  primaryColor            String?       @default("#ffffff")
-  physicalAddress         String?
-  linkedInUrl             String?
-  googleReviewsUrl        String?
-  bio                     String?
-  heroMediaUrl            String?
-  createdAt               DateTime      @default(now())
-  updatedAt               DateTime      @updatedAt
-  accentColor             String?       @default("#151515")
-  backgroundColor         String?       @default("#0a0a0a")
-  fontColor               String?       @default("#ffffff")
-  showAgencyBranding      Boolean       @default(true)
-  logoScale               Float         @default(100.0)
-  borderRadius            String        @default("rounded")
-  bioFontFamily           String        @default("Inter")
-  bioFontSize             Int           @default(18)
-  firmNameFontFamily      String        @default("Inter")
-  firmNameFontSize        Int           @default(72)
-  firmNameFontWeight      String        @default("900")
-  isColorLinked           Boolean       @default(false)
-  isFontLinked            Boolean       @default(false)
-  bioFontColor            String        @default("#000000")
-  firmNameFontColor       String        @default("#000000")
-  memberCardBgColor       String        @default("rgba(255, 255, 255, 0.5)")
-  memberPhotoSpacing      Int           @default(12)
-  showMemberNarrative     Boolean       @default(true)
-  isMemberCardColorLinked Boolean       @default(false)
-  cardShadowIntensity     Float         @default(0.0)
-  portfolioListStyle      String        @default("TRADITIONAL")
-  showSearchBar           Boolean       @default(true)
-  teamListStyle           String        @default("TRADITIONAL")
-  viewLayoutMode          String        @default("BOTH")
-  tombstoneLayout         String[]      @default(["INFO", "METRICS", "MEDIA", "NARRATIVE"])
-  tombstonePadding        Int           @default(48)
-  tombstoneMaxWidth       Int           @default(1200)
-  tombstoneInfoBgColor      String?     @default("#ffffff")
-  tombstoneMetricsBgColor   String?     @default("#f8f9fa")
-  tombstoneMediaBgColor     String?     @default("#ffffff")
-  tombstoneNarrativeBgColor String?     @default("#ffffff")
-  activityLogs            ActivityLog[]
-  deals                   Deal[]
-  teamMembers             TeamMember[]
-  users                   User[]
-  invitations             Invitation[]
+  id                        String        @id @default(cuid())
+  name                      String
+  slug                      String        @unique
+  logoUrl                   String?
+  primaryColor              String?       @default("#ffffff")
+  physicalAddress           String?
+  linkedInUrl               String?
+  googleReviewsUrl          String?
+  bio                       String?
+  heroMediaUrl              String?
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+  accentColor               String?       @default("#151515")
+  backgroundColor           String?       @default("#0a0a0a")
+  fontColor                 String?       @default("#ffffff")
+  showAgencyBranding        Boolean       @default(true)
+  logoScale                 Float         @default(100.0)
+  borderRadius              String        @default("rounded")
+  bioFontFamily             String        @default("Inter")
+  bioFontSize               Int           @default(18)
+  firmNameFontFamily        String        @default("Inter")
+  firmNameFontSize          Int           @default(72)
+  firmNameFontWeight        String        @default("900")
+  isColorLinked             Boolean       @default(false)
+  isFontLinked              Boolean       @default(false)
+  bioFontColor              String        @default("#000000")
+  firmNameFontColor         String        @default("#000000")
+  memberCardBgColor         String        @default("rgba(255, 255, 255, 0.5)")
+  memberPhotoSpacing        Int           @default(12)
+  showMemberNarrative       Boolean       @default(true)
+  isMemberCardColorLinked   Boolean       @default(false)
+  cardShadowIntensity       Float         @default(0.0)
+  portfolioListStyle        String        @default("TRADITIONAL")
+  showSearchBar             Boolean       @default(true)
+  teamListStyle             String        @default("TRADITIONAL")
+  viewLayoutMode            String        @default("BOTH")
+  tombstoneInfoBgColor      String?       @default("#ffffff")
+  tombstoneLayout           String[]      @default(["INFO", "METRICS", "MEDIA", "NARRATIVE"])
+  tombstoneMaxWidth         Int           @default(1200)
+  tombstoneMediaBgColor     String?       @default("#ffffff")
+  tombstoneMetricsBgColor   String?       @default("#f8f9fa")
+  tombstoneNarrativeBgColor String?       @default("#ffffff")
+  tombstonePadding          Int           @default(48)
+  activityLogs              ActivityLog[]
+  deals                     Deal[]
+  invitations               Invitation[]
+  teamMembers               TeamMember[]
+  users                     User[]
 }
 
 model Invitation {
@@ -63,48 +64,66 @@ model Invitation {
   token     String   @unique
   role      UserRole @default(USER)
   firmId    String
-  firm      Firm     @relation(fields: [firmId], references: [id])
   isUsed    Boolean  @default(false)
   createdAt DateTime @default(now())
   expiresAt DateTime
+  firm      Firm     @relation(fields: [firmId], references: [id])
 }
 
 model User {
   id                  String      @id @default(cuid())
-  name                String?
   email               String      @unique
   password            String
   role                UserRole    @default(USER)
-  resetToken          String?     @unique
-  resetTokenExpires   DateTime?
   firmId              String
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
-  firm                Firm        @relation(fields: [firmId], references: [id])
+  name                String?
+  resetToken          String?     @unique
+  resetTokenExpires   DateTime?
   professionalProfile TeamMember?
+  firm                Firm        @relation(fields: [firmId], references: [id])
 }
 
-
 model TeamMember {
-  id           String   @id @default(cuid())
+  id           String           @id @default(cuid())
   name         String
-  slug         String   @unique
+  slug         String           @unique
   role         String
-  email        String?  @unique
+  email        String?          @unique
   imageURL     String?
   firmId       String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
   bio          String?
-  firmIds      String[] @default([])
+  firmIds      String[]         @default([])
   heroMediaUrl String?
   linkedInUrl  String?
   phoneNumber  String?
-  sortOrder    Int      @default(0)
+  sortOrder    Int              @default(0)
+  userId       String?          @unique
+  department   String?
+  managerId    String?
+  manager      TeamMember?      @relation("Management", fields: [managerId], references: [id])
+  reports      TeamMember[]     @relation("Management")
   deals        Deal[]
-  userId       String?  @unique
-  user         User?    @relation(fields: [userId], references: [id])
-  firm         Firm     @relation(fields: [firmId], references: [id])
+  firm         Firm             @relation(fields: [firmId], references: [id])
+  user         User?            @relation(fields: [userId], references: [id])
+  files        AssetFile[]
+}
+
+model AssetFile {
+  id           String     @id @default(cuid())
+  name         String
+  content      String
+  type         String     @default("OTHER")
+  teamMemberId String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  teamMember   TeamMember @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+
+  @@index([teamMemberId])
+  @@map("TeamMemberFile")
 }
 
 model Deal {
@@ -123,7 +142,6 @@ model Deal {
   teamMemberId       String?
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
-  sortOrder          Int         @default(0)
   arv                Float?
   context            String?
   financingType      String?
@@ -131,18 +149,19 @@ model Deal {
   investmentOverview String?
   rehabAmount        Float?
   teamMemberIds      String[]    @default([])
+  sortOrder          Int         @default(0)
   firm               Firm        @relation(fields: [firmId], references: [id])
   teamMember         TeamMember? @relation(fields: [teamMemberId], references: [id])
 }
 
 model ActivityLog {
-  id        String   @id @default(cuid())
-  type      String
-  title     String
-  timestamp DateTime @default(now())
-  firmId    String?
-  dealId    String?
-  userId    String?
+  id               String   @id @default(cuid())
+  type             String
+  title            String
+  timestamp        DateTime @default(now())
+  firmId           String?
+  dealId           String?
+  userId           String?
   memberId         String?
   performedByEmail String?
   firm             Firm?    @relation(fields: [firmId], references: [id])

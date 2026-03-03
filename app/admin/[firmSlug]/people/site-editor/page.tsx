@@ -1,18 +1,23 @@
 "use client";
 
 import { useState, Suspense, useEffect, useRef } from "react";
-import { useData, TeamMember, Firm } from "@/context/DataContext";
+import { useData, TeamMember, Firm, TeamMemberFile } from "@/context/DataContext";
 import {
     Users, Building2, Mail, ExternalLink, Settings, Save, Check, Plus, X,
     Linkedin, Phone, Trash2, Image as ImageIcon, Video, ChevronDown, ChevronUp,
-    Briefcase, Globe, Info, Camera
+    Briefcase, Globe, Info, Camera, Eye, FileText, FileCode, CheckCircle2,
+    AlertCircle, Share2, DollarSign, ChevronRight
 } from "lucide-react";
 import { useSearchParams, useParams } from "next/navigation";
 import Link from "next/link";
 import PublicPortalView from "@/components/PublicPortalView";
 import RichTextEditor from "@/components/RichTextEditor";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye } from "lucide-react";
+import PlanArtifactMapper from "@/components/PlanArtifactMapper";
+import FileTreeSidebar from "@/components/FileTreeSidebar";
+import MarkdownEditor from "@/components/MarkdownEditor";
+import MemberDetailView from "@/components/MemberDetailView";
+
 
 export default function SiteEditorPage() {
     return (
@@ -34,6 +39,18 @@ function TenantPeopleContent() {
     const [saveStatus, setSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
     const [isAddingPerson, setIsAddingPerson] = useState(false);
     const [isLoadedOnce, setIsLoadedOnce] = useState(false);
+    const [activeTab, setActiveTab] = useState<"FILES" | "DEALS" | "SETTINGS">("FILES");
+    const [selectedFile, setSelectedFile] = useState<TeamMemberFile | null>(null);
+    const [isEditingFile, setIsEditingFile] = useState(false);
+    const [fileEditContent, setFileEditContent] = useState("");
+    const [isSavingFile, setIsSavingFile] = useState(false);
+
+    const {
+        fetchMemberFiles,
+        uploadMemberFile,
+        updateMemberFile,
+        deleteMemberFile
+    } = useData();
 
     // One-Way Sync: Only populate localTeam once on load or firm change
     useEffect(() => {
@@ -186,7 +203,7 @@ function TenantPeopleContent() {
                                 initialTab="PEOPLE"
                                 focusedMemberId={focusedMemberId || undefined}
                                 previewMode={previewMode}
-                                onMemberClick={(id) => {
+                                onMemberClick={(id: string | null) => {
                                     if (id) {
                                         setFocusedMemberId(id);
                                         setPreviewMode("PROFILE");
@@ -202,420 +219,147 @@ function TenantPeopleContent() {
 
                 {/* Right-Hand Editor Stack */}
                 <div className="w-[450px] bg-brand-gray-900 border-l border-white/5 flex flex-col">
-                    <div className="p-8 border-b border-white/5 flex items-center justify-between bg-brand-gray-900/50 backdrop-blur-md sticky top-0 z-10">
-                        <div>
-                            <h2 className="text-xl font-black text-white uppercase tracking-tight">Team <span className="text-brand-gold">Registry</span></h2>
-                            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mt-1">Management Workflow</p>
-                        </div>
-                        <button
-                            onClick={handleOnboardMember}
-                            className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-gold text-brand-dark transition-all hover:scale-110 active:scale-95 shadow-lg shadow-brand-gold/20"
-                        >
-                            <Plus size={20} />
-                        </button>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 pb-4">
-                        {localTeam.length === 0 ? (
-                            <div className="h-64 flex flex-col items-center justify-center text-center opacity-20 border-2 border-dashed border-white/10 rounded-3xl m-4">
-                                <Users size={48} className="mb-4" />
-                                <p className="text-sm font-bold uppercase tracking-widest">No members registered</p>
-                            </div>
-                        ) : (
-                            localTeam.map((member, index) => (
-                                <MemberEditorCard
-                                    key={member.id}
-                                    member={member}
-                                    firms={firms}
-                                    isFocused={focusedMemberId === member.id}
-                                    onFocus={() => {
-                                        setFocusedMemberId(member.id);
-                                        setPreviewMode("PROFILE");
-                                    }}
-                                    onUpdate={(updates) => handleUpdateLocal(member.id, updates)}
-                                    onMove={(dir) => handleMoveMember(member.id, dir)}
-                                    onSave={() => handleSave(member)}
-                                    onDelete={() => handleMemberDelete(member.id)}
-                                    saveStatus={saveStatus[member.id] || 'idle'}
-                                    currentUser={currentUser}
-                                    users={users}
-                                    isFirst={index === 0}
-                                    isLast={index === localTeam.length - 1}
-                                />
-                            ))
-                        )}
-                    </div>
-
-                    {/* Registry Controls Footer */}
-                    <div className="p-6 border-t border-white/10 bg-brand-gray-900/80 backdrop-blur-xl flex gap-4">
-                        <button
-                            onClick={handleTeamView}
-                            className={`flex-[1] flex items-center justify-center gap-3 h-14 rounded-2xl border font-black uppercase tracking-widest text-[10px] transition-all ${!focusedMemberId ? 'bg-white text-brand-dark border-white shadow-xl shadow-white/10' : 'bg-brand-dark border-white/10 text-white/40 hover:text-white hover:border-white/20'}`}
-                        >
-                            <Eye size={16} />
-                            Team View
-                        </button>
-                        <button
-                            onClick={handleSaveAll}
-                            className="flex-[2] flex items-center justify-center gap-3 h-14 rounded-2xl bg-brand-gold text-brand-dark font-black uppercase tracking-widest text-[10px] transition-all hover:shadow-xl hover:shadow-brand-gold/20 hover:scale-[1.02] active:scale-[0.98]"
-                        >
-                            <Save size={16} />
-                            Save All Edits
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
-}
-
-interface MemberEditorCardProps {
-    member: TeamMember;
-    firms: Firm[];
-    isFocused: boolean;
-    onFocus: () => void;
-    onUpdate: (updates: Partial<TeamMember>) => void;
-    onMove: (direction: 'up' | 'down') => void;
-    onSave: () => void;
-    onDelete: () => void;
-    saveStatus: 'idle' | 'saving' | 'saved';
-    currentUser: any;
-    users: any[];
-    isFirst: boolean;
-    isLast: boolean;
-}
-
-function MemberEditorCard({
-    member,
-    firms,
-    isFocused,
-    onFocus,
-    onUpdate,
-    onMove,
-    onSave,
-    onDelete,
-    saveStatus,
-    currentUser,
-    users,
-    isFirst,
-    isLast
-}: MemberEditorCardProps) {
-    const [isExpanded, setIsExpanded] = useState(isFocused);
-    const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const heroInputRef = useRef<HTMLInputElement>(null);
-    const isSystemAdmin = currentUser?.role === 'SYSTEM_ADMIN';
-
-    useEffect(() => {
-        if (isFocused) setIsExpanded(true);
-    }, [isFocused]);
-
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, field: 'imageURL' | 'heroMediaUrl') => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                onUpdate({ [field]: reader.result as string });
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    return (
-        <div
-            onClick={() => { onFocus(); }}
-            className={`group transition-all duration-500 rounded-[2rem] border overflow-hidden ${isFocused
-                ? 'bg-brand-gray-800 border-brand-gold/30 shadow-2xl scale-[1.02]'
-                : 'bg-white/5 border-white/5 hover:border-white/10 opacity-70 hover:opacity-100'
-                }`}
-        >
-            {/* Header / Identity Editor */}
-            <div className="p-6">
-                <div className="flex gap-5 items-start relative group/identity">
-                    <div className="relative group/photo shrink-0">
-                        <div className="h-20 w-20 overflow-hidden rounded-2xl border-2 border-brand-gold/30 shadow-xl bg-brand-dark group-hover/photo:border-brand-gold transition-all">
-                            <img src={member.imageURL || "/placeholder-user.jpg"} className="h-full w-full object-cover" alt={member.name} />
-                            <div
-                                className="absolute inset-0 bg-black/60 opacity-0 group-hover/photo:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
-                                onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                            >
-                                <Camera size={20} className="text-white" />
-                            </div>
-                        </div>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                            className="mt-2 w-full text-[8px] font-black uppercase tracking-[0.15em] text-brand-gold hover:text-white transition-colors text-center"
-                        >
-                            Replace Headshot
-                        </button>
-                        <input ref={fileInputRef} type="file" hidden accept="image/*" onChange={(e) => handleImageUpload(e, 'imageURL')} />
-                    </div>
-
-                    <div className="flex-1 space-y-3 pt-1">
-                        <div className="space-y-1">
-                            <label className="text-[8px] font-black uppercase tracking-widest text-white/20 ml-1">Full Legal Name</label>
-                            <input
-                                type="text"
-                                placeholder="Legal Name"
-                                value={member.name}
-                                onChange={(e) => onUpdate({ name: e.target.value })}
-                                className="w-full h-10 bg-black/40 border border-white/5 rounded-xl px-4 text-xs font-bold text-white outline-none focus:border-brand-gold/40 transition-all font-inter"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-[8px] font-black uppercase tracking-widest text-white/20 ml-1">Professional Title</label>
-                            <input
-                                type="text"
-                                placeholder="Professional Title"
-                                value={member.role}
-                                onChange={(e) => onUpdate({ role: e.target.value })}
-                                className="w-full h-10 bg-black/40 border border-white/5 rounded-xl px-4 text-xs font-bold text-white/60 outline-none focus:border-brand-gold/40 transition-all font-inter"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2 pt-2 shrink-0">
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onMove('up'); }}
-                            disabled={isFirst}
-                            className={`h-8 w-8 flex items-center justify-center rounded-lg border border-white/5 transition-all ${isFirst ? 'opacity-20 cursor-not-allowed' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'}`}
-                        >
-                            <ChevronUp size={16} />
-                        </button>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onMove('down'); }}
-                            disabled={isLast}
-                            className={`h-8 w-8 flex items-center justify-center rounded-lg border border-white/5 transition-all ${isLast ? 'opacity-20 cursor-not-allowed' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'}`}
-                        >
-                            <ChevronDown size={16} />
-                        </button>
-                    </div>
-
-                    <div className="flex flex-col items-center gap-2 pt-2 shrink-0">
-                        <div className="h-6 flex items-center justify-center">
-                            {saveStatus === 'saved' && <Check size={18} className="text-green-500" />}
-                            {saveStatus === 'saving' && <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-gold/30 border-t-brand-gold" />}
-                        </div>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                            className="h-10 w-10 flex items-center justify-center rounded-full bg-white/5 text-white/30 hover:bg-white/10 hover:text-white transition-all border border-white/5"
-                        >
-                            {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Expanded Editor */}
-            <AnimatePresence>
-                {isExpanded && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.4, ease: "easeInOut" }}
-                        className="px-6 pb-8 space-y-8"
-                    >
-                        <hr className="border-white/5" />
-
-                        {/* Connectivity Section */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-2">
-                                <Globe size={12} />
-                                Connectivity
-                            </div>
-                            <div className="space-y-3">
-                                <div className="relative group">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-brand-gold transition-colors" size={14} />
-                                    <input
-                                        type="email"
-                                        placeholder="Email Address"
-                                        value={member.email}
-                                        onChange={(e) => onUpdate({ email: e.target.value })}
-                                        className="w-full h-12 bg-black/40 border border-white/5 rounded-xl pl-12 pr-4 text-xs font-bold text-white outline-none focus:border-brand-gold/40 transition-all"
-                                    />
+                    {focusedMemberId && localTeam.find(m => m.id === focusedMemberId) ? (
+                        <MemberDetailView
+                            member={localTeam.find(m => m.id === focusedMemberId)!}
+                            onBack={() => setFocusedMemberId(null)}
+                            onUpdate={(updates) => handleUpdateLocal(focusedMemberId, updates)}
+                            onSave={() => handleSave(localTeam.find(m => m.id === focusedMemberId)!)}
+                            saveStatus={saveStatus[focusedMemberId] || 'idle'}
+                            deals={deals.filter(d => (d.teamMemberIds || []).includes(focusedMemberId))}
+                            users={users}
+                            firms={firms}
+                            currentUser={currentUser}
+                            activeTab={activeTab}
+                            setActiveTab={setActiveTab}
+                            onFileSelect={(file: TeamMemberFile) => {
+                                setSelectedFile(file);
+                                setFileEditContent(file.content);
+                                setIsEditingFile(true);
+                            }}
+                            onAddFile={async (name: string, content: string, type?: string) => {
+                                const newFile = await uploadMemberFile(focusedMemberId, { name, content, type: type || 'OTHER' });
+                                if (newFile) {
+                                    setLocalTeam(prev => prev.map(m =>
+                                        m.id === focusedMemberId ? { ...m, files: [newFile, ...(m.files || [])] } : m
+                                    ));
+                                }
+                            }}
+                            onDeleteFile={async (fileId: string) => {
+                                if (confirm("Are you sure you want to delete this file?")) {
+                                    const success = await deleteMemberFile(focusedMemberId, fileId);
+                                    if (success) {
+                                        setLocalTeam(prev => prev.map(m =>
+                                            m.id === focusedMemberId ? { ...m, files: (m.files || []).filter(f => f.id !== fileId) } : m
+                                        ));
+                                        if (selectedFile?.id === fileId) setIsEditingFile(false);
+                                    }
+                                }
+                            }}
+                        />
+                    ) : (
+                        <>
+                            <div className="p-8 border-b border-white/5 flex items-center justify-between bg-brand-gray-900/50 backdrop-blur-md sticky top-0 z-10">
+                                <div>
+                                    <h2 className="text-xl font-black text-white uppercase tracking-tight">Team <span className="text-brand-gold">Registry</span></h2>
+                                    <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mt-1">Management Workflow</p>
                                 </div>
-                                <div className="relative group">
-                                    <Linkedin className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-brand-gold transition-colors" size={14} />
-                                    <input
-                                        type="url"
-                                        placeholder="LinkedIn URL"
-                                        value={member.linkedInUrl || ""}
-                                        onChange={(e) => onUpdate({ linkedInUrl: e.target.value })}
-                                        className="w-full h-12 bg-black/40 border border-white/5 rounded-xl pl-12 pr-4 text-xs font-bold text-white outline-none focus:border-brand-gold/40 transition-all"
-                                    />
-                                </div>
-                                <div className="relative group">
-                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-brand-gold transition-colors" size={14} />
-                                    <input
-                                        type="tel"
-                                        placeholder="Phone Number"
-                                        value={member.phoneNumber || ""}
-                                        onChange={(e) => onUpdate({ phoneNumber: e.target.value })}
-                                        className="w-full h-12 bg-black/40 border border-white/5 rounded-xl pl-12 pr-4 text-xs font-bold text-white outline-none focus:border-brand-gold/40 transition-all"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Identity Connection Section */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-2">
-                                <Users size={12} />
-                                Platform Identity Connection
-                            </div>
-                            <div className="flex items-center gap-3 rounded-2xl bg-black/20 border border-white/5 px-4 h-12">
-                                <Users size={14} className="text-white/20" />
-                                <select
-                                    className="bg-transparent outline-none w-full text-xs font-bold text-white cursor-pointer"
-                                    value={member.userId || ""}
-                                    onChange={(e) => onUpdate({ userId: e.target.value || null })}
+                                <button
+                                    onClick={handleOnboardMember}
+                                    className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-gold text-brand-dark transition-all hover:scale-110 active:scale-95 shadow-lg shadow-brand-gold/20"
                                 >
-                                    <option value="" className="bg-brand-gray-900">None (Standalone Profile)</option>
-                                    {(users || []).map(u => (
-                                        <option key={u.id} value={u.id} className="bg-brand-gray-900">{u.email} ({u.role})</option>
-                                    ))}
-                                </select>
+                                    <Plus size={20} />
+                                </button>
                             </div>
-                        </div>
 
-                        {/* Associated Firms Section */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-2">
-                                <Building2 size={12} />
-                                {isSystemAdmin ? 'Associated Firms' : 'Firm'}
-                            </div>
-                            <div className="flex flex-wrap gap-2 p-4 rounded-2xl bg-black/20 border border-white/5">
-                                {(member.firmIds || []).map(fId => {
-                                    const f = firms.find(item => item.id === fId);
-                                    return (
-                                        <div key={fId} className="flex items-center gap-2 rounded-lg bg-brand-gold/10 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-brand-gold border border-brand-gold/20">
-                                            {f?.name}
-                                            {isSystemAdmin && (
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); onUpdate({ firmIds: (member.firmIds || []).filter(id => id !== fId) }); }}
-                                                    className="hover:text-white transition-colors"
-                                                >
-                                                    <X size={10} />
-                                                </button>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                                {isSystemAdmin && (
-                                    <select
-                                        className="bg-transparent border-none text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white outline-none cursor-pointer w-[120px]"
-                                        value=""
-                                        onChange={(e) => {
-                                            const id = e.target.value;
-                                            if (id && !(member.firmIds || []).includes(id)) {
-                                                onUpdate({ firmIds: [...(member.firmIds || []), id] });
-                                            }
-                                        }}
-                                    >
-                                        <option value="" disabled>+ Link Firm</option>
-                                        {firms.filter(f => !(member.firmIds || []).includes(f.id)).map(f => (
-                                            <option key={f.id} value={f.id} className="bg-brand-dark">{f.name}</option>
-                                        ))}
-                                    </select>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Narrative Section */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-2">
-                                <Info size={12} />
-                                Profile Narrative
-                            </div>
-                            <div className="rounded-2xl border border-white/5 overflow-hidden">
-                                <RichTextEditor
-                                    content={member.bio}
-                                    onChange={(val) => onUpdate({ bio: val })}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Portfolio Hero Media */}
-                        <div className="space-y-4 pt-4">
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-2">
-                                <ImageIcon size={12} />
-                                Portfolio Hero
-                            </div>
-                            <div className={`aspect-[21/9] rounded-2xl border-2 border-dashed border-white/5 bg-black/20 overflow-hidden relative group/hero flex flex-col items-center justify-center gap-3 transition-all hover:border-brand-gold/20 hover:bg-black/40`}>
-                                {member.heroMediaUrl ? (
-                                    <>
-                                        <img src={member.heroMediaUrl} className="absolute inset-0 h-full w-full object-cover opacity-60" />
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover/hero:opacity-100 transition-opacity bg-black/60 cursor-pointer" onClick={(e) => { e.stopPropagation(); heroInputRef.current?.click(); }}>
-                                            <Video size={24} className="text-brand-gold mb-2" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-white">Replace Media</span>
-                                        </div>
-                                    </>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 pb-4">
+                                {localTeam.length === 0 ? (
+                                    <div className="h-64 flex flex-col items-center justify-center text-center opacity-20 border-2 border-dashed border-white/10 rounded-3xl m-4">
+                                        <Users size={48} className="mb-4" />
+                                        <p className="text-sm font-bold uppercase tracking-widest">No members registered</p>
+                                    </div>
                                 ) : (
-                                    <>
-                                        <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center" onClick={(e) => { e.stopPropagation(); heroInputRef.current?.click(); }}>
-                                            <Plus size={20} className="text-white/20" />
+                                    localTeam.map((member, index) => (
+                                        <div
+                                            key={member.id}
+                                            onClick={() => {
+                                                setFocusedMemberId(member.id);
+                                                setPreviewMode("PROFILE");
+                                            }}
+                                            className="group p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer flex items-center gap-4"
+                                        >
+                                            <div className="h-12 w-12 rounded-xl overflow-hidden border border-white/10 shrink-0">
+                                                <img src={member.imageURL || "/placeholder-user.jpg"} className="h-full w-full object-cover" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="text-xs font-black text-white uppercase tracking-widest truncate">{member.name}</h4>
+                                                <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest mt-0.5">{member.role}</p>
+                                            </div>
+                                            <ChevronRight size={16} className="text-white/20 group-hover:text-white/60 transition-colors" />
                                         </div>
-                                        <div className="text-center">
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Cinematic Banner</p>
-                                            <p className="text-[8px] font-bold uppercase tracking-widest text-white/20">Video or Ultra-Wide Static</p>
-                                        </div>
-                                    </>
+                                    ))
                                 )}
-                                <input ref={heroInputRef} type="file" hidden accept="video/*,image/*" onChange={(e) => handleImageUpload(e, 'heroMediaUrl')} />
                             </div>
-                        </div>
 
-                        <div className="flex gap-4 pt-6">
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onSave(); }}
-                                disabled={saveStatus === 'saving'}
-                                className={`flex-1 h-14 flex items-center justify-center gap-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${saveStatus === 'saved'
-                                    ? 'bg-green-500 text-white shadow-[0_10px_30px_-10px_rgba(34,197,94,0.5)]'
-                                    : 'bg-brand-gold text-brand-dark shadow-[0_10px_30px_-10px_rgba(197,160,89,0.3)] hover:scale-[1.02]'
-                                    }`}
-                            >
-                                {saveStatus === 'saving' ? (
-                                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-dark/30 border-t-brand-dark" />
-                                ) : saveStatus === 'saved' ? (
-                                    <>
-                                        <Check size={18} />
-                                        Registry Updated
-                                    </>
-                                ) : (
-                                    <>
-                                        <Save size={18} />
-                                        Save Changes
-                                    </>
-                                )}
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (isConfirmingDelete) {
-                                        onDelete();
+                            {/* Registry Controls Footer */}
+                            <div className="p-6 border-t border-white/10 bg-brand-gray-900/80 backdrop-blur-xl flex gap-4">
+                                <button
+                                    onClick={handleTeamView}
+                                    className={`flex-[1] flex items-center justify-center gap-3 h-14 rounded-2xl border font-black uppercase tracking-widest text-[10px] transition-all ${!focusedMemberId ? 'bg-white text-brand-dark border-white shadow-xl shadow-white/10' : 'bg-brand-dark border-white/10 text-white/40 hover:text-white hover:border-white/20'}`}
+                                >
+                                    <Eye size={16} />
+                                    Team View
+                                </button>
+                                <button
+                                    onClick={handleSaveAll}
+                                    className="flex-[2] flex items-center justify-center gap-3 h-14 rounded-2xl bg-brand-gold text-brand-dark font-black uppercase tracking-widest text-[10px] transition-all hover:shadow-xl hover:shadow-brand-gold/20 hover:scale-[1.02] active:scale-[0.98]"
+                                >
+                                    <Save size={16} />
+                                    Save All Edits
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* Overlaid Markdown Editor */}
+                <AnimatePresence>
+                    {isEditingFile && selectedFile && (
+                        <motion.div
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="fixed inset-y-0 right-0 w-[600px] z-[100] p-10 bg-brand-dark/50 backdrop-blur-3xl border-l border-white/10"
+                        >
+                            <MarkdownEditor
+                                fileName={selectedFile.name}
+                                content={fileEditContent}
+                                onChange={setFileEditContent}
+                                onClose={() => setIsEditingFile(false)}
+                                isSaving={isSavingFile}
+                                onSave={async () => {
+                                    setIsSavingFile(true);
+                                    const success = await updateMemberFile(focusedMemberId!, selectedFile.id, { content: fileEditContent });
+                                    if (success) {
+                                        // Update local state is handled by updateMemberFile in DataContext manually usually but wait
+                                        // DataContext updateMemberFile updates setTeamMembers, which ripples to localTeam via useEffect
+                                        setTimeout(() => {
+                                            setIsSavingFile(false);
+                                            setIsEditingFile(false);
+                                        }, 500);
                                     } else {
-                                        setIsConfirmingDelete(true);
-                                        // Reset confirmation after 3 seconds if not clicked
-                                        setTimeout(() => setIsConfirmingDelete(false), 3000);
+                                        setIsSavingFile(false);
+                                        alert("Failed to save file.");
                                     }
                                 }}
-                                className={`h-14 flex items-center justify-center rounded-2xl transition-all border ${isConfirmingDelete
-                                    ? 'bg-red-500 text-white px-6 border-red-600 animate-pulse'
-                                    : 'w-14 bg-white/5 text-white/30 hover:bg-red-500/10 hover:text-red-500 border-white/5'
-                                    }`}
-                            >
-                                {isConfirmingDelete ? (
-                                    <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Confirm Delete?</span>
-                                ) : (
-                                    <Trash2 size={18} />
-                                )}
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
     );
 }
+
+

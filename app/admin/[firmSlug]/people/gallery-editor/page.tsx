@@ -1,16 +1,18 @@
 "use client";
 
 import { useState, Suspense, useEffect, useRef } from "react";
-import { useData, TeamMember, Firm } from "@/context/DataContext";
+import { useData, TeamMember, Firm, TeamMemberFile } from "@/context/DataContext";
 import {
     Users, Mail, ExternalLink, Save, Check, Plus, X,
     Linkedin, Phone, LayoutGrid, List, Trash2,
-    Building2, Globe, Info, Camera, Image as ImageIcon, Video,
-    GripVertical
+    GripVertical, Camera, Image as ImageIcon, Video,
+    FileText, FileCode, CheckCircle2, AlertCircle, FileStack, Settings, Building2, Globe, Info, GitGraph,
+    AlertTriangle
 } from "lucide-react";
 import { useSearchParams, useParams } from "next/navigation";
 import Link from "next/link";
 import RichTextEditor from "@/components/RichTextEditor";
+import OrgChart from "@/components/OrgChart";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 
 export default function TenantGalleryEditorPage() {
@@ -27,8 +29,9 @@ function TenantGalleryEditorContent() {
     const firmSlug = params.firmSlug as string;
     const firm = firms.find(f => f.slug === firmSlug);
 
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-    const [saveStatus, setSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
+    const [viewMode, setViewMode] = useState<'grid' | 'list' | 'org'>('grid');
+    const [saveStatus, setSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved' | 'error'>>({});
+    const [lastError, setLastError] = useState<string | null>(null);
     const [isAddingPerson, setIsAddingPerson] = useState(false);
     const [isConfirmingDelete, setIsConfirmingDelete] = useState<string | null>(null);
     const [orderedMembers, setOrderedMembers] = useState<TeamMember[]>([]);
@@ -149,7 +152,9 @@ function TenantGalleryEditorContent() {
             }, 2000);
         } else {
             console.error(`[GalleryEditor] handleSave failed for ${id}`);
-            setSaveStatus(prev => ({ ...prev, [id]: 'idle' }));
+            const errorMsg = localStorage.getItem('last_update_member_error') || 'Save failed';
+            setLastError(errorMsg);
+            setSaveStatus(prev => ({ ...prev, [id]: 'error' }));
         }
     };
 
@@ -164,10 +169,10 @@ function TenantGalleryEditorContent() {
     }
 
     return (
-        <div className="min-h-screen bg-brand-dark pb-24 overflow-x-hidden">
-            <div className="px-4 md:px-8 lg:px-12 mx-auto max-w-[1700px]">
-                {/* Header Section */}
-                <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className={`min-h-screen bg-brand-dark pb-24 transition-all duration-500 ${viewMode === 'org' ? '-m-6 lg:-m-12 !pb-0' : ''}`}>
+            <div className={`mx-auto transition-all duration-500 ${viewMode === 'org' ? 'max-w-none px-0' : 'max-w-[1700px] px-4 md:px-8 lg:px-12'}`}>
+                {/* Header Section - Conditional Layout */}
+                <div className={`flex flex-col md:flex-row md:items-end justify-between gap-6 transition-all ${viewMode === 'org' ? 'px-8 lg:px-12 py-12 bg-brand-gray-900/50 border-b border-white/5 mb-0' : 'mb-12'}`}>
                     <div>
                         <h1 className="text-4xl font-black text-white uppercase tracking-tight">Team <span className="text-brand-gold">Members</span></h1>
                         <p className="mt-2 text-foreground/40 font-medium max-w-xl">Manage your firm's professional profiles and their public appearance across the platform.</p>
@@ -187,6 +192,13 @@ function TenantGalleryEditorContent() {
                             >
                                 <List size={18} />
                             </button>
+                            <button
+                                onClick={() => setViewMode('org')}
+                                className={`flex h-10 w-12 items-center justify-center rounded-xl transition-all ${viewMode === 'org' ? 'bg-brand-gold text-brand-dark shadow-lg' : 'text-foreground/30 hover:text-white'}`}
+                                title="Organization Chart"
+                            >
+                                <GitGraph size={18} />
+                            </button>
                         </div>
 
                         <button
@@ -198,6 +210,31 @@ function TenantGalleryEditorContent() {
                         </button>
                     </div>
                 </div>
+
+                <AnimatePresence>
+                    {lastError && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="bg-red-500/10 border border-red-500/20 rounded-[2rem] p-6 mb-8 flex items-center justify-between group overflow-hidden"
+                        >
+                            <div className="flex items-center gap-4 text-red-500 font-bold text-sm">
+                                <AlertTriangle size={20} />
+                                <div className="space-y-0.5">
+                                    <h4 className="font-black uppercase tracking-tight">Save Error Encountered</h4>
+                                    <p className="text-xs opacity-80">{lastError}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setLastError(null)}
+                                className="h-10 px-4 rounded-xl bg-red-500 text-white text-[10px] font-black uppercase tracking-widest transition-all hover:bg-red-600 active:scale-95"
+                            >
+                                Dismiss
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {hasOrderChanged && (
                     <motion.div
@@ -248,11 +285,12 @@ function TenantGalleryEditorContent() {
                                         onDelete={() => setIsConfirmingDelete(member.id)}
                                         saveStatus={saveStatus[member.id] || 'idle'}
                                         currentUser={currentUser}
+                                        teamMembers={teamMembers}
                                     />
                                 </Reorder.Item>
                             ))}
                         </Reorder.Group>
-                    ) : (
+                    ) : viewMode === 'list' ? (
                         <Reorder.Group
                             axis="y"
                             values={orderedMembers}
@@ -263,10 +301,10 @@ function TenantGalleryEditorContent() {
                                 <thead className="bg-brand-gray-900/50">
                                     <tr className="border-b border-white/5">
                                         <th className="w-12 pl-6 py-4"></th>
-                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 whitespace-nowrap min-w-[300px]">Identity</th>
-                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 whitespace-nowrap">Hero</th>
-                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 whitespace-nowrap min-w-[250px]">Connectivity</th>
-                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 whitespace-nowrap min-w-[350px]">Narrative</th>
+                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 whitespace-nowrap min-w-[200px]">Identity</th>
+                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 whitespace-nowrap">Docs</th>
+                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 whitespace-nowrap min-w-[150px]">Department</th>
+                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 whitespace-nowrap min-w-[200px]">Reports To</th>
                                         <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 whitespace-nowrap min-w-[180px]">Firm</th>
                                         <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 whitespace-nowrap text-right pr-12">Actions</th>
                                     </tr>
@@ -289,6 +327,7 @@ function TenantGalleryEditorContent() {
                                                 onDelete={() => setIsConfirmingDelete(member.id)}
                                                 saveStatus={saveStatus[member.id] || 'idle'}
                                                 currentUser={currentUser}
+                                                teamMembers={teamMembers}
                                                 isNestedInRow
                                             />
                                         </Reorder.Item>
@@ -296,6 +335,19 @@ function TenantGalleryEditorContent() {
                                 </tbody>
                             </table>
                         </Reorder.Group>
+                    ) : (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 1.02 }}
+                        >
+                            <OrgChart
+                                members={orderedMembers}
+                                onMemberClick={(member) => {
+                                    window.location.href = `/admin/${firmSlug}/people/${member.id}`;
+                                }}
+                            />
+                        </motion.div>
                     )}
                 </AnimatePresence>
 
@@ -468,14 +520,17 @@ function TenantGalleryEditorContent() {
 }
 
 // Sub-component: Grid card refined to match Site Editor aesthetic
-function GridMemberCard({ member, firms, onUpdate, onDelete, saveStatus, currentUser }: {
+function GridMemberCard({ member, firms, onUpdate, onDelete, saveStatus, currentUser, teamMembers }: {
     member: TeamMember,
     firms: Firm[],
     onUpdate: (updates: Partial<TeamMember>) => void,
     onDelete: () => void,
-    saveStatus: 'idle' | 'saving' | 'saved',
-    currentUser: any
+    saveStatus: 'idle' | 'saving' | 'saved' | 'error',
+    currentUser: any,
+    teamMembers: TeamMember[]
 }) {
+    const params = useParams();
+    const firmSlug = params.firmSlug as string;
     const fileInputRef = useRef<HTMLInputElement>(null);
     const heroInputRef = useRef<HTMLInputElement>(null);
     const isSystemAdmin = currentUser?.role === 'SYSTEM_ADMIN';
@@ -533,26 +588,27 @@ function GridMemberCard({ member, firms, onUpdate, onDelete, saveStatus, current
                 </div>
             </div>
 
-            {/* Portfolio Hero Media */}
+            {/* Core Documentation Status */}
             <div className="space-y-3 mb-6">
-                <label className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 ml-1">Portfolio Hero</label>
-                <div
-                    className="aspect-[21/9] rounded-2xl border border-white/5 bg-black/40 overflow-hidden relative group/hero flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-brand-gold/20 transition-all"
-                    onClick={() => heroInputRef.current?.click()}
-                >
-                    {member.heroMediaUrl ? (
-                        <img src={member.heroMediaUrl} className="absolute inset-0 h-full w-full object-cover opacity-50" />
-                    ) : (
-                        <div className="flex flex-col items-center gap-1 opacity-20">
-                            <ImageIcon size={16} />
-                            <span className="text-[8px] font-black uppercase tracking-widest text-white">No Media</span>
-                        </div>
-                    )}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/hero:opacity-100 transition-opacity bg-black/40">
-                        <Video size={16} className="text-brand-gold" />
-                    </div>
+                <label className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 ml-1">Core Documentation</label>
+                <div className="grid grid-cols-2 gap-2">
+                    {['SOUL', 'ROLE', 'AGENTS', 'TOOLS'].map(type => {
+                        const file = (member.files || []).find(f => f.type === type);
+                        return (
+                            <Link
+                                key={type}
+                                href={`/admin/${firmSlug}/people/${member.id}?tab=FILES`}
+                                className={`flex items-center gap-2 p-2 rounded-xl border transition-all ${file
+                                    ? 'bg-brand-gold/10 border-brand-gold/20 text-brand-gold'
+                                    : 'bg-black/20 border-white/5 text-white/20 hover:border-white/10'
+                                    }`}
+                            >
+                                {file ? <CheckCircle2 size={10} /> : <AlertCircle size={10} />}
+                                <span className="text-[9px] font-black tracking-widest uppercase">{type}.MD</span>
+                            </Link>
+                        );
+                    })}
                 </div>
-                <input ref={heroInputRef} type="file" hidden accept="video/*,image/*" onChange={(e) => handleImageUpload(e, 'heroMediaUrl')} />
             </div>
 
             {/* Associated Firms Section - READ ONLY on Firm Admin level */}
@@ -570,102 +626,76 @@ function GridMemberCard({ member, firms, onUpdate, onDelete, saveStatus, current
                 </div>
             </div>
 
-            {/* Connectivity Section */}
+            {/* Organizational Hierarchy Display */}
             <div className="space-y-4 flex-1">
                 <div className="space-y-1.5">
-                    <label className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 ml-1">Email Connection</label>
-                    <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-black/20 px-4 h-12 text-sm text-foreground/60 transition-all focus-within:border-brand-gold/30">
-                        <Mail size={16} className="text-brand-gold/40" />
-                        <input
-                            type="email"
-                            className="bg-transparent outline-none w-full text-white font-bold"
-                            value={member.email || ""}
-                            onChange={(e) => onUpdate({ email: e.target.value })}
-                        />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                        <label className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 ml-1">LinkedIn</label>
-                        <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-black/20 px-4 h-12 text-sm text-foreground/60 transition-all focus-within:border-brand-gold/30">
-                            <Linkedin size={16} className="text-brand-gold/40" />
-                            <input
-                                type="text"
-                                className="bg-transparent outline-none w-full text-white font-bold"
-                                value={member.linkedInUrl || ""}
-                                onChange={(e) => onUpdate({ linkedInUrl: e.target.value })}
-                            />
-                        </div>
-                    </div>
-                    <div className="space-y-1.5">
-                        <label className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 ml-1">Phone</label>
-                        <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-black/20 px-4 h-12 text-sm text-foreground/60 transition-all focus-within:border-brand-gold/30">
-                            <Phone size={16} className="text-brand-gold/40" />
-                            <input
-                                type="text"
-                                className="bg-transparent outline-none w-full text-white font-bold"
-                                value={member.phoneNumber || ""}
-                                onChange={(e) => onUpdate({ phoneNumber: e.target.value })}
-                            />
-                        </div>
+                    <label className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 ml-1">Department</label>
+                    <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-black/20 px-4 h-12 text-sm text-brand-gold font-bold focus-within:border-brand-gold/30">
+                        <Building2 size={16} className="text-brand-gold/40" />
+                        <select
+                            className="bg-transparent border-none outline-none w-full h-full text-brand-gold appearance-none cursor-pointer"
+                            value={member.department || ""}
+                            onChange={(e) => onUpdate({ department: e.target.value })}
+                        >
+                            <option value="" className="bg-brand-gray-900">Unassigned</option>
+                            {["Acquisitions", "Investor Relations", "Finance", "Asset Management"].map(dept => (
+                                <option key={dept} value={dept} className="bg-brand-gray-900">{dept}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 ml-1">Profile Narrative</label>
-                    <textarea
-                        className="w-full h-24 rounded-2xl border border-white/5 bg-black/20 p-4 text-xs font-medium text-white/60 outline-none focus:border-brand-gold/30 transition-all resize-none custom-scrollbar"
-                        value={member.bio}
-                        onChange={(e) => onUpdate({ bio: e.target.value })}
-                        placeholder="Professional summary..."
-                    />
+                    <label className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 ml-1">Reports To</label>
+                    <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-black/20 px-4 h-12 text-sm text-white/60 font-medium focus-within:border-brand-gold/30">
+                        <Users size={16} className="text-white/20" />
+                        <select
+                            className="bg-transparent border-none outline-none w-full h-full text-white appearance-none cursor-pointer"
+                            value={member.managerId || ""}
+                            onChange={(e) => onUpdate({ managerId: e.target.value || null })}
+                        >
+                            <option value="" className="bg-brand-gray-900">No Manager</option>
+                            {teamMembers.filter(m => m.id !== member.id).map(m => (
+                                <option key={m.id} value={m.id} className="bg-brand-gray-900">{m.name}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 
             {/* Actions Bar */}
             <div className="mt-8 flex gap-3">
                 <Link
-                    href={`/team/${member.slug}`}
-                    className="flex-1 flex items-center justify-center gap-3 h-14 rounded-2xl bg-brand-dark/50 border border-white/5 text-[10px] font-black uppercase tracking-widest text-white/40 transition-all hover:bg-brand-gray-800 hover:text-white"
+                    href={`/admin/${firmSlug}/people/${member.id}`}
+                    className="flex-1 flex items-center justify-center gap-3 h-14 rounded-2xl bg-brand-gold text-brand-dark shadow-xl shadow-brand-gold/20 text-[10px] font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
-                    <ExternalLink size={14} />
-                    View Profile
+                    <FileStack size={14} />
+                    Manage Member
                 </Link>
-                <div className="relative group">
-                    {saveStatus === 'saved' ? (
-                        <div className="h-14 w-14 flex items-center justify-center rounded-2xl bg-green-500 text-white shadow-xl shadow-green-500/20">
-                            <Check size={20} />
-                        </div>
-                    ) : (
-                        <button
-                            onClick={onDelete}
-                            className="h-14 w-14 flex items-center justify-center rounded-2xl bg-white/5 text-white/20 border border-white/5 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 transition-all"
-                        >
-                            <Trash2 size={20} />
-                        </button>
-                    )}
-                    {saveStatus === 'saving' && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-brand-gray-900/80 rounded-2xl">
-                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-gold/30 border-t-brand-gold" />
-                        </div>
-                    )}
-                </div>
+                <button
+                    onClick={onDelete}
+                    className="h-14 w-14 flex items-center justify-center rounded-2xl bg-white/5 text-white/20 border border-white/5 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 transition-all"
+                >
+                    <Trash2 size={20} />
+                </button>
             </div>
         </div>
     );
 }
 
 // Sub-component: High-density list row
-function ListMemberRow({ member, firms, onUpdate, onDelete, saveStatus, currentUser, isNestedInRow }: {
+function ListMemberRow({ member, firms, onUpdate, onDelete, saveStatus, currentUser, teamMembers, isNestedInRow }: {
     member: TeamMember,
     firms: Firm[],
     onUpdate: (updates: Partial<TeamMember>) => void,
     onDelete: () => void,
-    saveStatus: 'idle' | 'saving' | 'saved',
+    saveStatus: 'idle' | 'saving' | 'saved' | 'error',
     currentUser: any,
+    teamMembers: TeamMember[],
     isNestedInRow?: boolean
 }) {
+    const params = useParams();
+    const firmSlug = params.firmSlug as string;
     const isSystemAdmin = currentUser?.role === 'SYSTEM_ADMIN';
 
     const content = (
@@ -693,80 +723,55 @@ function ListMemberRow({ member, firms, onUpdate, onDelete, saveStatus, currentU
                 </div>
             </td>
 
-            {/* Hero Media Column */}
+            {/* Documentation Column */}
             <td className="px-8 py-6">
-                <div
-                    className="h-10 w-24 rounded-lg bg-black/40 border border-white/10 overflow-hidden relative group/list-hero cursor-pointer flex items-center justify-center transition-all hover:border-brand-gold/20"
-                    onClick={() => {
-                        const input = document.createElement('input');
-                        input.type = 'file';
-                        input.accept = 'image/*,video/*';
-                        input.onchange = (e) => {
-                            const file = (e.target as HTMLInputElement).files?.[0];
-                            if (file) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => onUpdate({ heroMediaUrl: reader.result as string });
-                                reader.readAsDataURL(file);
-                            }
-                        };
-                        input.click();
-                    }}
+                <div className="flex gap-1.5">
+                    {['SOUL', 'ROLE', 'AGENTS', 'TOOLS'].map(type => {
+                        const file = (member.files || []).find(f => f.type === type);
+                        return (
+                            <div
+                                key={type}
+                                title={`${type}.md ${file ? '(Active)' : '(Missing)'}`}
+                                className={`h-8 w-8 flex items-center justify-center rounded-lg border transition-all ${file
+                                    ? 'bg-brand-gold/10 border-brand-gold/20 text-brand-gold'
+                                    : 'bg-black/20 border-white/5 text-white/10'
+                                    }`}
+                            >
+                                {file ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+                            </div>
+                        );
+                    })}
+                </div>
+            </td>
+
+            {/* Organization Columns */}
+            <td className="px-8 py-6">
+                <select
+                    className="text-[10px] font-black text-brand-gold uppercase tracking-widest bg-brand-gold/5 px-3 py-1.5 rounded-lg border border-brand-gold/10 outline-none appearance-none cursor-pointer hover:bg-brand-gold/10 transition-colors"
+                    value={member.department || ""}
+                    onChange={(e) => onUpdate({ department: e.target.value })}
                 >
-                    {member.heroMediaUrl ? (
-                        <img src={member.heroMediaUrl} className="h-full w-full object-cover opacity-50" />
-                    ) : (
-                        <ImageIcon size={14} className="text-white/10" />
-                    )}
-                    <div className="absolute inset-0 bg-brand-gold/20 opacity-0 group-hover/list-hero:opacity-100 transition-opacity flex items-center justify-center">
-                        <Camera size={12} className="text-brand-dark" />
-                    </div>
-                </div>
+                    <option value="" className="bg-brand-gray-900 italic">Unassigned</option>
+                    {["Acquisitions", "Investor Relations", "Finance", "Asset Management"].map(dept => (
+                        <option key={dept} value={dept} className="bg-brand-gray-900">{dept}</option>
+                    ))}
+                </select>
             </td>
 
-            {/* Connectivity Column */}
             <td className="px-8 py-6">
-                <div className="flex flex-col gap-2 min-w-[200px]">
-                    <div className="flex items-center gap-3 bg-black/20 border border-white/5 rounded-lg px-3 py-1.5 focus-within:border-brand-gold/30 transition-all">
-                        <Mail size={12} className="text-brand-gold/40" />
-                        <input
-                            type="email"
-                            className="bg-transparent border-none text-[11px] font-bold text-white outline-none w-full p-0"
-                            value={member.email || ""}
-                            onChange={(e) => onUpdate({ email: e.target.value })}
-                            placeholder="Email"
-                        />
-                    </div>
-                    <div className="flex items-center gap-3 bg-black/20 border border-white/5 rounded-lg px-3 py-1.5 focus-within:border-brand-gold/30 transition-all">
-                        <Linkedin size={12} className="text-brand-gold/40" />
-                        <input
-                            type="text"
-                            className="bg-transparent border-none text-[11px] font-bold text-white outline-none w-full p-0"
-                            value={member.linkedInUrl || ""}
-                            onChange={(e) => onUpdate({ linkedInUrl: e.target.value })}
-                            placeholder="LinkedIn URL"
-                        />
-                    </div>
-                    <div className="flex items-center gap-3 bg-black/20 border border-white/5 rounded-lg px-3 py-1.5 focus-within:border-brand-gold/30 transition-all">
-                        <Phone size={12} className="text-brand-gold/40" />
-                        <input
-                            type="text"
-                            className="bg-transparent border-none text-[11px] font-bold text-white outline-none w-full p-0"
-                            value={member.phoneNumber || ""}
-                            onChange={(e) => onUpdate({ phoneNumber: e.target.value })}
-                            placeholder="Phone Number"
-                        />
-                    </div>
+                <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5 hover:border-brand-gold/30 transition-all">
+                    <Users size={12} className="text-white/20" />
+                    <select
+                        className="bg-transparent border-none outline-none text-[10px] font-bold text-white/40 uppercase tracking-widest appearance-none cursor-pointer"
+                        value={member.managerId || ""}
+                        onChange={(e) => onUpdate({ managerId: e.target.value || null })}
+                    >
+                        <option value="" className="bg-brand-gray-900">No Manager</option>
+                        {teamMembers.filter(m => m.id !== member.id).map(m => (
+                            <option key={m.id} value={m.id} className="bg-brand-gray-900">{m.name}</option>
+                        ))}
+                    </select>
                 </div>
-            </td>
-
-            {/* Narrative Column */}
-            <td className="px-8 py-6">
-                <textarea
-                    className="w-full min-w-[250px] h-20 rounded-xl border border-white/5 bg-black/20 p-3 text-[11px] font-medium text-white/60 outline-none focus:border-brand-gold/30 transition-all resize-none custom-scrollbar"
-                    value={member.bio}
-                    onChange={(e) => onUpdate({ bio: e.target.value })}
-                    placeholder="Narrative..."
-                />
             </td>
 
             {/* Firm Column - READ ONLY */}
@@ -789,13 +794,14 @@ function ListMemberRow({ member, firms, onUpdate, onDelete, saveStatus, currentU
                     <div className="flex items-center justify-center w-8">
                         {saveStatus === 'saving' && <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-gold/30 border-t-brand-gold" />}
                         {saveStatus === 'saved' && <Check size={16} className="text-green-500" />}
+                        {saveStatus === 'error' && <AlertTriangle size={16} className="text-red-500" />}
                     </div>
                     <Link
-                        href={`/team/${member.slug}`}
-                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/5 text-white/30 hover:bg-white/10 hover:text-white transition-all"
-                        title="View Live Profile"
+                        href={`/admin/${firmSlug}/people/${member.id}`}
+                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-brand-gold text-brand-dark hover:shadow-lg transition-all"
+                        title="Manage Record"
                     >
-                        <ExternalLink size={16} />
+                        <Settings size={16} />
                     </Link>
                     <button
                         onClick={onDelete}
